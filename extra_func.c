@@ -95,3 +95,20 @@ int LinuxSecurityModule() {
     return 0;
 
 }
+//this function is for memory calculation
+unsigned long long extract_value(const char* line) {
+    // Find the colon (':') character
+    const char* colon = strchr(line, ':');
+    if (colon == NULL)
+        return 0;
+
+    // Move the pointer past the colon
+    colon++;
+
+    // Extract the value using strtoull
+    return strtoull(colon, NULL, 10);
+}
+// and this one is for round
+double round_to_nearest_tenth(double value) {
+    return round(value * 10.0) / 10.0;
+}

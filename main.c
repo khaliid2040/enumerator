@@ -37,7 +37,7 @@ void systeminfo()
     __uid_t uid= getuid();
     __gid_t gid= getgid();
     //now getting kernel information
-    printf("\nchecking running kernel\n");
+    printf(ANSI_COLOR_YELLOW "\nchecking running kernel\n" ANSI_COLOR_RESET);
     struct utsname kernel_info;
     if (uname(&kernel_info) == -1)
     {
@@ -67,7 +67,7 @@ void systeminfo()
             }
         }
     }
-    printf("getting processor information\n");
+    printf(ANSI_COLOR_YELLOW "getting processor information\n" ANSI_COLOR_RESET);
    // long total_time= system_info.uptime;
     //getProcessInfo(getpid, total_time);
     
@@ -105,9 +105,11 @@ void systeminfo()
     free(cpuinfo_buffer);
     fclose(cpuinfo);
     //checking for Linux Security Modules
-    printf("checking for Linux Security Modules\n");
+    printf(ANSI_COLOR_YELLOW "checking for Linux Security Modules\n" ANSI_COLOR_RESET);
     // the function is implemented in extra_func.c
     LinuxSecurityModule();
+    printf(ANSI_COLOR_BLUE "now for storage\n" ANSI_COLOR_RESET);
+    storage();
 }
 int memory_info() {
     FILE *fp;
@@ -161,7 +163,7 @@ int main(int argc, char *argv[])
     int m_flag = 0;
 
     // Parse command line options
-    while ((opt = getopt(argc, argv, "p:m:h")) != -1) {
+    while ((opt = getopt(argc, argv, "p:mh")) != -1) {
         switch (opt) {
             case 'p':
                 p_value = atoi(optarg);

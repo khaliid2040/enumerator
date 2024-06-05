@@ -1,7 +1,7 @@
 #ifndef MAIN_H
 #define MAIN_H
 #define SIZE 1024 // size often used for file buffers
-
+#define MAX_LINE_LENGTH 1024 //needs update in the project to be combined SIZE and MAX_LINE_LENGTH
 //for ansi escape codes to get colors
 
 #define ANSI_COLOR_RED     "\x1b[31m" //red
@@ -32,6 +32,15 @@ struct MemInfo {
     double buf_cache_mem;
     double used_mem;
 };
+//for storing processes mountpoints in extra/storage.c
+struct Mountpoints {
+    char *boot;
+    char *root;
+    char *efi;
+    char *efi_boot;
+};
+//for accessing function defined in extra/storage.c
+int storage(void);
 //function for memory calculation implemented in extra_func.c
 unsigned long long extract_value(const char* line);
 double round_to_nearest_tenth(double value);

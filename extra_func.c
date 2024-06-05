@@ -1,29 +1,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "main.h"
-//for detecting the operating system because only one operating system supported and it is Linux
-int Detectos() {
-    char buffer[120];
-    FILE *uname= popen("uname -s","r");
-    if(uname == NULL)
-    {
-        perror("error running command");
-    }
-    if (fgets(buffer,sizeof(buffer),uname) !=NULL)
-    {
-        buffer[strcspn(buffer, "\n")] = '\0';
-        if (strcmp(buffer,"Linux")==0)
-        {
-            printf("detected operating system: Linux\n");
-        }
-        else {
-            printf("not linux");
-            return -1;
-        }
-    }
-    pclose(uname);
-    return 0;
-}
+
 //for getting process information like cpu time
 int getProcessInfo(pid_t pid) {
     char statPath[256];
@@ -75,18 +53,18 @@ int LinuxSecurityModule() {
     if (fgets(buffer, SIZE, fp) != NULL) {
         // Check if SELinux is being used
         if (strstr(buffer, "selinux")) {
-            printf("SELinux detected.\n");
+            printf(ANSI_COLOR_GREEN "SELinux detected.\n" ANSI_COLOR_RESET);
         } 
         // Check if AppArmor is being used
         else if (strstr(buffer, "apparmor")) {
-            printf("AppArmor detected.\n");
+            printf(ANSI_COLOR_GREEN "AppArmor detected.\n" ANSI_COLOR_RESET);
         } 
         // If neither SELinux nor AppArmor is found, print unknown
         else {
-            printf("Unknown LSM is in use.\n");
+            printf(ANSI_COLOR_RED "Unknown LSM is in use.\n" ANSI_COLOR_RESET);
         }
     } else {
-        printf("Unable to determine the LSM.\n");
+        printf(ANSI_COLOR_RED "Unable to determine the LSM.\n" ANSI_COLOR_RESET);
     }
 
     // Close the file

@@ -2,6 +2,15 @@
 #define MAIN_H
 #define SIZE 1024 // size often used for file buffers
 
+//for ansi escape codes to get colors
+
+#define ANSI_COLOR_RED     "\x1b[31m" //red
+#define ANSI_COLOR_GREEN   "\x1b[32m"//green
+#define ANSI_COLOR_YELLOW  "\x1b[33m"//yellow
+#define ANSI_COLOR_BLUE    "\x1b[34m"//blue
+#define ANSI_COLOR_MAGENTA "\x1b[35m"//magenta
+#define ANSI_COLOR_CYAN    "\x1b[36m"//cyan
+#define ANSI_COLOR_RESET   "\x1b[0m"//reset the colors
 // including libraries
 #include <stdio.h>
 #include <string.h>

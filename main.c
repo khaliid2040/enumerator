@@ -7,8 +7,6 @@
 /*system information function*/
 void systeminfo()
 {
-    //calling the detector function to check running operating system
-    Detectos();
     //now getting the hostname from /etc/hostname
     char hostname_buf[256];
     FILE *hostname= fopen("/etc/hostname","r");
@@ -31,7 +29,7 @@ void systeminfo()
            hours, (hours != 1) ? "s" : "", 
            minutes, (minutes != 1) ? "s" : "");
         printf("\nTotal memory: %d GB", system_info.totalram / 1024 / 1024 / 1024);
-        printf(" Note: for more info use -m\n");
+        printf(ANSI_COLOR_YELLOW " Note: for more info use -m\n" ANSI_COLOR_RESET);
         
     }
     /* since the program is doing system related things for security reasons it must not be run as root
@@ -39,17 +37,17 @@ void systeminfo()
     __uid_t uid= getuid();
     __gid_t gid= getgid();
     //now getting kernel information
-    printf("checking running kernel\n");
+    printf("\nchecking running kernel\n");
     struct utsname kernel_info;
     if (uname(&kernel_info) == -1)
     {
         perror("error");
     }
     printf("kernel version: %s\n",kernel_info.release);
-    printf("Warning: this script wan't supposed to be run under the root user \n");
+    printf(ANSI_COLOR_YELLOW "Warning: this script wan't supposed to be run under the root user \n" ANSI_COLOR_RESET);
     if (uid < 1000 && gid < 1000)
     {
-        printf("the program doesn't allowed to be run under this users\n");
+        printf(ANSI_COLOR_RED "the program doesn't allowed to be run under this users\n" ANSI_COLOR_RESET);
         _exit(2);
     } else {
         char *username= getlogin();
@@ -156,14 +154,14 @@ int memory_info() {
 }
 int main(int argc, char *argv[])
 {
-    printf("system enumeration\n");
+    printf(ANSI_COLOR_GREEN "system enumeration\n" ANSI_COLOR_RESET);
     
      int opt;
     int p_value = 0;
     int m_flag = 0;
 
     // Parse command line options
-    while ((opt = getopt(argc, argv, "p:m")) != -1) {
+    while ((opt = getopt(argc, argv, "p:m:h")) != -1) {
         switch (opt) {
             case 'p':
                 p_value = atoi(optarg);
@@ -179,6 +177,11 @@ int main(int argc, char *argv[])
                 else
                     fprintf(stderr, "Unknown option character `\\x%x'.\n", optopt);
                 return 1;
+                break;
+            case 'h':
+                printf("-p      get supplied process id information\n");
+                printf("-m      get memory information\n");
+                return 0;
             default:
                 abort();
         }

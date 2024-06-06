@@ -29,7 +29,7 @@ void systeminfo()
            hours, (hours != 1) ? "s" : "", 
            minutes, (minutes != 1) ? "s" : "");
         printf("\nTotal memory: %d GB", system_info.totalram / 1024 / 1024 / 1024);
-        printf(ANSI_COLOR_YELLOW " Note: for more info use -m\n" ANSI_COLOR_RESET);
+        printf(ANSI_COLOR_YELLOW " Note: for more info use -m" ANSI_COLOR_RESET);
         
     }
     /* since the program is doing system related things for security reasons it must not be run as root
@@ -108,51 +108,7 @@ void systeminfo()
     printf(ANSI_COLOR_YELLOW "checking for Linux Security Modules\n" ANSI_COLOR_RESET);
     // the function is implemented in extra_func.c
     LinuxSecurityModule();
-    printf(ANSI_COLOR_BLUE "now for storage\n" ANSI_COLOR_RESET);
-    storage();
-}
-int memory_info() {
-    FILE *fp;
-    char buffer[255];
-    unsigned long long total_mem = 0, free_mem = 0, buffer_cache = 0;
-
-    fp = fopen("/proc/meminfo", "r");
-    if (fp == NULL) {
-        printf("Error opening file.\n");
-        return 1;
-    }
-
-    // Iterate over each line in the file
-    while (fgets(buffer, 255, fp)) {
-        // Check for the lines containing required information
-        if (strstr(buffer, "MemTotal:") != NULL) {
-            total_mem = extract_value(buffer);
-        } else if (strstr(buffer, "MemFree:") != NULL) {
-            free_mem = extract_value(buffer);
-        } else if (strstr(buffer, "Buffers:") != NULL || strstr(buffer, "Cached:") != NULL) {
-            // Both "Buffers" and "Cached" contribute to buffer/cache
-            buffer_cache += extract_value(buffer);
-        }
-    }
-
-    fclose(fp);
-
-    // Convert memory sizes to gibibytes and round to the nearest tenth
-    double total_mem_gib = round_to_nearest_tenth(total_mem / (1024.0 * 1024.0));
-    double free_mem_gib = round_to_nearest_tenth(free_mem / (1024.0 * 1024.0));
-    double buffer_cache_gib = round_to_nearest_tenth(buffer_cache / (1024.0 * 1024.0));
-    double used_mem_gib = round_to_nearest_tenth(total_mem_gib - free_mem_gib - buffer_cache_gib);
-
-    struct MemInfo memory;
-    memory.total_mem= total_mem_gib;
-    memory.free_mem= free_mem_gib;
-    memory.buf_cache_mem= buffer_cache_gib;
-    memory.used_mem= used_mem_gib;
-    // Output the results
-    printf("Total Memory: %.1f GiB\n", memory.total_mem);
-    printf("Free Memory: %.1f GiB\n", memory.free_mem);
-    printf("Buffer/Cache: %.1f GiB\n", memory.buf_cache_mem);
-    printf("Used Memory: %.1f GiB\n", memory.used_mem);
+    
 }
 int main(int argc, char *argv[])
 {
@@ -160,20 +116,19 @@ int main(int argc, char *argv[])
     
      int opt;
     int p_value = 0;
-    int m_flag = 0;
-
+    int H_flag = 0;
     // Parse command line options
-    while ((opt = getopt(argc, argv, "p:mh")) != -1) {
+    while ((opt = getopt(argc, argv, "p:Hh")) != -1) {
         switch (opt) {
             case 'p':
                 p_value = atoi(optarg);
                 break;
-            case 'm':
-                m_flag = 1;
+            case 'H':
+                H_flag= 1;
                 break;
             case '?': // Handle unknown options
                 if (optopt == 'p')
-                    fprintf(stderr, "Option -%c requires an argument.\n", optopt);
+                    printf(ANSI_COLOR_RED "Option -%c requires an argument.\n" ANSI_COLOR_RESET, optopt);
                 else if (isprint(optopt))
                     fprintf(stderr, "Unknown option `-%c'.\n", optopt);
                 else
@@ -182,29 +137,25 @@ int main(int argc, char *argv[])
                 break;
             case 'h':
                 printf("-p      get supplied process id information\n");
-                printf("-m      get memory information\n");
+                printf("-H      get hardware information\n");
                 return 0;
             default:
                 abort();
         }
     }
 
-    // If both options are specified
-    if (p_value != 0 && m_flag) {
-       // printf("Both options specified: -p %d and -m.\n", p_value);
+    // If -p is specified
+    if (p_value != 0) {
        getProcessInfo(p_value);
-       memory_info();
     }
-    // If only -p is specified
-    else if (p_value != 0) {
-        //printf("Option -p specified with value: %d.\n", p_value);
-        getProcessInfo(p_value);
-    }
-    // If only -m is specified
-    else if (m_flag) {
+    
+    // If only -H is specified
+    else if (H_flag !=0) {
        // printf("Option -m specified.\n");
-       systeminfo();
-       printf("\n");
+       cpuinfo();
+       printf(ANSI_COLOR_BLUE "Disk layout" ANSI_COLOR_RESET);
+       storage();
+       printf(ANSI_COLOR_BLUE "Memory information\n" ANSI_COLOR_RESET);
        memory_info();
     }
     // If no options are specified

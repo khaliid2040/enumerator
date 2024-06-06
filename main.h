@@ -33,15 +33,14 @@ struct MemInfo {
     double used_mem;
 };
 //for storing processes mountpoints in extra/storage.c
-struct Mountpoints {
-    char *boot;
-    char *root;
-    char *efi;
-    char *efi_boot;
-};
+
 //for accessing function defined in extra/storage.c
-int storage(void);
+void storage(void);
+//for accessng memory_info defined in memory.c
+int memory_info(void);
 //function for memory calculation implemented in extra_func.c
+//for cpu defined in extra/cpuinfo.c
+int cpuinfo(void);
 unsigned long long extract_value(const char* line);
 double round_to_nearest_tenth(double value);
 #endif

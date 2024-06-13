@@ -24,10 +24,38 @@ void cpuid() {
                     printf("%s ", feature_names[j]);
                 }
             }
-            printf("\n\n");
+            //detecting the hypervisor in case if we run on virtual machine
+            if (ecx & (1 << 31)) {
+                printf("\nVirtualization detected");
+                unsigned int eax, ebx, ecx, edx;
+                char *hypervisors[] = {"KVM", "Vmware", "Virtualbox", "hyper-v"};
+                int sig[3];
+                // Execute CPUID instruction to retrieve hypervisor signature
+                __cpuid(0x40000000U, eax, ebx, ecx, edx);
+
+                // Store the retrieved signature
+                sig[0] = ebx;
+                sig[1] = ecx;
+                sig[2] = edx;
+                // For demonstration purposes, let's print the signature
+                if (sig[0]==0x4B4D564B && sig[1]==0x564B4D56 && sig[2]== 0x0000004D) { 
+                    printf("KVM\n");
+                } else if (sig[0]==0x61774D56 && sig[1]==0x4D566572 && sig[3]==0x65726175) {
+                    printf("VMWare\n");
+                }else if (sig[0]==0x72754D56 && sig[1]==0x56656361 && sig[2]==0x32746E65) {
+                    printf("Virtualbox\n");
+                }else if (sig[0]==0x72636968 && sig[1]==0x4D566572 && sig[2]==0x65746E65) {
+                    printf("Hyper-v\n");
+                }else {
+                    printf("unknown\n");
+                }
+            }
         }
-    }
+        
+        }
 }
+
+
 int cpuinfo() {
         printf(ANSI_COLOR_YELLOW "getting processor information\n" ANSI_COLOR_RESET);
    // long total_time= system_info.uptime;

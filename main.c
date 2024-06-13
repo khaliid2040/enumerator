@@ -153,7 +153,7 @@ int main(int argc, char *argv[])
     else if (H_flag !=0) {
        // printf("Option -m specified.\n");
        cpuinfo();
-       printf(ANSI_COLOR_BLUE "Disk layout\n" ANSI_COLOR_RESET);
+       printf(ANSI_COLOR_BLUE "\nDisk layout\n" ANSI_COLOR_RESET);
        storage();
        printf(ANSI_COLOR_BLUE "Memory information\n" ANSI_COLOR_RESET);
        memory_info();

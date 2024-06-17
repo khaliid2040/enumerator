@@ -15,7 +15,20 @@ void systeminfo()
         printf("%s %s\n",kernel->sysname, kernel->release);
     }
     free(kernel);
-    
+    //checking whether the firmware is UEFI or BIOS
+    printf("Firmware: ");
+    if (access("/sys/firmware/efi",F_OK) != -1) {
+        printf("UEFI\n");
+    } else {
+        printf("BIOS\n");
+    }
+    char *env, *de;
+    if (env = getenv("XDG_SESSION_TYPE")) {
+        printf("Session Type: %s\n",env);
+    }
+    if (de = getenv("XDG_CURRENT_DESKTOP")) {
+        printf("Desktop: %s\n",de);
+    }
     /*using the information provided by sysinfo library data structure*/
     struct sysinfo system_info;
     if (sysinfo(&system_info) == 0)

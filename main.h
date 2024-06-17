@@ -20,7 +20,7 @@
 typedef unsigned long cpuInfo;
 typedef const char* cpuProperty;
 
-int Detectos();
+int process_file(char *path, char *filename);
 
 void getProcessInfo(pid_t pid);
 

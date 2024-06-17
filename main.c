@@ -7,17 +7,15 @@
 /*system information function*/
 void systeminfo()
 {
-    //now getting the hostname from /etc/hostname
-    char hostname_buf[256];
-    FILE *hostname= fopen("/etc/hostname","r");
-    if (hostname == NULL) {
-        perror("failed to open /etc/hostname");
+    //now getting the hostname and kernel information from using utsname same as kernel retrival method
+    struct utsname *kernel= malloc(sizeof(struct utsname));
+    
+    if (uname(kernel) != -1) {
+        printf("Hostname: %s\n",kernel->nodename);
+        printf("%s %s\n",kernel->sysname, kernel->release);
     }
-    else {
-        fgets(hostname_buf,256,hostname);
-        printf("hostname: %s",hostname_buf);
-    }
-    fclose(hostname);
+    free(kernel);
+    
     /*using the information provided by sysinfo library data structure*/
     struct sysinfo system_info;
     if (sysinfo(&system_info) == 0)
@@ -29,29 +27,20 @@ void systeminfo()
            hours, (hours != 1) ? "s" : "", 
            minutes, (minutes != 1) ? "s" : "");
         printf("\nTotal memory: %d GB", system_info.totalram / 1024 / 1024 / 1024);
-        printf(ANSI_COLOR_YELLOW " Note: for more info use -m" ANSI_COLOR_RESET);
         
     }
     /* since the program is doing system related things for security reasons it must not be run as root
     if next time needed we will remove this code but now it must be their for security reasons */
     __uid_t uid= getuid();
     __gid_t gid= getgid();
-    //now getting kernel information
-    printf(ANSI_COLOR_YELLOW "\nchecking running kernel\n" ANSI_COLOR_RESET);
-    struct utsname kernel_info;
-    if (uname(&kernel_info) == -1)
-    {
-        perror("error");
-    }
-    printf("kernel version: %s\n",kernel_info.release);
-    printf(ANSI_COLOR_YELLOW "Warning: this script wan't supposed to be run under the root user \n" ANSI_COLOR_RESET);
+
     if (uid < 1000 && gid < 1000)
     {
         printf(ANSI_COLOR_RED "the program doesn't allowed to be run under this users\n" ANSI_COLOR_RESET);
         _exit(2);
     } else {
         char *username= getlogin();
-        printf("checking users up to 2000\n");
+        printf(ANSI_COLOR_YELLOW "\nchecking users up to 2000\n" ANSI_COLOR_RESET);
         for (int i=0; i < 2000; i++)
         {
             struct passwd *pw= getpwuid(i);

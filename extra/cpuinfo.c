@@ -1,11 +1,11 @@
 #include "../main.h"
 #include <cpuid.h>
+unsigned int eax,ebx,ecx,edx;
 void cpuid() {
     /* i intentionally compared leaf 0 and 1 because this is the only leaf values is being worked 
     it may be removed from the future */
     for (int i=0;i<2;i++) {
         if (i==0) {
-            unsigned int eax,ebx,ecx,edx;
             __get_cpuid(i,&eax,&ebx,&ecx,&edx);
             char vendor[13];
             memcpy(vendor, &ebx, 4);
@@ -14,7 +14,6 @@ void cpuid() {
             vendor[12] = '\0'; // Null-terminate the string
             printf("CPU vendor: %s\n", vendor);
         } else{
-            unsigned int eax, ebx, ecx, edx;
             // Call CPUID instruction to retrieve information
             __get_cpuid(i, &eax, &ebx, &ecx, &edx);
             char *feature_names[]= {"fpu","vme","de","pse","tsc","pae","mce","cx8","apic","VMX"};
@@ -26,8 +25,7 @@ void cpuid() {
             }
             //detecting the hypervisor in case if we run on virtual machine
             if (ecx & (1 << 31)) {
-                printf("\nVirtualization detected");
-                unsigned int eax, ebx, ecx, edx;
+                printf("\nVirtualization detected: ");
                 char *hypervisors[] = {"KVM", "Vmware", "Virtualbox", "hyper-v"};
                 int sig[3];
                 // Execute CPUID instruction to retrieve hypervisor signature
@@ -89,9 +87,20 @@ int cpuinfo() {
         }
         
     }
-    printf("Number of cores: %d\n", cores_count /2);
-    printf("number of processors: %d\n",processors_count);
+    printf("cores: %d\n", cores_count /2);
+    printf("processors: %d\n",processors_count);
     // now getting the vendor 
     cpuid();
+    //now we are going to print the brand using cpuid instruction
+    char brand[50];
+    for (int i = 0; i < 3; ++i) {
+        __get_cpuid(0x80000002 + i, &eax, &ebx, &ecx, &edx);
+        memcpy(brand + i * 16, &eax, 4);
+        memcpy(brand + i * 16 + 4, &ebx, 4);
+        memcpy(brand + i * 16 + 8, &ecx, 4);
+        memcpy(brand + i * 16 + 12, &edx, 4);
+    }
+    brand[48] = '\0';
+    printf("\nBrand:  %s\n", brand);
     return 0;
 }

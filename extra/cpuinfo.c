@@ -1,13 +1,14 @@
 #include "../main.h"
 #include <cpuid.h>
+#include <dirent.h>
 unsigned int eax,ebx,ecx,edx;
+char vendor[13];
 void cpuid() {
     /* i intentionally compared leaf 0 and 1 because this is the only leaf values is being worked 
     it may be removed from the future */
     for (int i=0;i<2;i++) {
         if (i==0) {
             __get_cpuid(i,&eax,&ebx,&ecx,&edx);
-            char vendor[13];
             memcpy(vendor, &ebx, 4);
             memcpy(vendor+4, &edx, 4);
             memcpy(vendor+8, &ecx, 4);
@@ -23,6 +24,14 @@ void cpuid() {
                     printf("%s ", feature_names[j]);
                 }
             }
+            // now for hyperthreading and simulatanous threading
+            if (ecx & (1<<28)) {
+                if (strcmp(vendor,"GenuineIntel")==0) {
+                    printf("HT ");
+                } else if (strcmp(vendor,"AuthenticAMD")==0) {
+                    printf("SMT ");
+                    }
+                } 
             //detecting the hypervisor in case if we run on virtual machine
             if (ecx & (1 << 31)) {
                 printf("\nVirtualization detected: ");
@@ -52,7 +61,24 @@ void cpuid() {
         
         }
 }
-
+int cpu_vulnerabilities(void) {
+    struct dirent *entry;
+    char *dir_path= "/sys/devices/system/cpu/vulnerabilities";
+    char file_path[MAX_LINE_LENGTH];
+    DIR *path= opendir(dir_path);
+    if (path ==NULL) {
+        perror("couldn't open");
+        return 2;
+    }
+    while ((entry= readdir(path)) != NULL) {
+        if (entry->d_type == DT_REG) {
+           // printf("file %s\n",entry->d_name);
+            snprintf(file_path,sizeof(file_path),"%s/%s",dir_path,entry->d_name);
+            process_file(file_path,entry->d_name);
+        }
+    }
+    closedir(path);
+}
 
 int cpuinfo() {
         printf(ANSI_COLOR_YELLOW "getting processor information\n" ANSI_COLOR_RESET);
@@ -102,5 +128,7 @@ int cpuinfo() {
     }
     brand[48] = '\0';
     printf("\nBrand:  %s\n", brand);
+    printf(ANSI_COLOR_YELLOW "Getting cpu vurnuabilities\n" ANSI_COLOR_RESET);
+    cpu_vulnerabilities();
     return 0;
 }

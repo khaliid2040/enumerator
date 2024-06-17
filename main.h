@@ -22,7 +22,7 @@ typedef const char* cpuProperty;
 
 int Detectos();
 
-int getProcessInfo(pid_t pid);
+void getProcessInfo(pid_t pid);
 
 int LinuxSecurityModule();
 // structure that stores memory information

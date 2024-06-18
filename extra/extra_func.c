@@ -71,3 +71,19 @@ unsigned long long extract_value(const char* line) {
 double round_to_nearest_tenth(double value) {
     return round(value * 10.0) / 10.0;
 }
+//to convert size dynamically
+double convert_size(double size_kib) {
+    extern const char* unit;
+
+    if (size_kib >= 1024.0) {
+        size_kib /= 1024.0;
+        unit = "MiB";
+
+        if (size_kib >= 1024.0) {
+            size_kib /= 1024.0;
+            unit = "GiB";
+        }
+    }
+    //printf("Size: %.2f %s\n", size_kib, unit);
+    return size_kib;
+}

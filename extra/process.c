@@ -1,8 +1,70 @@
 #include "../main.h"
 #include <fcntl.h>
 
+void Total_cpu_time(void) {
+    FILE *fp;
+    char line[MAX_LINE_LENGTH];
+
+    // Open /proc/stat file
+    fp = fopen("/proc/stat", "r");
+    if (fp == NULL) {
+        perror("Error opening /proc/stat");
+        return;
+    }
+
+    // Variables to store CPU times
+    unsigned long long user_ticks, nice_ticks, system_ticks, idle_ticks;
+    unsigned long long iowait_ticks, irq_ticks, softirq_ticks, steal_ticks;
+    unsigned long long guest_ticks, guest_nice_ticks;
+
+    // Read each line and extract CPU times
+    while (fgets(line, sizeof(line), fp) != NULL) {
+        if (strncmp(line, "cpu ", 4) == 0) {
+            sscanf(line + 5, "%llu %llu %llu %llu %llu %llu %llu %llu %llu %llu",
+                   &user_ticks, &nice_ticks, &system_ticks, &idle_ticks,
+                   &iowait_ticks, &irq_ticks, &softirq_ticks, &steal_ticks,
+                   &guest_ticks, &guest_nice_ticks);
+
+            // Calculate total CPU ticks
+            unsigned long long total_ticks = user_ticks + nice_ticks + system_ticks +
+                                             idle_ticks + iowait_ticks + irq_ticks +
+                                             softirq_ticks + steal_ticks +
+                                             guest_ticks + guest_nice_ticks;
+
+            // Calculate CPU usage percentages
+            double user_percent = (double)user_ticks / total_ticks * 100.0;
+            double nice_percent = (double)nice_ticks / total_ticks * 100.0;
+            double system_percent = (double)system_ticks / total_ticks * 100.0;
+            double idle_percent = (double)idle_ticks / total_ticks * 100.0;
+            double iowait_percent = (double)iowait_ticks / total_ticks * 100.0;
+            double irq_percent = (double)irq_ticks / total_ticks * 100.0;
+            double softirq_percent = (double)softirq_ticks / total_ticks * 100.0;
+            double steal_percent = (double)steal_ticks / total_ticks * 100.0;
+            double guest_percent = (double)guest_ticks / total_ticks * 100.0;
+            double guest_nice_percent = (double)guest_nice_ticks / total_ticks * 100.0;
+
+            // Print CPU usage percentages in the desired format
+            printf(" %6.2f   %5.2f   %6.2f   %6.2f   %6.2f   %6.2f   %6.2f   %6.2f\n",
+                   user_percent, nice_percent, system_percent,
+                   iowait_percent, steal_percent, idle_percent,
+                   irq_percent, softirq_percent);
+
+            break; // Break after processing the first "cpu" line
+        }
+    }
+
+    // Close file
+    fclose(fp);
+}
+void process_cpu_time(void) {
+    printf(ANSI_COLOR_YELLOW "System utilization\n" ANSI_COLOR_RESET);
+    printf(ANSI_COLOR_BLUE "%6s   %5s   %6s   %6s   %6s   %6s   %6s   %6s\n",
+           "%user", "%nice", "%system", "%iowait", "%steal", "%idle", "%irq", "%softirq" ANSI_COLOR_RESET);
+    Total_cpu_time();
+}
 void getProcessInfo(int pid) {
     // Read uptime from /proc/uptime
+    printf(ANSI_COLOR_YELLOW "Getting process..\n"ANSI_COLOR_RESET);
     double uptime, idletime;
     FILE *uptimeFile = fopen("/proc/uptime", "r");
     if (uptimeFile == NULL) {

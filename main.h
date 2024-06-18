@@ -32,8 +32,8 @@ struct MemInfo {
     double buf_cache_mem;
     double used_mem;
 };
-//for storing processes mountpoints in extra/storage.c
-
+//total cpu time
+void process_cpu_time(void);
 //for accessing function defined in extra/storage.c
 void storage(void);
 //for accessng memory_info defined in memory.c
@@ -43,4 +43,5 @@ int memory_info(void);
 int cpuinfo(void);
 unsigned long long extract_value(const char* line);
 double round_to_nearest_tenth(double value);
+double convert_size(double size_kib);
 #endif

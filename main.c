@@ -18,7 +18,17 @@ void systeminfo()
     //checking whether the firmware is UEFI or BIOS
     printf("Firmware: ");
     if (access("/sys/firmware/efi",F_OK) != -1) {
-        printf("UEFI\n");
+        printf("UEFI: ");
+        FILE *secure_boot= fopen("/sys/firmware/efi/efivars/SecureBoot-8be4df61-93ca-11d2-aa0d-00e098032b8c","r");
+        char sb_buf[48];
+        if (secure_boot != NULL) {
+            if (fgets(sb_buf, sizeof(sb_buf),secure_boot) == NULL) {
+                printf(ANSI_COLOR_GREEN "Secure Boot enabled\n" ANSI_COLOR_RESET);
+            } else {
+                printf(ANSI_COLOR_RED "Secure Boot disabled\n" ANSI_COLOR_RESET);
+            }
+        }
+        fclose(secure_boot);
     } else {
         printf("BIOS\n");
     }
@@ -39,7 +49,6 @@ void systeminfo()
         printf("Uptime: %ld hour%s and %ld minute%s", 
            hours, (hours != 1) ? "s" : "", 
            minutes, (minutes != 1) ? "s" : "");
-        printf("\nTotal memory: %d GB", system_info.totalram / 1024 / 1024 / 1024);
         
     }
     /* since the program is doing system related things for security reasons it must not be run as root
@@ -112,60 +121,59 @@ void systeminfo()
     LinuxSecurityModule();
     
 }
-int main(int argc, char *argv[])
-{
-    printf(ANSI_COLOR_GREEN "system enumeration\n" ANSI_COLOR_RESET);
-    
-     int opt;
-    int p_value = 0;
-    int H_flag = 0;
-    // Parse command line options
-    while ((opt = getopt(argc, argv, "p:Hh")) != -1) {
-        switch (opt) {
-            case 'p':
-                p_value = atoi(optarg);
-                break;
-            case 'H':
-                H_flag= 1;
-                break;
-            case '?': // Handle unknown options
-                if (optopt == 'p')
-                    printf(ANSI_COLOR_RED "Option -%c requires an argument.\n" ANSI_COLOR_RESET, optopt);
-                else if (isprint(optopt))
-                    fprintf(stderr, "Unknown option `-%c'.\n", optopt);
-                else
-                    fprintf(stderr, "Unknown option character `\\x%x'.\n", optopt);
-                return 1;
-                break;
-            case 'h':
-                printf("-p      get supplied process id information\n");
-                printf("-H      get hardware information\n");
-                return 0;
-            default:
-                abort();
+    int main(int argc, char *argv[])
+    {
+        printf(ANSI_COLOR_GREEN "system enumeration\n" ANSI_COLOR_RESET);
+        
+        int opt;
+        int p_value = 0;
+        int H_flag = 0;
+        // Parse command line options
+        while ((opt = getopt(argc, argv, "p:Hh")) != -1) {
+            switch (opt) {
+                case 'p':
+                    p_value = atoi(optarg);
+                    break;
+                case 'H':
+                    H_flag= 1;
+                    break;
+                case '?': // Handle unknown options
+                    if (optopt == 'p')
+                        printf(ANSI_COLOR_RED "Option -%c requires an argument.\n" ANSI_COLOR_RESET, optopt);
+                    else if (isprint(optopt))
+                        fprintf(stderr, "Unknown option `-%c'.\n", optopt);
+                    else
+                        fprintf(stderr, "Unknown option character `\\x%x'.\n", optopt);
+                    return 1;
+                    break;
+                case 'h':
+                    printf("-p      get supplied process id information\n");
+                    printf("-H      get hardware information\n");
+                    return 0;
+                default:
+                    abort();
+            }
         }
-    }
 
-    // If -p is specified
-    if (p_value != 0) {
-        process_cpu_time();
-       getProcessInfo(p_value);
-    }
-    
-    // If only -H is specified
-    else if (H_flag !=0) {
-       // printf("Option -m specified.\n");
-       cpuinfo();
-       printf(ANSI_COLOR_BLUE "\nDisk layout\n" ANSI_COLOR_RESET);
-       storage();
-       printf(ANSI_COLOR_BLUE "Memory information\n" ANSI_COLOR_RESET);
-       memory_info();
-    }
-    // If no options are specified
-    else {
-        //printf("No options specified.\n");
-        systeminfo();
-    }
+        // If -p is specified
+        if (p_value) {
+            process_cpu_time();
+            getProcessInfo(p_value);
+        } 
+        // If only -H is specified
+        else if (H_flag) {
+        // printf("Option -m specified.\n");
+        cpuinfo();
+        printf(ANSI_COLOR_YELLOW "\nGetting disk layout...\n" ANSI_COLOR_RESET);
+        storage();
+        printf(ANSI_COLOR_YELLOW "Getting memory information\n" ANSI_COLOR_RESET);
+        memory_info();
+        }
+        // If no options are specified
+        else {
+            //printf("No options specified.\n");
+            systeminfo();
+        }
 
-    return 0;
-}
+        return 0;
+    }

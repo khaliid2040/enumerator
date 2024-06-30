@@ -25,7 +25,7 @@ int memory_info() {
             buffer_mem += extract_value(buffer);
         } else if (strstr(buffer, "MemAvailable:")) {
             available_mem += extract_value(buffer);
-        }
+        } 
     }
 
     fclose(fp);

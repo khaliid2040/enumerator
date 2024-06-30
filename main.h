@@ -19,7 +19,7 @@
 #include <math.h>
 typedef unsigned long cpuInfo;
 typedef const char* cpuProperty;
-
+#define GiB (1024 * 1024 * 1024)
 int process_file(char *path, char *filename);
 
 void getProcessInfo(pid_t pid);

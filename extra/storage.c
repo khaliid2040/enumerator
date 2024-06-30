@@ -1,43 +1,43 @@
 #include "../main.h"
 #include <sys/statvfs.h>
-void storage() {
-    FILE *fp;
-    char line[MAX_LINE_LENGTH];
-    char mount_point[MAX_LINE_LENGTH];
-    char device[MAX_LINE_LENGTH];
-    // Open /proc/mounts file
-    fp = fopen("/proc/mounts", "r");
-    if (fp == NULL) {
-        perror("Error opening /proc/mounts");
-    }
-    /* first it will iterate all mountpoints then compare with expected mountpoint if so store it in 
-    in needed_mountpoints then process with statvfs*/
-    // Read each line and extract mount point and device
+#include <mntent.h>
 
-    while (fgets(line, sizeof(line), fp) != NULL) {
-        sscanf(line, "%s %s", device, mount_point);
-        char *needed_mount_point[12]= {"/","/boot","/efi","/boot/efi"};
-        // statvfs structure and path
-        struct statvfs fs_info;
-        printf("%-15s%-12s%-12s%-12s\n", "Mountpoint", "Size(GiB)", "Free(GiB)", "Used(GiB)");
-        for (int i=0; i<4; i++) {
-            if (access(needed_mount_point[i],F_OK) != -1) {
-                if (statvfs(needed_mount_point[i], &fs_info) == 0) {
-                    unsigned long long block_size = fs_info.f_frsize ? fs_info.f_frsize : fs_info.f_bsize; // Get the block size
-                    unsigned long long total_size = fs_info.f_blocks * block_size; // Total size in bytes
-                    unsigned long long free_blocks = fs_info.f_bfree * block_size; // Free blocks in bytes
-                    unsigned long long used_blocks = total_size - free_blocks; // Used blocks in bytes
-                    double total_size_gib = total_size / (double)(1 << 30); // Convert to GiB
-                    double free_blocks_gib = free_blocks / (double)(1 << 30); // Convert free blocks to GiB
-                    double used_blocks_gib = used_blocks / (double)(1 << 30); // Convert used blocks to GiB
-                    printf("%-15s%-12.2f%-12.2f%-12.2f\n", needed_mount_point[i], total_size_gib, free_blocks_gib, used_blocks_gib);
-                }
-            }
-            
-        }
-        break;
-    }
 
-    // Close file
-    fclose(fp);
-}
+void storage(void) {
+    // Open the mount points file
+    FILE *mtab = setmntent("/etc/mtab", "r");
+	if (mtab != NULL) {
+    	// Print header
+    	printf("%-15s%-12s%-12s%-12s%-12s%-12s\n", "Device", "Filesystem", "Mountpoint", "Size(GiB)", "Free(GiB)", "Used(GiB)");
+		char *needed_filesystem[5]= {"ext4","ext3","ext2","btrfs","vfat"};
+    	// Read each entry from the mount points file
+    	struct mntent *entry;
+		int counter=0;
+    	while ((entry = getmntent(mtab)) != NULL) {
+    	    struct statvfs fs_info;
+    	    if (statvfs(entry->mnt_dir, &fs_info) == 0) {
+    	        unsigned long long block_size = fs_info.f_frsize ? fs_info.f_frsize : fs_info.f_bsize; // Get the block size
+    	        unsigned long long total_size = fs_info.f_blocks * block_size; // Total size in bytes
+    	        unsigned long long free_blocks = fs_info.f_bfree * block_size; // Free blocks in bytes
+    	        unsigned long long used_blocks = total_size - free_blocks; // Used blocks in bytes
+    	        double total_size_gib = total_size / (double)GiB; // Convert to GiB
+    	        double free_blocks_gib = free_blocks / (double)GiB; // Convert free blocks to GiB
+    	        double used_blocks_gib = used_blocks / (double)GiB; // Convert used blocks to GiB
+				int needed=0;
+				for (int i=0; i < sizeof(needed_filesystem)/ sizeof(needed_filesystem[0]); i++) {
+					if (strcmp(entry->mnt_type,needed_filesystem[i]) ==0) {
+						needed=1;
+						break;
+					}
+				}
+				if (needed) {
+					printf("%-15s%-12s%-12s%-12.2f%-12.2f%-12.2f\n", entry->mnt_fsname, entry->mnt_type, entry->mnt_dir, total_size_gib, free_blocks_gib, used_blocks_gib);	
+				}
+
+    	    }
+    	}
+
+    	// Close the mount points file
+    	endmntent(mtab);
+	}
+}	

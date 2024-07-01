@@ -17,6 +17,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <math.h>
+#include <dirent.h>
 typedef unsigned long cpuInfo;
 typedef const char* cpuProperty;
 #define GiB (1024 * 1024 * 1024)
@@ -44,4 +45,6 @@ int cpuinfo(void);
 unsigned long long extract_value(const char* line);
 double round_to_nearest_tenth(double value);
 double convert_size(double size_kib);
+//network functions implemented in network.c
+void network(void);
 #endif

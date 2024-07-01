@@ -173,6 +173,8 @@ void systeminfo()
         else {
             //printf("No options specified.\n");
             systeminfo();
+            printf(ANSI_COLOR_YELLOW "Getting network information\n" ANSI_COLOR_RESET);
+            network();
         }
 
         return 0;

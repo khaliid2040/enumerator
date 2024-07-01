@@ -1,5 +1,3 @@
-#include <stdio.h>
-#include <string.h>
 #include "../main.h"
 
 int process_file(char *path,char *filename) {

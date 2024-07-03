@@ -70,18 +70,16 @@ double round_to_nearest_tenth(double value) {
     return round(value * 10.0) / 10.0;
 }
 //to convert size dynamically
-double convert_size(double size_kib) {
-    extern const char* unit;
-
+double convert_size(double size_kib, char **unit) {
     if (size_kib >= 1024.0) {
         size_kib /= 1024.0;
-        unit = "MiB";
+        *unit = "MiB";
 
         if (size_kib >= 1024.0) {
             size_kib /= 1024.0;
-            unit = "GiB";
+            *unit= "GiB";
         }
+        
     }
-    //printf("Size: %.2f %s\n", size_kib, unit);
     return size_kib;
 }

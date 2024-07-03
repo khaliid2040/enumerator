@@ -7,6 +7,7 @@
 void interface(const char *intface) {
 	struct ifaddrs *ifap, *ifa;
 	int family,printed=0;
+	char subnetmask[ADDR_SIZE];
 	if (getifaddrs(&ifap) != -1) {
 		for (ifa= ifap; ifa != NULL; ifa= ifa->ifa_next) {
 				if (ifa->ifa_addr == NULL) {
@@ -22,8 +23,14 @@ void interface(const char *intface) {
 					if (family == AF_INET) {
 						char ipv4_addr[ADDR_SIZE];
 						struct sockaddr_in *sock= (struct sockaddr_in *) ifa->ifa_addr;
-							inet_ntop(AF_INET,&	sock->sin_addr,ipv4_addr,ADDR_SIZE);
-							printf("IPv4 %s\n",ipv4_addr);		
+						inet_ntop(AF_INET,&	sock->sin_addr,ipv4_addr,ADDR_SIZE);
+						printf("IPv4 %s\n",ipv4_addr);
+						if (ifa->ifa_netmask != NULL) {
+							struct sockaddr_in *subnet= (struct sockaddr_in *) ifa->ifa_netmask;
+							inet_ntop(AF_INET,&(subnet->sin_addr),subnetmask,sizeof(subnetmask));
+							printf("Subnet 	%s\n",subnetmask);
+						}
+								
 					} else if (family== AF_INET6) {
 						char ipv6_addr[ADDR_SIZE];
 						struct sockaddr_in6 *sock6= (struct sockaddr_in6 *) ifa->ifa_addr;
@@ -51,10 +58,18 @@ void network(void) {
 			counter++;
 		}
 	}
-	char *path[SIZE];
+	char path[SIZE];
 	char buffer[SIZE];
 	for (int i=0; i<counter; i++) {
 		interface(net[i]);
+		snprintf(path,SIZE,"/sys/class/net/%s/address",net[i]);
+		FILE *address= fopen(path,"r");
+		if (address != NULL) {
+			while(fgets(buffer,SIZE,address) != NULL) {
+				printf("MAC %s",buffer);
+			}
+		}
+		fclose(address);
 		free(net[i]);
 	}
 }

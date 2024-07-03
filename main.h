@@ -27,11 +27,9 @@ void getProcessInfo(pid_t pid);
 
 int LinuxSecurityModule();
 // structure that stores memory information
-struct MemInfo {
-    double total_mem;
-    double free_mem;
-    double buf_cache_mem;
-    double used_mem;
+struct memInfo {
+    double total_size;
+    const char *unit;
 };
 //total cpu time
 void process_cpu_time(void);
@@ -44,7 +42,9 @@ int memory_info(void);
 int cpuinfo(void);
 unsigned long long extract_value(const char* line);
 double round_to_nearest_tenth(double value);
-double convert_size(double size_kib);
+double convert_size(double size_kib,char *      *unit);
 //network functions implemented in network.c
 void network(void);
+//for routing
+void route(void);
 #endif

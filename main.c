@@ -58,8 +58,8 @@ void systeminfo()
 
     if (uid < 1000 && gid < 1000)
     {
-        printf(ANSI_COLOR_RED "the program doesn't allowed to be run under this users\n" ANSI_COLOR_RESET);
-        _exit(2);
+        printf(ANSI_COLOR_RED "\nthe program doesn't allowed to be run under this users\n" ANSI_COLOR_RESET);
+        return;
     } else {
         char *username= getlogin();
         printf(ANSI_COLOR_YELLOW "\nchecking users up to 2000\n" ANSI_COLOR_RESET);
@@ -116,7 +116,6 @@ void systeminfo()
     free(cpuinfo_buffer);
     fclose(cpuinfo);
     //checking for Linux Security Modules
-    printf(ANSI_COLOR_YELLOW "checking for Linux Security Modules\n" ANSI_COLOR_RESET);
     // the function is implemented in extra_func.c
     LinuxSecurityModule();
     
@@ -128,14 +127,18 @@ void systeminfo()
         int opt;
         int p_value = 0;
         int H_flag = 0;
+        int N_flag= 0;
         // Parse command line options
-        while ((opt = getopt(argc, argv, "p:Hh")) != -1) {
+        while ((opt = getopt(argc, argv, "p:Hnh")) != -1) {
             switch (opt) {
                 case 'p':
                     p_value = atoi(optarg);
                     break;
                 case 'H':
                     H_flag= 1;
+                    break;
+                case 'n':
+                    N_flag= 1;
                     break;
                 case '?': // Handle unknown options
                     if (optopt == 'p')
@@ -149,6 +152,7 @@ void systeminfo()
                 case 'h':
                     printf("-p      get supplied process id information\n");
                     printf("-H      get hardware information\n");
+                    printf("-n      get network information\n");
                     return 0;
                 default:
                     abort();
@@ -156,7 +160,7 @@ void systeminfo()
         }
 
         // If -p is specified
-        if (p_value) {
+        if (p_value > 0) {
             process_cpu_time();
             getProcessInfo(p_value);
         } 
@@ -168,13 +172,16 @@ void systeminfo()
         storage();
         printf(ANSI_COLOR_YELLOW "Getting memory information\n" ANSI_COLOR_RESET);
         memory_info();
+        } else if(N_flag) {
+            printf(ANSI_COLOR_YELLOW "Getting network information\n" ANSI_COLOR_RESET);
+            network();
+            printf(ANSI_COLOR_YELLOW "Getting route information...\n" ANSI_COLOR_RESET);
+            route();
         }
         // If no options are specified
         else {
             //printf("No options specified.\n");
             systeminfo();
-            printf(ANSI_COLOR_YELLOW "Getting network information\n" ANSI_COLOR_RESET);
-            network();
         }
 
         return 0;

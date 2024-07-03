@@ -5,7 +5,7 @@
 #include <ctype.h>
 #include "main.h"
 /*system information function*/
-void systeminfo()
+void systeminfo(void)
 {
     //now getting the hostname and kernel information from using utsname same as kernel retrival method
     struct utsname *kernel= malloc(sizeof(struct utsname));
@@ -123,7 +123,6 @@ void systeminfo()
     int main(int argc, char *argv[])
     {
         printf(ANSI_COLOR_GREEN "system enumeration\n" ANSI_COLOR_RESET);
-        
         int opt;
         int p_value = 0;
         int H_flag = 0;
@@ -158,7 +157,6 @@ void systeminfo()
                     abort();
             }
         }
-
         // If -p is specified
         if (p_value > 0) {
             process_cpu_time();
@@ -177,10 +175,12 @@ void systeminfo()
             network();
             printf(ANSI_COLOR_YELLOW "Getting route information...\n" ANSI_COLOR_RESET);
             route();
+            printf(ANSI_COLOR_YELLOW "checking for arp entries..\n" ANSI_COLOR_RESET);
+            arp();
         }
         // If no options are specified
         else {
-            //printf("No options specified.\n");
+            
             systeminfo();
         }
 

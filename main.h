@@ -29,7 +29,9 @@ int LinuxSecurityModule();
 // structure that stores memory information
 struct memInfo {
     double total_size;
-    const char *unit;
+    double free_mem;
+    double available;
+    double buffer;
 };
 //total cpu time
 void process_cpu_time(void);
@@ -39,7 +41,7 @@ void storage(void);
 int memory_info(void);
 //function for memory calculation implemented in extra_func.c
 //for cpu defined in extra/cpuinfo.c
-int cpuinfo(void);
+int cpuinfo(void);  
 unsigned long long extract_value(const char* line);
 double round_to_nearest_tenth(double value);
 double convert_size(double size_kib,char *      *unit);
@@ -47,4 +49,6 @@ double convert_size(double size_kib,char *      *unit);
 void network(void);
 //for routing
 void route(void);
+//parsing and resding arp
+void arp(void);
 #endif

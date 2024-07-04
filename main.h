@@ -18,6 +18,8 @@
 #include <unistd.h>
 #include <math.h>
 #include <dirent.h>
+#include <arpa/inet.h>
+#include <sys/sysinfo.h>
 typedef unsigned long cpuInfo;
 typedef const char* cpuProperty;
 #define GiB (1024 * 1024 * 1024)
@@ -26,13 +28,6 @@ int process_file(char *path, char *filename);
 void getProcessInfo(pid_t pid);
 
 int LinuxSecurityModule();
-// structure that stores memory information
-struct memInfo {
-    double total_size;
-    double free_mem;
-    double available;
-    double buffer;
-};
 //total cpu time
 void process_cpu_time(void);
 //for accessing function defined in extra/storage.c

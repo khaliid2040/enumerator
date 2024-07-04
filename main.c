@@ -1,4 +1,3 @@
-#include <sys/sysinfo.h>
 #include <pwd.h>
 #include <sys/utsname.h>
 #include <sys/types.h>
@@ -15,6 +14,7 @@ void systeminfo(void)
         printf("%s %s\n",kernel->sysname, kernel->release);
     }
     free(kernel);
+
     //checking whether the firmware is UEFI or BIOS
     printf("Firmware: ");
     if (access("/sys/firmware/efi",F_OK) != -1) {
@@ -111,8 +111,6 @@ void systeminfo(void)
     }
     printf("Number of cores: %d\n", cores_count /2);
     printf("number of processors: %d\n",processors_count);
-    // checking firmware
-
     free(cpuinfo_buffer);
     fclose(cpuinfo);
     //checking for Linux Security Modules

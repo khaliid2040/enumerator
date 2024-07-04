@@ -90,7 +90,7 @@ int cpuinfo() {
         buffer_size is the size of the buffer
         processors and cores are strings searched in  the file
         
-    */
+    */      
     char *cpuinfo_buffer= NULL;
     size_t buffer_size= 0;
     cpuProperty processors = "processor";
@@ -115,6 +115,8 @@ int cpuinfo() {
     }
     printf("cores: %d\n", cores_count /2);
     printf("processors: %d\n",processors_count);
+    fclose(cpuinfo);
+    free(cpuinfo_buffer);
     // now getting the vendor 
     cpuid();
     //now we are going to print the brand using cpuid instruction

@@ -1,5 +1,4 @@
 #include <ifaddrs.h>
-#include <arpa/inet.h>
 #include <net/if.h>
 #include <dirent.h>
 #include "../main.h"
@@ -58,6 +57,7 @@ void network(void) {
 			counter++;
 		}
 	}
+	closedir(block);
 	char path[SIZE];
 	char buffer[SIZE];
 	for (int i=0; i<counter; i++) {

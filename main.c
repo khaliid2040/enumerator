@@ -14,7 +14,17 @@ void systeminfo(void)
         printf("%s %s\n",kernel->sysname, kernel->release);
     }
     free(kernel);
-
+    //now checking for loaded modules
+    char *line=NULL;
+    size_t len= 0;
+    FILE *modules= fopen("/proc/modules","r");
+    unsigned int count=0;
+    while (getline(&line,&len,modules) != -1) {
+        count++;
+    }
+    printf("Kernel modules loaded: %u\n",count);
+    fclose(modules);
+    free(line); 
     //checking whether the firmware is UEFI or BIOS
     printf("Firmware: ");
     if (access("/sys/firmware/efi",F_OK) != -1) {
@@ -79,8 +89,6 @@ void systeminfo(void)
         }
     }
     printf(ANSI_COLOR_YELLOW "getting processor information\n" ANSI_COLOR_RESET);
-   // long total_time= system_info.uptime;
-    //getProcessInfo(getpid, total_time);
     
     /*
         cpuinfo_buffer holds the buffer of the cpuinfo file
@@ -162,7 +170,8 @@ void systeminfo(void)
         } 
         // If only -H is specified
         else if (H_flag) {
-        // printf("Option -m specified.\n");
+        printf(ANSI_COLOR_YELLOW "Getting basic information...\n" ANSI_COLOR_RESET);
+        system_enum();
         cpuinfo();
         printf(ANSI_COLOR_YELLOW "\nGetting disk layout...\n" ANSI_COLOR_RESET);
         storage();

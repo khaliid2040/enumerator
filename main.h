@@ -46,4 +46,16 @@ void network(void);
 void route(void);
 //parsing and resding arp
 void arp(void);
+//used by extra/syste.c
+typedef struct System {
+    char bios_vendor[SIZE];
+    char release[9];
+    char date[15];
+    char version[10];
+    char product_name[SIZE];
+    char product_family[SIZE];
+    char sys_vendor[SIZE];
+    char board_vendor[SIZE];
+} System_t;
+void system_enum(void);
 #endif

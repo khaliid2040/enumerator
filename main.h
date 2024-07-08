@@ -55,7 +55,7 @@ typedef struct System {
     char product_name[SIZE];
     char product_family[SIZE];
     char sys_vendor[SIZE];
-    char board_vendor[SIZE];
+    char chassis_vendor[SIZE];
 } System_t;
 void system_enum(void);
 #endif

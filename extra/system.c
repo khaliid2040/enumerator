@@ -1,7 +1,7 @@
 #include "../main.h"
 System_t *dmi_read() {
     char *sys_files[]= {"bios_vendor","bios_release","bios_date","bios_version",
-    "product_name","product_family","sys_vendor","board_vendor"};
+    "product_name","product_family","sys_vendor","chassis_vendor"};
 
     char path[SIZE],buffer[SIZE];
     char *iterate[8];
@@ -11,11 +11,12 @@ System_t *dmi_read() {
         FILE *sys= fopen(path,"r");
         if (sys == NULL) {
             perror("failed");
-            return NULL;
+            //return NULL;
+            continue;
         }
-        
+          
         if (fgets(buffer,SIZE,sys) != NULL) {
-            iterate[i]= malloc(strlen(buffer));
+            iterate[i]= malloc(strlen(buffer)+ 1);
             strcpy(iterate[i],buffer);
             fclose(sys);
         }
@@ -27,7 +28,7 @@ System_t *dmi_read() {
     strcpy(system->product_name,iterate[4]);
     strcpy(system->product_family,iterate[5]);
     strcpy(system->sys_vendor,iterate[6]);
-    strcpy(system->board_vendor,iterate[7]);
+    strcpy(system->chassis_vendor,iterate[7]);
     for (int i=0;i<8;i++) {
         free(iterate[i]);
     }
@@ -39,10 +40,10 @@ void system_enum() {
        printf("Bios vendor: %s",system->bios_vendor);
        printf("Bios: version: %s\n",system->release);
        printf("Bios release date: %s",system->date);
-       printf("MotherBoard vendor: %s",system->board_vendor);
        printf("Product Name: %s",system->product_name);
        printf("product family: %s",system->product_family);
        printf("System vendor %s",system->sys_vendor);
+       printf("Chassis Vendor %s",system->chassis_vendor);
        free(system);
     }
 }

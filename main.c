@@ -2,6 +2,7 @@
 #include <sys/utsname.h>
 #include <sys/types.h>
 #include <ctype.h>
+#include <grp.h>    
 #include "main.h"
 /*system information function*/
 void systeminfo(void)
@@ -65,29 +66,38 @@ void systeminfo(void)
     if next time needed we will remove this code but now it must be their for security reasons */
     __uid_t uid= getuid();
     __gid_t gid= getgid();
-
-    if (uid < 1000 && gid < 1000)
-    {
-        printf(ANSI_COLOR_RED "\nthe program doesn't allowed to be run under this users\n" ANSI_COLOR_RESET);
+    struct passwd *pwd;
+   //we don't want to be run on privileged user
+    if (uid==0 && gid==0) {
+        printf(ANSI_COLOR_RED "user %s is not allowed\n"ANSI_COLOR_RESET,pwd->pw_name);
         return;
-    } else {
-        char *username= getlogin();
-        printf(ANSI_COLOR_YELLOW "\nchecking users up to 2000\n" ANSI_COLOR_RESET);
-        for (int i=0; i < 2000; i++)
-        {
-            struct passwd *pw= getpwuid(i);
-            if (i<1000 && i !=0)
-            {
-                continue;
-            } else
-            {
-                if (pw !=NULL)
-                {
-                    printf("user %s exist\n", pw->pw_name);
-                }
+    }
+    printf(ANSI_COLOR_YELLOW "\nGetting users...\n" ANSI_COLOR_RESET);
+    printf("User\tUID\tGID\tShell\n");
+    while ((pwd= getpwent()) != NULL) {
+        if (pwd->pw_uid==0 || pwd->pw_uid >=1000) {   //also we need to print root user if it exists because it                                      // it is a normal user which can be used after
+            if (strcmp(pwd->pw_name,"nobody")) {  //we don't want nobody user because it is not a normal user 
+                printf("%s\t%d\t%d\t%s\n",pwd->pw_name,pwd->pw_uid,pwd->pw_gid,pwd->pw_shell);
             }
         }
     }
+    endpwent();
+    struct group *grp;
+    //now for groups
+    printf(ANSI_COLOR_YELLOW "retrieving groups...\n" ANSI_COLOR_RESET);
+    printf("Group\tGID\tMembers\n");
+    while ((grp=getgrent()) != NULL) {
+        //same as users before we need to retrieve every group except system groups 
+        //also we may need wheel and sudo groups    
+        if (    grp->gr_gid==0 || grp->gr_gid > 1000 || strcmp(grp->gr_name,"wheel") == 0|| strcmp(grp->gr_name,"sudo")==0  ) {
+            printf("%s\t%d\t",grp->gr_name,grp->gr_gid);
+            for (int i=0; grp->gr_mem[i] != NULL;i++) {
+                printf("%s\t",grp->gr_mem[i]);
+            }
+            printf("\n");
+        }
+    }
+    endgrent();
     printf(ANSI_COLOR_YELLOW "getting processor information\n" ANSI_COLOR_RESET);
     
     /*

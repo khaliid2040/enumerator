@@ -20,6 +20,12 @@
 #include <dirent.h>
 #include <arpa/inet.h>
 #include <sys/sysinfo.h>
+#ifdef APPARMOR 
+#include <sys/apparmor.h>
+#endif
+#ifdef SELINUX
+#include <selinux/selinux.h>
+#endif  
 typedef unsigned long cpuInfo;
 typedef const char* cpuProperty;
 #define GiB (1024 * 1024 * 1024)
@@ -27,7 +33,7 @@ int process_file(char *path, char *filename);
 
 void getProcessInfo(pid_t pid);
 
-int LinuxSecurityModule();
+void LinuxSecurityModule(void);
 //total cpu time
 void process_cpu_time(void);
 //for accessing function defined in extra/storage.c

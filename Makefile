@@ -3,7 +3,16 @@ CFLAGS=-march=native -O2 -pipe -I.
 EXECUTABLE=systeminfo
 LIBS=-lm
 INCLUDE_DIR = .
+ifeq ($(shell test -f /usr/include/sys/apparmor.h && echo yes),yes)
+    CFLAGS += -DAPPARMOR
+    LIBS += -lapparmor
+endif
 
+# Check for SELinux header
+ifeq ($(shell test -f /usr/include/selinux/selinux.h && echo yes),yes)
+    CFLAGS += -DSELINUX
+    LIBS += -lselinux
+endif	
 $(EXECUTABLE): main.o extra_func.o storage.o memory.o cpuinfo.o process.o network.o route.o arp.o system.o
 	$(CC) -o $(EXECUTABLE) main.o extra_func.o storage.o memory.o cpuinfo.o process.o network.o route.o arp.o system.o $(LIBS)
 

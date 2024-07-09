@@ -17,7 +17,7 @@ int process_file(char *path,char *filename) {
 
 }
 //for checking the Linux security Modules
-int LinuxSecurityModule() {
+/*int LinuxSecurityModule() {
     FILE *fp;
     char buffer[SIZE];
     
@@ -51,6 +51,24 @@ int LinuxSecurityModule() {
 
     return 0;
 
+}*/
+void LinuxSecurityModule(void) {
+    #ifdef APPARMOR
+    if (aa_is_enabled()) {
+        printf("Apparmor:" ANSI_COLOR_GREEN "enabled\n" ANSI_COLOR_RESET);
+    } else {
+        printf("Apparmor: " ANSI_COLOR_RED "disabled\n" ANSI_COLOR_RESET);
+    }
+    #endif
+    #ifdef SELINUX
+    if (is_selinux_enabled()) {
+        printf("SELinux: " ANSI_COLOR_GREEN "enabled\n" ANSI_COLOR_RESET);
+    } else if(!(is_selinux_enabled())) {
+       printf("Apparmor: " ANSI_COLOR_RED "disabled\n" ANSI_COLOR_RESET);
+    } else {
+        printf(ANSI_COLOR_RED "SELinux unknown\n" ANSI_COLOR_RESET  );
+    }
+    #endif  
 }
 //this function is for memory calculation
 unsigned long long extract_value(const char* line) {

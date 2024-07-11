@@ -28,6 +28,7 @@
 #endif  
 typedef unsigned long cpuInfo;
 typedef const char* cpuProperty;
+typedef unsigned long page_t;
 #define GiB (1024 * 1024 * 1024)
 int process_file(char *path, char *filename);
 

@@ -1,6 +1,6 @@
 #include "../main.h"
 #include <fcntl.h>
-typedef unsigned long page_t;
+
 void Total_cpu_time(void) {
     FILE *fp;
     char line[MAX_LINE_LENGTH];

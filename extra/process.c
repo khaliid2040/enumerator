@@ -1,6 +1,6 @@
 #include "../main.h"
 #include <fcntl.h>
-
+typedef unsigned long page_t;
 void Total_cpu_time(void) {
     FILE *fp;
     char line[MAX_LINE_LENGTH];
@@ -100,7 +100,6 @@ void getProcessInfo(int pid) {
     // Calculate total CPU time in seconds
     long hertz = sysconf(_SC_CLK_TCK);
     double total_cpu_time = (utime + stime + cutime + cstime) / (double) hertz;
-
     // Calculate CPU time percentage compared to uptime
     double cpu_time_percent = (total_cpu_time / uptime) * 100;
 
@@ -130,6 +129,25 @@ void getProcessInfo(int pid) {
             state_string= "Unknown";
             break;
     }
+    //now getting memory information of the process via /proc/pid/statm
+    char path[30];
+    char mem_buf[30];
+    size_t total,shared,residual,dirty;
+    page_t tpage,shpage,rpage,dpage;
+    snprintf(path,30,"/proc/%d/statm",pid);
+    FILE *mem= fopen(path,"r");
+    //whether fopen and fgets fail or not we need to continue execution 
+    if (mem == NULL) {
+        perror("fopen ");
+    }
+    int succeed;
+    if ((succeed=fscanf(mem,"%d%d%d%*d%*d%*d%d",&tpage,&rpage,&shpage,&dpage)) < 4) {
+        perror("fscanf");
+    }
+    total= tpage * 4;
+    shared= shpage * 4;
+    residual= rpage *4;
+    dirty= dpage * 4;
     // Print results
     printf("Process ID: %d\n", pid);
     printf("Process Name: %s\n", comm);
@@ -139,5 +157,8 @@ void getProcessInfo(int pid) {
     printf("User Mode CPU Time Percentage: %.2f %%\n", user_mode_percent);
     printf("System Mode CPU Time Percentage: %.2f %%\n", system_mode_percent);
     printf("I/O Wait CPU Time Percentage: %.2f %%\n", io_wait_percent);
+    printf(ANSI_COLOR_YELLOW "Getting process virtual address\n" ANSI_COLOR_RESET);
+    printf("%-16s%-16s%-16s%-16s\n", "Total(KiB)", "Shared(KiB)", "Resident(KiB)", "Dirty(KiB)");  
+    printf("%-16d%-16d%-16d%-16d\n",total,shared,residual,dirty); 
 }
 

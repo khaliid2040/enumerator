@@ -69,7 +69,8 @@ void systeminfo(void)
     struct passwd *pwd;
    //we don't want to be run on privileged user
     if (uid==0 && gid==0) {
-        printf(ANSI_COLOR_RED "user %s is not allowed\n"ANSI_COLOR_RESET,pwd->pw_name);
+        pwd= getpwuid(uid);
+        printf(ANSI_COLOR_RED "\nuser %s is not allowed\n"ANSI_COLOR_RESET,pwd->pw_name);
         return;
     }
     printf(ANSI_COLOR_YELLOW "\nGetting users...\n" ANSI_COLOR_RESET);
@@ -159,7 +160,7 @@ void systeminfo(void)
                     if (optopt == 'p')
                         printf(ANSI_COLOR_RED "Option -%c requires an argument.\n" ANSI_COLOR_RESET, optopt);
                     else if (isprint(optopt))
-                        fprintf(stderr, "Unknown option `-%c'.\n", optopt);
+                        fprintf(stderr, ANSI_COLOR_RED "Unknown option `-%c'.\n" ANSI_COLOR_RESET, optopt);
                     else
                         fprintf(stderr, "Unknown option character `\\x%x'.\n", optopt);
                     return 1;

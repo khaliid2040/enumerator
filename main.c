@@ -140,14 +140,12 @@ void systeminfo(void)
     int main(int argc, char *argv[])
     {
         printf(ANSI_COLOR_GREEN "system enumeration\n" ANSI_COLOR_RESET);
-        int opt;
-        int p_value = 0;
-        int H_flag = 0;
-        int N_flag= 0;
+        int opt,p_value = 0,H_flag = 0,N_flag= 0,P_flag=0;
         // Parse command line options
         while ((opt = getopt(argc, argv, "p:Hnh")) != -1) {
             switch (opt) {
                 case 'p':
+                    P_flag=1;
                     p_value = atoi(optarg);
                     break;
                 case 'H':
@@ -175,7 +173,7 @@ void systeminfo(void)
             }
         }
         // If -p is specified
-        if (p_value > 0) {
+        if (P_flag) {
             process_cpu_time();
             getProcessInfo(p_value);
         } 

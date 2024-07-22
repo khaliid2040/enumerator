@@ -16,7 +16,7 @@ void cpuid() {
             memcpy(vendor+4, &edx, 4);
             memcpy(vendor+8, &ecx, 4);
             vendor[12] = '\0'; // Null-terminate the string
-            printf("CPU vendor: %s\n", vendor);
+            print   f("CPU vendor: %s\n", vendor);
         } else{
             // Call CPUID instruction to retrieve information
             __get_cpuid(i, &eax, &ebx, &ecx, &edx);
@@ -120,10 +120,11 @@ int cpuinfo() {
     printf("processors: %d\n",processors_count);
     fclose(cpuinfo);
     free(cpuinfo_buffer);
+    #ifdef supported    
     // now getting the vendor 
     cpuid();
     //now we are going to print the brand using cpuid instruction
-    #ifdef supported
+    
     char brand[50];
     for (int i = 0; i < 3; ++i) {
         __get_cpuid(0x80000002 + i, &eax, &ebx, &ecx, &edx);

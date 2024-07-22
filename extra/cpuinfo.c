@@ -1,6 +1,9 @@
 #include "../main.h"
-#include <cpuid.h>
 #include <dirent.h>
+#if defined(__x86_64__) || defined(__i386__)
+#include <cpuid.h>  
+#define supported
+#endif
 unsigned int eax,ebx,ecx,edx;
 char vendor[13];
 void cpuid() {
@@ -120,6 +123,7 @@ int cpuinfo() {
     // now getting the vendor 
     cpuid();
     //now we are going to print the brand using cpuid instruction
+    #ifdef supported
     char brand[50];
     for (int i = 0; i < 3; ++i) {
         __get_cpuid(0x80000002 + i, &eax, &ebx, &ecx, &edx);
@@ -131,6 +135,7 @@ int cpuinfo() {
     brand[48] = '\0';
     printf("\nBrand:  %s\n", brand);
     printf(ANSI_COLOR_YELLOW "Getting cpu vurnuabilities\n" ANSI_COLOR_RESET);
+    #endif  
     cpu_vulnerabilities();
     return 0;
 }

@@ -30,8 +30,8 @@ typedef unsigned long cpuInfo;
 typedef const char* cpuProperty;
 typedef unsigned long page_t;
 #define GiB (1024 * 1024 * 1024)
-int process_file(char *path, char *filename);
 
+int process_file(char *path,char *filename);
 void getProcessInfo(pid_t pid);
 
 void LinuxSecurityModule(void);
@@ -44,9 +44,6 @@ int memory_info(void);
 //function for memory calculation implemented in extra_func.c
 //for cpu defined in extra/cpuinfo.c
 int cpuinfo(void);  
-unsigned long long extract_value(const char* line);
-double round_to_nearest_tenth(double value);
-double convert_size(double size_kib,char *      *unit);
 //network functions implemented in network.c
 void network(void);
 //for routing

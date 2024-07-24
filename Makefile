@@ -13,8 +13,8 @@ ifeq ($(shell test -f /usr/include/selinux/selinux.h && echo yes),yes)
     CFLAGS += -DSELINUX
     LIBS += -lselinux
 endif	
-$(EXECUTABLE): main.o extra_func.o storage.o memory.o cpuinfo.o process.o network.o route.o arp.o system.o
-	$(CC) -o $(EXECUTABLE) main.o extra_func.o storage.o memory.o cpuinfo.o process.o network.o route.o arp.o system.o $(LIBS)
+$(EXECUTABLE): main.o extra_func.o storage.o memory.o cpuinfo.o process.o network.o route.o arp.o system.o security.o
+	$(CC) -o $(EXECUTABLE) main.o extra_func.o storage.o memory.o cpuinfo.o process.o network.o route.o arp.o system.o security.o $(LIBS)
 
 main.o: main.c main.h
 	$(CC) -c -o main.o main.c $(CFLAGS) -I$(INCLUDE_DIR)
@@ -38,6 +38,8 @@ route.o:
 	$(CC) -c -o route.o net/route.c $(CFLAGS) -I$(INCLUDE_DIR)
 arp.o:
 	$(CC) -c -o arp.o net/arp.c $(CFLAGS) -I$(INCLUDE_DIR)
+security.o:
+	$(CC) -c -o security.o extra/security.c $(CFLAGS) -I$(INCLUDE_DIR) $(LIBS	)
 install:
 	mv -v systeminfo /home/khaalid/.local/bin
 clean:

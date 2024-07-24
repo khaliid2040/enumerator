@@ -38,8 +38,8 @@ void systeminfo(void)
             } else {
                 printf(ANSI_COLOR_RED "Secure Boot disabled\n" ANSI_COLOR_RESET);
             }
+            fclose(secure_boot);                    
         }
-        fclose(secure_boot);
     } else {
         printf("BIOS\n");
     }
@@ -67,12 +67,6 @@ void systeminfo(void)
     __uid_t uid= getuid();
     __gid_t gid= getgid();
     struct passwd *pwd;
-   //we don't want to be run on privileged user
-    if (uid==0 && gid==0) {
-        pwd= getpwuid(uid);
-        printf(ANSI_COLOR_RED "\nuser %s is not allowed\n"ANSI_COLOR_RESET,pwd->pw_name);
-        return;
-    }
     printf(ANSI_COLOR_YELLOW "\nGetting users...\n" ANSI_COLOR_RESET);
     printf("User\tUID\tGID\tShell\n");
     while ((pwd= getpwent()) != NULL) {
@@ -90,7 +84,7 @@ void systeminfo(void)
     while ((grp=getgrent()) != NULL) {
         //same as users before we need to retrieve every group except system groups 
         //also we may need wheel and sudo groups    
-        if (    grp->gr_gid==0 || grp->gr_gid > 1000 || strcmp(grp->gr_name,"wheel") == 0|| strcmp(grp->gr_name,"sudo")==0  ) {
+        if (grp->gr_gid==0 || grp->gr_gid > 1000 || strcmp(grp->gr_name,"wheel") == 0|| strcmp(grp->gr_name,"sudo")==0  ) {
             printf("%s\t%d\t",grp->gr_name,grp->gr_gid);
             for (int i=0; grp->gr_mem[i] != NULL;i++) {
                 printf("%s\t",grp->gr_mem[i]);
@@ -134,6 +128,7 @@ void systeminfo(void)
     fclose(cpuinfo);
     //checking for Linux Security Modules
     // the function is implemented in extra_func.c
+    printf(ANSI_COLOR_YELLOW "Getting security modules...\n"    ANSI_COLOR_RESET);
     LinuxSecurityModule();
     
 }

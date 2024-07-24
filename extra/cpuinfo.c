@@ -16,7 +16,7 @@ void cpuid() {
             memcpy(vendor+4, &edx, 4);
             memcpy(vendor+8, &ecx, 4);
             vendor[12] = '\0'; // Null-terminate the string
-            print   f("CPU vendor: %s\n", vendor);
+            printf("CPU vendor: %s\n", vendor);
         } else{
             // Call CPUID instruction to retrieve information
             __get_cpuid(i, &eax, &ebx, &ecx, &edx);

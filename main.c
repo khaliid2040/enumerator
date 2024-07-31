@@ -146,7 +146,7 @@ void systeminfo(void)
                 case 'H':
                     H_flag= 1;
                     break;
-                case 'n':
+                  case 'n':
                     N_flag= 1;
                     break;
                 case '?': // Handle unknown options

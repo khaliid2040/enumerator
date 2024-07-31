@@ -26,11 +26,11 @@ for lib in "${LIBS[@]}"; do
         fi
         continue
     fi
-    LIB="/usr/include/proc/${lib}.h"
+    LIB="/usr/include/selinux/${lib}.h"
     if [ -f $LIB ]; then
     echo -e "checking ${lib}:    ${GREEN}OK${NC}"
-    LDFLAGS+=" -lprocps"
-    CFLAGS+=" -DPROC_H"
+    LDFLAGS+=" -lselinux"
+    CFLAGS+=" -DSELINUX_H"
     continue
     fi
     #attempt three and final one 

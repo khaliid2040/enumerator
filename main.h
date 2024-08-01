@@ -20,6 +20,7 @@
 #include <dirent.h>
 #include <arpa/inet.h>
 #include <sys/sysinfo.h>
+#include <stdbool.h>
 #ifdef APPARMOR 
 #include <sys/apparmor.h>
 #endif
@@ -37,6 +38,8 @@ void getProcessInfo(pid_t pid);
 void LinuxSecurityModule(void);
 //total cpu time
 void process_cpu_time(void);
+//process number of cores and processors
+bool count_processor(int* cores, int* processors);
 //for accessing function defined in extra/storage.c
 void storage(void);
 //for accessng memory_info defined in memory.c

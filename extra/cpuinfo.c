@@ -85,8 +85,6 @@ int cpu_vulnerabilities(void) {
 
 int cpuinfo() {
         printf(ANSI_COLOR_YELLOW "getting processor information\n" ANSI_COLOR_RESET);
-   // long total_time= system_info.uptime;
-    //getProcessInfo(getpid, total_time);
     
     /*
         cpuinfo_buffer holds the buffer of the cpuinfo file
@@ -94,32 +92,44 @@ int cpuinfo() {
         processors and cores are strings searched in  the file
         
     */      
-    char *cpuinfo_buffer= NULL;
-    size_t buffer_size= 0;
-    cpuProperty processors = "processor";
-    cpuProperty cores = "cores";
-    int processors_count= 0;
-    int cores_count= 0;
-    FILE *cpuinfo = fopen("/proc/cpuinfo","r");
-
-    if (cpuinfo == NULL) {
-        printf("Failed to open cpuinfo file.\n");
-
+    int cores=0,processors=0,level=4; //assumption: 4 cache levels
+    char spath[60],tpath[60];
+    char size_cont[20],type_cont[30];
+    if (count_processor(&cores,&processors)) {
+        printf("cores: %d\n",cores /2);
+        printf("processor: %d\n\n",processors);
     }
-    while (getline(&cpuinfo_buffer, &buffer_size, cpuinfo) != -1)
-    {
-        if (strstr(cpuinfo_buffer, processors) != NULL) {
-            processors_count++;
+    for (int i=0;i<processors;i++) {
+        level--; //decrement each iteration and if fopen fails assume non exsted
+        if (level <0) {
+            break;  // prevent level becoming negative  
         }
-        if (strstr(cpuinfo_buffer, cores) != NULL) {
-            cores_count++;
+        snprintf(spath,sizeof(spath),"/sys/devices/system/cpu/cpu%d/cache/index%d/size",i,level); //size
+        snprintf(tpath,sizeof(tpath),"/sys/devices/system/cpu/cpu%d/cache/index%d/type",i,level);
+        FILE *sizeN= fopen(spath,"r");
+        if (sizeN==NULL) {
+            continue;   
         }
-        
+        if (fgets(size_cont,sizeof(size_cont),sizeN) == NULL) {
+            perror("fgets");
+            fclose(sizeN);
+            continue;
+        }   
+        fclose(sizeN);
+        //now for cache type
+        FILE *typeN= fopen(tpath,"r");
+        if (typeN==NULL) {
+            perror("fopen");
+            return 2;
+        }
+        if (fgets(type_cont,sizeof(type_cont),typeN) == NULL) { 
+            perror("fgets");
+            fclose(typeN);
+            continue;
+        }
+        fclose(typeN);
+        printf("L%d:\t type: %5s\t size: %5s\n",level,type_cont,size_cont);
     }
-    printf("cores: %d\n", cores_count /2);
-    printf("processors: %d\n",processors_count);
-    fclose(cpuinfo);
-    free(cpuinfo_buffer);
     #ifdef supported    
     // now getting the vendor 
     cpuid();

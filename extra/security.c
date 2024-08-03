@@ -1,5 +1,7 @@
 #include "../main.h"
-#ifdef APPARMOR_H
+#ifdef SELINUX_H
+#include <selinux/selinux.h>
+#elif APPARMOR_H
 #include <sys/apparmor.h>
 void apparmor(void) {
     //check if enabled
@@ -42,13 +44,11 @@ void apparmor(void) {
 void LinuxSecurityModule(void) {
     #ifdef APPARMOR_H
     apparmor();
-    #elif defined(SELINUX)
+    #elif defined(SELINUX_H)
     if (is_selinux_enabled()) {
         printf("SELinux: " ANSI_COLOR_GREEN "enabled\n" ANSI_COLOR_RESET);
     } else if(!(is_selinux_enabled())) {
-       printf("Apparmor: " ANSI_COLOR_RED "disabled\n" ANSI_COLOR_RESET);
-    } else {
-        printf(ANSI_COLOR_RED "SELinux unknown\n" ANSI_COLOR_RESET  );
+       printf("SELinux: " ANSI_COLOR_RED "disabled\n" ANSI_COLOR_RESET);
     }
     #else
     printf(ANSI_COLOR_RED "No LSM found\n" ANSI_COLOR_RESET);

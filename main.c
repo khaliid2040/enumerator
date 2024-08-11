@@ -157,6 +157,12 @@ void systeminfo(void)
         printf(ANSI_COLOR_YELLOW "Getting basic information...\n" ANSI_COLOR_RESET);
         system_enum();
         cpuinfo();
+        #ifdef LIBPCI
+        printf(ANSI_COLOR_YELLOW "Getting PCI information..\n" ANSI_COLOR_RESET);
+        get_pci_info();
+        #endif
+        printf(ANSI_COLOR_YELLOW "Getting sensor information..\n"ANSI_COLOR_RESET);
+        acpi_info();
         printf(ANSI_COLOR_YELLOW "\nGetting disk layout...\n" ANSI_COLOR_RESET);
         storage();
         printf(ANSI_COLOR_YELLOW "Getting memory information\n" ANSI_COLOR_RESET);

@@ -5,7 +5,7 @@ ifneq ($(wildcard config.mk),)
     include config.mk
 endif	
 $(EXECUTABLE): main.o extra_func.o storage.o memory.o cpuinfo.o process.o network.o route.o arp.o system.o security.o
-	$(CC) -o $(EXECUTABLE) $(LDFLAGS) main.o extra_func.o storage.o memory.o cpuinfo.o process.o network.o route.o arp.o system.o security.o $(LIBS)
+	$(CC) -o $(EXECUTABLE) main.o extra_func.o storage.o memory.o cpuinfo.o process.o network.o route.o arp.o system.o security.o $(LDFLAGS)
 
 main.o: main.c main.h
 	$(CC) -c -o main.o main.c $(CFLAGS) -I$(INCLUDE_DIR)

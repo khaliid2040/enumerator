@@ -31,7 +31,11 @@ typedef unsigned long cpuInfo;
 typedef const char* cpuProperty;
 typedef unsigned long page_t;
 #define GiB (1024 * 1024 * 1024)
-
+#if defined(ARCH) || defined(DEBIAN)
+#include <pci/pci.h>
+#elif defined(REDHAT)
+#include <sys/pci.h>
+#endif
 int process_file(char *path,char *filename);
 void getProcessInfo(pid_t pid);
 
@@ -41,6 +45,7 @@ void process_cpu_time(void);
 //process number of cores and processors
 bool count_processor(int* cores, int* processors);
 //for accessing function defined in extra/storage.c
+void get_pci_info(void);
 void storage(void);
 //for accessng memory_info defined in memory.c
 int memory_info(void);
@@ -65,4 +70,12 @@ typedef struct System {
     char chassis_vendor[SIZE];
 } System_t;
 void system_enum(void);
+//used in extra_fun.c
+struct acpi {
+    char name[64];
+    char state[10];
+    unsigned long temp;
+    struct acpi *next;
+};
+void acpi_info(void);
 #endif

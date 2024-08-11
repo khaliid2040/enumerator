@@ -88,8 +88,8 @@ void getProcessInfo(int pid) {
     char comm[256],state;
     // Read and parse the stat file to extract process state
     int fields_read = fscanf(statFile, "%*d (%[^)]) %c %*d %*d %*d %*d %*d %*u "
-                                        "%*lu %*lu %*lu %*lu %*lu %lu %lu %lu %lu",
-                                        comm, &state, &utime, &stime, &cutime, &cstime);
+                                        "%*lu %*lu %*lu %*lu %  lu %lu %lu %lu %lu",
+                                        comm, &state, &utime, &stime, &cutime,&cstime);
 
     fclose(statFile);
 

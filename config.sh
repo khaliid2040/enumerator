@@ -1,45 +1,63 @@
 #!/bin/bash
-LIBS=("math" "apparmor" "selinux")
-LDFLAGS=
+
+LDFLAGS=""
 CFLAGS="-march=native -O2 -pipe -I."
 GREEN='\033[0;32m'
 RED='\033[0;31m'
 NC='\033[0m'
-for lib in "${LIBS[@]}"; do
-        # attempt 1
-    LIB="/usr/include/${lib}.h"
-    if [ -f $LIB ]; then
-        echo -e "checking ${lib}:   ${GREEN}OK${NC}"
-        if [ "$lib" = "math" ]; then
-        LDFLAGS+="-lm"
-        CFLAGS+="-DMATH_H"
+
+# Libraries to check
+LIBS=("math" "apparmor" "selinux")
+LIBPCI="libpci"
+
+# Check for the standard libraries
+for LIB in "${LIBS[@]}"; do
+    if ldconfig -p | grep -q "$LIB"; then
+        if [ "$LIB" == "math" ]; then
+            CFLAGS+=" -DMATH_H"
+            LDFLAGS+=" -lm"
+        elif [ "$LIB" == "apparmor" ] && [ -f /usr/include/sys/apparmor.h ] ; then
+            CFLAGS+=" -DAPPARMOR_H"
+            LDFLAGS+=" -lapparmor"
+        elif [ "$LIB" == "selinux" ]; then
+            if [ -f /usr/include/selinux/selinux.h ]; then
+                CFLAGS+=" -DSELINUX_H"
+                LDFLAGS+=" -lselinux"
+                echo -e "checking ${LIB}: ${GREEN}OK${NC}"
+            else
+                echo -e "checking ${LIB}: ${RED}NO (header not found)${NC}"
+            fi
+        else
+            echo -e "checking ${LIB}: ${RED}NO${NC}"
         fi
-        continue 
-    fi
-    # attempt 2
-    LIB="/usr/include/sys/${lib}.h"
-    if [ -f $LIB ]; then
-        echo -e "checking ${lib}:   ${GREEN}OK${NC}"
-        if [ "$lib" = "apparmor" ]; then
-        LDFLAGS+=" -lapparmor"
-        CFLAGS+=" -DAPPARMOR_H"
-        fi
-        continue
-    fi
-    LIB="/usr/include/selinux/${lib}.h"
-    if [ -f $LIB ]; then
-    echo -e "checking ${lib}:    ${GREEN}OK${NC}"
-    LDFLAGS+=" -lselinux"
-    CFLAGS+=" -DSELINUX_H"
-    continue
-    fi
-    #attempt three and final one 
-    LIB="/usr/include/${lib}/${lib}.h"
-    if [ -f $LIB ]; then
-        echo -e "checking ${lib}:   ${GREEN}OK${NC}"
     else
-        echo -e "checking ${lib}: ${RED}NO${NC}"
-    fi 
+        echo -e "checking ${LIB}: ${RED}NO${NC}"
+    fi
 done
-echo "LDFLAGS=${LDFLAGS}" > config.mk
-echo "CFLAGS=${CFLAGS}" >> config.mk
+
+# Check for libpci independently
+if ldconfig -p | grep -q "$LIBPCI" && [ -d /usr/include/pci ]; then
+    CFLAGS+=" -DLIBPCI"
+    LDFLAGS+=" -lpci"
+    echo -e "checking ${LIBPCI}: ${GREEN}OK${NC}"
+else
+    echo -e "checking ${LIBPCI}: ${RED}NO${NC}"
+fi
+
+# Detect distribution
+if [ -f /usr/bin/apt ]; then
+    CFLAGS+=" -DDEBIAN"
+    echo -e "Detected Debian-based distribution: ${GREEN}OK${NC}"
+elif [ -f /usr/bin/dnf ]; then
+    CFLAGS+=" -DREADHAT"
+    echo -e "Detected Redhat-based distribution: ${GREEN}OK${NC}"
+elif [ -f /usr/bin/pacman ]; then
+    CFLAGS+=" -DARCH"
+    echo -e "Detected Arch-based distribution: ${GREEN}OK${NC}"
+else
+    echo -e "${RED}Distribution unsupported${NC}"
+fi
+
+# Write results to config.mk
+echo "CFLAGS = ${CFLAGS}" > config.mk
+echo "LDFLAGS = ${LDFLAGS}" >> config.mk

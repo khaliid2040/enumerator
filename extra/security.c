@@ -33,7 +33,7 @@ void selinux(void) {
     // Check SELinux MLS status
     mls_file = fopen("/sys/fs/selinux/mls", "r");
     if (mls_file == NULL) {
-        perror("        fopen /sys/fs/selinux/mls");
+        perror("fopen /sys/fs/selinux/mls");
         return;
     }
 
@@ -88,7 +88,7 @@ void apparmor(void) {
     fclose(fp);
 }
 #endif
-//for checking the Linux security Modules
+//for   checking the Linux security Modules
 void LinuxSecurityModule(void) {
     #ifdef APPARMOR_H
     apparmor();

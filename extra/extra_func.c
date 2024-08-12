@@ -71,58 +71,67 @@ void get_pci_info(void) {
 }
 #endif
 struct acpi* get_acpi() {
-    char path[PATH],contents[SIZE];
+    char path[PATH], contents[SIZE];
     struct dirent *entry;
     struct acpi *node;
-    struct acpi *head= NULL;
+    struct acpi *head = NULL;
+    struct acpi *tail = NULL; // To keep track of the end of the list
     DIR *thermal = opendir("/sys/devices/virtual/thermal");
     if (thermal == NULL) {
-        perror("dirent");
+        perror("opendir");
         return NULL;
     }   
-    while ((entry=readdir(thermal)) !=NULL) {
-        //pass .. and . directories
-        if (!strcmp(entry->d_name,"..") || !strcmp(entry->d_name,".")) {
+
+    while ((entry = readdir(thermal)) != NULL) {
+        // Skip . and .. directories
+        if (!strcmp(entry->d_name, "..") || !strcmp(entry->d_name, ".")) {
             continue;
         }
-        //open temp and state and save space by overwriting values
-        snprintf(path,PATH,"/sys/devices/virtual/thermal/%s/temp",entry->d_name);
-        //printf("%s\n",path);
-        FILE *tempfp= fopen(path,"r");
+
+        // Open temp and state files
+        snprintf(path, PATH, "/sys/devices/virtual/thermal/%s/temp", entry->d_name);
+        FILE *tempfp = fopen(path, "r");
         if (tempfp == NULL) {
             continue;
         }
-        if (fgets(contents,sizeof(contents),tempfp) == NULL) {
+        if (fgets(contents, sizeof(contents), tempfp) == NULL) {
             fclose(tempfp);
             continue;
         }
-        node= malloc(sizeof(struct acpi));
-        if (node==NULL) {   
-            perror("node");
+
+        node = malloc(sizeof(struct acpi));
+        if (node == NULL) {   
+            perror("malloc");
+            fclose(tempfp);
             continue;
         }
-        node->next=NULL;
-        node->temp= strtoul(contents,NULL,10);
+        node->next = NULL;
+        node->temp = strtoul(contents, NULL, 10);
         fclose(tempfp);
-        //now overwriting path and content buffers
-        snprintf(path,PATH,"/sys/devices/virtual/thermal/%s/mode",entry->d_name);
-        //printf("%s\n",path);
-        FILE *modefp= fopen(path,"r");
-        if (modefp==NULL) {
+
+        snprintf(path, PATH, "/sys/devices/virtual/thermal/%s/mode", entry->d_name);
+        FILE *modefp = fopen(path, "r");
+        if (modefp == NULL) {
             free(node);
             continue;
         }
-        if (fgets(contents,SIZE,modefp) != NULL) {
-            strncpy(node->state,contents,sizeof(node->state));
+        if (fgets(contents, SIZE, modefp) != NULL) {
+            strncpy(node->state, contents, sizeof(node->state));
             node->state[sizeof(node->state) - 3] = '\0'; // Ensure null termination
         }
-        
         fclose(modefp);
-        node->next=head;
-        head= node;
+
+        // Add node to the linked list
+        if (head == NULL) {
+            head = node;
+            tail = node;
+        } else {
+            tail->next = node;
+            tail = node;
+        }
     }
     closedir(thermal);
-    return node;
+    return head;
 }
 
 void acpi_info() {
@@ -141,7 +150,6 @@ void acpi_info() {
 
     while (current != NULL) {
         snprintf(tempb, sizeof(tempb), "temp%u", count);
-        // Print each row with properly aligned columns
         printf("%-10s %-10s %8d °C\n", tempb, current->state, current->temp / 1000);
         
         struct acpi *temp = current;
@@ -149,5 +157,5 @@ void acpi_info() {
         free(temp);  // Free each node after printing
         count++;
     }     
-    return;    
 }
+  

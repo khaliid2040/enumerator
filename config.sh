@@ -16,9 +16,11 @@ for LIB in "${LIBS[@]}"; do
         if [ "$LIB" == "math" ]; then
             CFLAGS+=" -DMATH_H"
             LDFLAGS+=" -lm"
-        elif [ "$LIB" == "apparmor" ] && [ -f /usr/include/sys/apparmor.h ] ; then
+            echo -e "checking ${LIB}: ${GREEN}OK${NC}"
+        elif [ "$LIB" == "apparmor" ] && [ -f /usr/include/sys/apparmor.h ]; then
             CFLAGS+=" -DAPPARMOR_H"
             LDFLAGS+=" -lapparmor"
+            echo -e "checking ${LIB}: ${GREEN}OK${NC}"
         elif [ "$LIB" == "selinux" ]; then
             if [ -f /usr/include/selinux/selinux.h ]; then
                 CFLAGS+=" -DSELINUX_H"
@@ -35,18 +37,22 @@ for LIB in "${LIBS[@]}"; do
     fi
 done
 
-# Check for libpci independently
-if ldconfig -p | grep -q "$LIBPCI" && [ -d /usr/include/pci ]; then
-    CFLAGS+=" -DLIBPCI"
-    LDFLAGS+=" -lpci"
-    echo -e "checking ${LIBPCI}: ${GREEN}OK${NC}"
-else
-    echo -e "checking ${LIBPCI}: ${RED}NO${NC}"
-fi
+libpci_path() {
+    local path="$1"
+    # Check for libpci independently
+    if ldconfig -p | grep -q "$LIBPCI" && [ -d "${path}/pci" ]; then
+        CFLAGS+=" -DLIBPCI"
+        LDFLAGS+=" -lpci"
+        echo -e "checking ${LIBPCI}: ${GREEN}OK${NC}"
+    else
+        echo -e "checking ${LIBPCI}: ${RED}NO${NC}"
+    fi
+}
 
 # Detect distribution
 if [ -f /usr/bin/apt ]; then
     CFLAGS+=" -DDEBIAN"
+    libpci_path "/usr/include/x86_64-linux-gnu"
     echo -e "Detected Debian-based distribution: ${GREEN}OK${NC}"
 elif [ -f /usr/bin/dnf ]; then
     CFLAGS+=" -DREADHAT"

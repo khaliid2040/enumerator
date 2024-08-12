@@ -3,6 +3,71 @@
 #include <dirent.h>
 #include "../main.h"
 #define ADDR_SIZE 48
+#include <stdio.h>
+#include <stdlib.h>
+#define SIZE 100
+
+void printNetworkConnections() {
+    const char* protocols[] = {"tcp", "udp"};
+    const char* commands[] = {"ss -atn", "ss -uan"};
+    char line[SIZE];
+    char localAddr[SIZE], remoteAddr[SIZE], state[SIZE];
+
+    // Iterate over each protocol and corresponding command
+    for (int i = 0; i < 2; i++) {
+        FILE *fp = popen(commands[i], "r");
+        if (fp == NULL) {
+            perror("popen");
+            continue;
+        }
+
+        // Skip header line if needed
+        fgets(line, sizeof(line), fp);
+
+        // Print column headers
+        if (i == 0) {
+            printf("%-8s %-35s %-35s %-35s\n", "Protocol", "Local Address", "Remote Address", "State");
+        } else {
+            printf("%-8s %-35s %-35s\n", "Protocol", "Local Address", "Remote Address");
+        }
+
+        while (fgets(line, sizeof(line), fp) != NULL) {
+            int numFields = sscanf(line, "%s %*d %*d %s %s %s", state, localAddr, remoteAddr);
+
+            // Check if parsing was successful
+            if (numFields < 2) {
+                fprintf(stderr, "Failed to parse line: %s", line);
+                continue;
+            }
+
+            // Map state to human-readable format for TCP
+            if (i == 0) { // TCP
+                if (strcmp(state, "ESTAB") == 0) {
+                    strcpy(state, "established");
+                } else if (strcmp(state, "LISTEN") == 0) {
+                    strcpy(state, "listening");
+                } else if (strcmp(state, "TIME-WAIT") == 0) {
+                    strcpy(state, "waiting");
+                } else {
+                    strcpy(state, "unknown"); // Handle unexpected states
+                }
+                printf("%-8s %-35s %-35s %-35s\n", protocols[i], localAddr, remoteAddr, state);
+            } else { // UDP
+                printf("%-8s %-35s %-35s\n", protocols[i], localAddr, remoteAddr);
+            }
+        }
+
+        if (pclose(fp) == -1) {
+            perror("pclose");
+        }
+
+        // Print a separator between protocol outputs
+        if (i == 0) {
+            printf("------------------------------------------------------------------------------------\n");
+        }
+    }
+}
+
 void interface(const char *intface) {
 	struct ifaddrs *ifap, *ifa;
 	int family,printed=0;
@@ -72,4 +137,6 @@ void network(void) {
 		fclose(address);
 		free(net[i]);
 	}
+	printf(ANSI_COLOR_YELLOW "getting connection information...\n" ANSI_COLOR_RESET);
+	printNetworkConnections();
 }

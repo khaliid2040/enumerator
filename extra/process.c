@@ -95,7 +95,7 @@ void getProcessInfo(int pid) {
 
     if (fields_read != 6) {
         perror("Error reading /proc/<pid>/stat");
-        return;
+        //return;
     }
     // Calculate total CPU time in seconds
     long hertz = sysconf(_SC_CLK_TCK);

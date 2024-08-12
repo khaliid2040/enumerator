@@ -31,10 +31,8 @@ typedef unsigned long cpuInfo;
 typedef const char* cpuProperty;
 typedef unsigned long page_t;
 #define GiB (1024 * 1024 * 1024)
-#if defined(ARCH) || defined(DEBIAN)
+#ifdef LIBPCI
 #include <pci/pci.h>
-#elif defined(REDHAT)
-#include <sys/pci.h>
 #endif
 int process_file(char *path,char *filename);
 void getProcessInfo(pid_t pid);

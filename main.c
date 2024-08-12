@@ -29,17 +29,8 @@ void systeminfo(void)
     //checking whether the firmware is UEFI or BIOS
     printf("Firmware: ");
     if (access("/sys/firmware/efi",F_OK) != -1) {
-        printf("UEFI: ");
-        FILE *secure_boot= fopen("/sys/firmware/efi/efivars/SecureBoot-8be4df61-93ca-11d2-aa0d-00e098032b8c","r");
-        char sb_buf[48];
-        if (secure_boot != NULL) {
-            if (fgets(sb_buf, sizeof(sb_buf),secure_boot) == NULL) {
-                printf(ANSI_COLOR_GREEN "Secure Boot enabled\n" ANSI_COLOR_RESET);
-            } else {
-                printf(ANSI_COLOR_RED "Secure Boot disabled\n" ANSI_COLOR_RESET);
-            }
-            fclose(secure_boot);                    
-        }
+        GetSecureBootStatus();
+        
     } else {
         printf("BIOS\n");
     }

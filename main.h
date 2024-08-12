@@ -34,6 +34,10 @@ typedef unsigned long page_t;
 #ifdef LIBPCI
 #include <pci/pci.h>
 #endif
+#ifdef LIBEFI
+#include <efivar/efivar.h>
+#endif
+int GetSecureBootStatus(void);
 int process_file(char *path,char *filename);
 void getProcessInfo(pid_t pid);
 

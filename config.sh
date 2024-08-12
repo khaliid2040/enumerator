@@ -7,7 +7,7 @@ RED='\033[0;31m'
 NC='\033[0m'
 
 # Libraries to check
-LIBS=("math" "apparmor" "selinux")
+LIBS=("math" "apparmor" "selinux" "efivar")
 LIBPCI="libpci"
 
 # Check for the standard libraries
@@ -25,6 +25,14 @@ for LIB in "${LIBS[@]}"; do
             if [ -f /usr/include/selinux/selinux.h ]; then
                 CFLAGS+=" -DSELINUX_H"
                 LDFLAGS+=" -lselinux"
+                echo -e "checking ${LIB}: ${GREEN}OK${NC}"
+            else
+                echo -e "checking ${LIB}: ${RED}NO (header not found)${NC}"
+            fi
+        elif [ "$LIB" == "efivar" ]; then
+            if [ -f /usr/include/efivar/efivar.h ]; then
+                CFLAGS+=" -DLIBEFI"
+                LDFLAGS+=" -lefivar"
                 echo -e "checking ${LIB}: ${GREEN}OK${NC}"
             else
                 echo -e "checking ${LIB}: ${RED}NO (header not found)${NC}"

@@ -106,7 +106,9 @@ struct acpi* get_acpi() {
             continue;
         }
         node->next = NULL;
-        node->temp = strtoul(contents, NULL, 10);
+        
+        //node->temp = strtoul(contents, NULL, 10);
+        node->temp=strtof(contents,NULL);
         fclose(tempfp);
 
         snprintf(path, PATH, "/sys/devices/virtual/thermal/%s/mode", entry->d_name);
@@ -150,15 +152,15 @@ void acpi_info() {
 
     while (current != NULL) {
         snprintf(tempb, sizeof(tempb), "temp%u", count);
-        printf("%-10s %-10s %8d °C\n", tempb, current->state, current->temp / 1000);
-        
+        printf("%-10s %-10s %.1f °C\n", tempb, current->state, current->temp / 1000.0);
         struct acpi *temp = current;
         current = current->next;
         free(temp);  // Free each node after printing
         count++;
     }     
-}
-  
+}   
+
+#ifdef LIBEFI
 int GetSecureBootStatus ()
 {
         uint8_t *data = NULL;
@@ -226,3 +228,4 @@ int GetSecureBootStatus ()
 
         return 0;
 }
+#endif  

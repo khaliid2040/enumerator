@@ -29,7 +29,9 @@ void systeminfo(void)
     //checking whether the firmware is UEFI or BIOS
     printf("Firmware: ");
     if (access("/sys/firmware/efi",F_OK) != -1) {
+        #ifdef LIBEFI
         GetSecureBootStatus();
+        #endif
         
     } else {
         printf("BIOS\n");

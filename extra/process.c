@@ -62,13 +62,15 @@ void process_cpu_time(void) {
            "%user", "%nice", "%system", "%iowait", "%steal", "%idle", "%irq", "%softirq" ANSI_COLOR_RESET);
     Total_cpu_time();
 }
+
+// Function to get and print process info
 void getProcessInfo(int pid) {
     // Read uptime from /proc/uptime
-    printf(ANSI_COLOR_YELLOW "Getting process..\n"ANSI_COLOR_RESET);
+    printf(ANSI_COLOR_YELLOW "Getting process info...\n" ANSI_COLOR_RESET);
     double uptime, idletime;
     FILE *uptimeFile = fopen("/proc/uptime", "r");
     if (uptimeFile == NULL) {
-        perror("Error opening /proc/uptime");
+        perror("Error opening /proc/uptime");       
         return;
     }
     fscanf(uptimeFile, "%lf %lf", &uptime, &idletime);
@@ -79,76 +81,83 @@ void getProcessInfo(int pid) {
     snprintf(statPath, sizeof(statPath), "/proc/%d/stat", pid);
     FILE *statFile = fopen(statPath, "r");
     if (statFile == NULL) {
-        printf(ANSI_COLOR_RED "Process %d not found\n"ANSI_COLOR_RESET, pid);
+        printf(ANSI_COLOR_RED "Process %d not found\n" ANSI_COLOR_RESET, pid);
         return;
     }
 
     // Variables to store stat values
     unsigned long utime, stime, cutime, cstime;
-    char comm[256],state;
+    char comm[256], state;
+    
     // Read and parse the stat file to extract process state
-    int fields_read = fscanf(statFile, "%*d (%[^)]) %c %*d %*d %*d %*d %*d %*u "
-                                        "%*lu %*lu %*lu %*lu %  lu %lu %lu %lu %lu",
-                                        comm, &state, &utime, &stime, &cutime,&cstime);
+    int fields_read = fscanf(statFile, "%*d (%[^)])  %c %*d %*d %*d %*d %*d %*u %*u %*u %*u %lu %lu %lu %lu",
+                             comm, &state, &utime, &stime, &cutime, &cstime);
 
     fclose(statFile);
 
     if (fields_read != 6) {
         perror("Error reading /proc/<pid>/stat");
-        //return;
+        return;
     }
+
     // Calculate total CPU time in seconds
     long hertz = sysconf(_SC_CLK_TCK);
-    double total_cpu_time = (utime + stime + cutime + cstime) / (double) hertz;
+    double total_cpu_time = (utime + stime) / (double) hertz;
+
     // Calculate CPU time percentage compared to uptime
     double cpu_time_percent = (total_cpu_time / uptime) * 100;
 
-    // Calculate breakdown percentages
+    // Breakdown percentages
     double user_mode_percent = (utime / (double) hertz) / total_cpu_time * 100;
     double system_mode_percent = (stime / (double) hertz) / total_cpu_time * 100;
-    double io_wait_percent = ((cutime + cstime) / (double) hertz) / total_cpu_time * 100;
-    //we have to change the characters to descriptive string
-    char *state_string;
+
+    // Process state description
+    const char *state_string;
     switch (state) {
         case 'S':
-            state_string= "sleeping";
+            state_string = "sleeping";
             break;
         case 'R':
-            state_string= "Running";
+            state_string = "running";
             break;
         case 'Z':
-            state_string= "Zombie";
+            state_string = "zombie";
             break;
         case 'T':
-            state_string= "Stopped";
+            state_string = "stopped";
             break;
         case 'D':
-            state_string= "Uinterruptable sleep";
+            state_string = "disk sleep";
             break;
         default:
-            state_string= "Unknown";
+            state_string = "unknown";
             break;
     }
-    //now getting memory information of the process via /proc/pid/statm
-    char path[30];
-    char mem_buf[30];
-    size_t total,shared,residual,dirty;
-    page_t tpage,shpage,rpage,dpage;
-    snprintf(path,30,"/proc/%d/statm",pid);
-    FILE *mem= fopen(path,"r");
-    //whether fopen and fgets fail or not we need to continue execution 
-    if (mem == NULL) {
-        perror("fopen ");
+
+    // Get memory information from /proc/<pid>/statm
+    char memPath[256];
+    snprintf(memPath, sizeof(memPath), "/proc/%d/statm", pid);
+    FILE *memFile = fopen(memPath, "r");
+    if (memFile == NULL) {
+        perror("Error opening /proc/<pid>/statm");
+        return;
     }
-    int succeed;
-    if ((succeed=fscanf(mem,"%d%d%d%*d%*d%*d%d",&tpage,&rpage,&shpage,&dpage)) < 4) {
-        perror("fscanf");
+
+    unsigned long total, resident, shared, dirty;
+    if (fscanf(memFile, "%lu %lu %lu %*lu %*lu %*lu %lu", &total, &resident, &shared, &dirty) < 4) {
+        perror("Error reading /proc/<pid>/statm");
+        fclose(memFile);
+        return;
     }
-    total= tpage * 4;
-    shared= shpage * 4;
-    residual= rpage *4;
-    dirty= dpage * 4;
-    // Print results
+    fclose(memFile);
+
+    // Convert pages to KiB
+    long page_size = sysconf(_SC_PAGE_SIZE) / 1024; // Page size in KiB
+    total *= page_size;
+    shared *= page_size;
+    resident *= page_size;
+    dirty *= page_size;
+
     printf("Process ID: %d\n", pid);
     printf("Process Name: %s\n", comm);
     printf("Process State: %s\n", state_string);
@@ -156,9 +165,7 @@ void getProcessInfo(int pid) {
     printf("CPU Time Percentage: %.2f %%\n", cpu_time_percent);
     printf("User Mode CPU Time Percentage: %.2f %%\n", user_mode_percent);
     printf("System Mode CPU Time Percentage: %.2f %%\n", system_mode_percent);
-    printf("I/O Wait CPU Time Percentage: %.2f %%\n", io_wait_percent);
     printf(ANSI_COLOR_YELLOW "Getting process virtual address\n" ANSI_COLOR_RESET);
     printf("%-16s%-16s%-16s%-16s\n", "Total(KiB)", "Shared(KiB)", "Resident(KiB)", "Dirty(KiB)");  
-    printf("%-16d%-16d%-16d%-16d\n",total,shared,residual,dirty); 
+    printf("%-16d%-16d%-16d%-16d\n",total,shared,resident       ,dirty); 
 }
-

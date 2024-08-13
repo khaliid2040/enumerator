@@ -8,9 +8,9 @@ NC='\033[0m'
 
 # Libraries to check
 LIBS=("math" "apparmor" "selinux" "efivar")
-LIBPCI="libpci"
+LIBPCI="pci"
 
-# Check for the standard libraries
+# Check for the standard libraries  
 for LIB in "${LIBS[@]}"; do
     if ldconfig -p | grep -q "$LIB"; then
         if [ "$LIB" == "math" ]; then
@@ -48,25 +48,27 @@ done
 libpci_path() {
     local path="$1"
     # Check for libpci independently
-    if ldconfig -p | grep -q "$LIBPCI" && [ -d "${path}/pci" ]; then
+    if ldconfig -p | grep -q "$LIBPCI" || [ -f "${path}/libpci.so" ]; then
         CFLAGS+=" -DLIBPCI"
         LDFLAGS+=" -lpci"
-        echo -e "checking ${LIBPCI}: ${GREEN}OK${NC}"
+        echo -e "checking libpci: ${GREEN}OK${NC}"
     else
-        echo -e "checking ${LIBPCI}: ${RED}NO${NC}"
+        echo -e "checking libpci: ${RED}NO${NC}"
     fi
 }
 
-# Detect distribution
+# Detect distribution and check for libpci
 if [ -f /usr/bin/apt ]; then
     CFLAGS+=" -DDEBIAN"
-    libpci_path "/usr/include/x86_64-linux-gnu"
+    libpci_path "/usr/lib/x86_64-linux-gnu"
     echo -e "Detected Debian-based distribution: ${GREEN}OK${NC}"
 elif [ -f /usr/bin/dnf ]; then
     CFLAGS+=" -DREADHAT"
+    libpci_path "/usr/lib64"
     echo -e "Detected Redhat-based distribution: ${GREEN}OK${NC}"
 elif [ -f /usr/bin/pacman ]; then
     CFLAGS+=" -DARCH"
+    libpci_path "/usr/lib"
     echo -e "Detected Arch-based distribution: ${GREEN}OK${NC}"
 else
     echo -e "${RED}Distribution unsupported${NC}"

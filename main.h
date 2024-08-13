@@ -76,7 +76,7 @@ void system_enum(void);
 struct acpi {
     char name[64];
     char state[10];
-    unsigned long temp;
+    float temp;
     struct acpi *next;
 };
 void acpi_info(void);

@@ -11,8 +11,8 @@ void systeminfo(void)
     struct utsname *kernel= malloc(sizeof(struct utsname));
     
     if (uname(kernel) != -1) {
-        printf("Hostname: %s\n",kernel->nodename);
-        printf("%s %s\n",kernel->sysname, kernel->release);
+        printf(ANSI_COLOR_LIGHT_GREEN "Hostname:\t" ANSI_COLOR_RESET "%s\n",kernel->nodename);
+        printf(ANSI_COLOR_LIGHT_GREEN "Kernel: \t"ANSI_COLOR_RESET "%s %s\n",kernel->sysname, kernel->release);
     }
     free(kernel);
     //now checking for loaded modules
@@ -23,12 +23,13 @@ void systeminfo(void)
     while (getline(&line,&len,modules) != -1) {
         count++;
     }
-    printf("Kernel modules loaded: %u\n",count);
+    printf(ANSI_COLOR_LIGHT_GREEN "Loaded modules:\t" ANSI_COLOR_RESET "%u\n",count);
     fclose(modules);
     free(line); 
     //checking whether the firmware is UEFI or BIOS
-    printf("Firmware: ");
+    printf(ANSI_COLOR_LIGHT_GREEN "Firmware:\t" ANSI_COLOR_RESET);
     if (access("/sys/firmware/efi",F_OK) != -1) {
+        printf("UEFI:\t");
         #ifdef LIBEFI
         GetSecureBootStatus();
         #endif
@@ -38,10 +39,10 @@ void systeminfo(void)
     }
     char *env, *de;
     if (env = getenv("XDG_SESSION_TYPE")) {
-        printf("Session Type: %s\n",env);
+        printf(ANSI_COLOR_LIGHT_GREEN "Session Type:\t" ANSI_COLOR_RESET "%s\n",env);
     }
     if (de = getenv("XDG_CURRENT_DESKTOP")) {
-        printf("Desktop: %s\n",de);
+        printf(ANSI_COLOR_LIGHT_GREEN "Desktop:\t" ANSI_COLOR_RESET "%s\n",de);
     }
     /*using the information provided by sysinfo library data structure*/
     struct sysinfo system_info;
@@ -50,17 +51,57 @@ void systeminfo(void)
         long uptime_sec = system_info.uptime; // Uptime in seconds
         long hours = uptime_sec / 3600; // Extracting hours
         long minutes = (uptime_sec % 3600) / 60; // Extracting minutes
-        printf("Uptime: %ld hour%s and %ld minute%s", 
+        printf(ANSI_COLOR_LIGHT_GREEN "Uptime:\t\t" ANSI_COLOR_RESET "%ld hour%s and %ld minute%s", 
            hours, (hours != 1) ? "s" : "", 
            minutes, (minutes != 1) ? "s" : "");
         
     }
+    struct dirent *entry;
+    DIR *proc_dir = opendir("/proc");
+    int num_processes = 0;
+    int num_threads = 0;
+
+    if (proc_dir == NULL) {
+        perror("opendir");
+        return;
+    }
+
+    // First pass: Count the number of processes
+    while ((entry = readdir(proc_dir)) != NULL) {
+        if (is_pid_directory(entry->d_name)) {
+            num_processes++;
+        }
+    }
+
+    // Reset directory stream to count threads
+    rewinddir(proc_dir);
+    struct dirent *task_entry;
+    // Second pass: Count the number of threads
+    while ((entry = readdir(proc_dir)) != NULL) {
+        if (is_pid_directory(entry->d_name)) {
+            char task_path[256];
+            snprintf(task_path, sizeof(task_path), "/proc/%s/task", entry->d_name);
+            DIR *task_dir = opendir(task_path);
+            if (task_dir != NULL) {
+                while ((task_entry = readdir(task_dir)) != NULL) {
+                    if (is_pid_directory(task_entry->d_name)) {
+                        num_threads++;
+                    }
+                }
+                closedir(task_dir);
+            }
+        }
+    }
+
+    closedir(proc_dir);
+
+    printf(ANSI_COLOR_LIGHT_GREEN "\nprocesses: " ANSI_COLOR_RESET "%d\t" ANSI_COLOR_LIGHT_GREEN "threads: " ANSI_COLOR_RESET "%d\n", num_processes,num_threads);
     /* since the program is doing system related things for security reasons it must not be run as root
     if next time needed we will remove this code but now it must be their for security reasons */
     __uid_t uid= getuid();
     __gid_t gid= getgid();
     struct passwd *pwd;
-    printf(ANSI_COLOR_YELLOW "\nGetting users...\n" ANSI_COLOR_RESET);
+    printf(ANSI_COLOR_YELLOW "Getting users...\n" ANSI_COLOR_RESET);
     printf("User\tUID\tGID\tShell\n");
     while ((pwd= getpwent()) != NULL) {
         if (pwd->pw_uid==0 || pwd->pw_uid >=1000) {   //also we need to print root user if it exists because it                                      // it is a normal user which can be used after
@@ -96,8 +137,8 @@ void systeminfo(void)
     */
     int cores=0,processors=0;
     if (count_processor(&cores,&processors)) {
-        printf("Number of cores: %d\n",cores / 2);
-        printf("Number of processors: %d\n",processors);    
+        printf(ANSI_COLOR_LIGHT_GREEN "cores:\t" ANSI_COLOR_RESET "%d\n",cores / 2);
+        printf(ANSI_COLOR_LIGHT_GREEN "processors:\t"ANSI_COLOR_RESET "%d\n",processors);    
     }
     //checking for Linux Security Modules
     // the function is implemented in extra_func.c
@@ -105,8 +146,8 @@ void systeminfo(void)
     LinuxSecurityModule();
     
 }
-    int main(int argc, char *argv[])
-    {
+int main(int argc, char *argv[])
+{
         printf(ANSI_COLOR_GREEN "system enumeration\n" ANSI_COLOR_RESET);
         int opt,p_value = 0,H_flag = 0,N_flag= 0,P_flag=0;
         // Parse command line options
@@ -175,4 +216,4 @@ void systeminfo(void)
         }
 
         return 0;
-    }
+}

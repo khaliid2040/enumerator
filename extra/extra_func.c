@@ -2,7 +2,7 @@
 #define PATH 64
 #define LENGTH 1024 //used by get_pci_info
 int process_file(char *path,char *filename) {
-    printf(ANSI_COLOR_MAGENTA "%-20s: " ANSI_COLOR_RESET ,filename );
+    printf(ANSI_COLOR_LIGHT_GREEN "%-20s: " ANSI_COLOR_RESET ,filename );
     FILE *file= fopen(path,"r");
     char file_buff[MAX_LINE_LENGTH];
     if (file == NULL) {
@@ -19,6 +19,19 @@ int process_file(char *path,char *filename) {
 
 }
 
+//used by main.c:Systeminfo
+int is_pid_directory(const char *name) {
+    if (name == NULL || *name == '\0') {
+        return 0;
+    }
+    while (*name) {
+        if (!isdigit((unsigned char)*name)) {
+            return 0;
+        }
+        name++;
+    }
+    return 1;
+}
 bool count_processor(int* cores_count, int* processors_count) {
     bool check=false;
     char *cpuinfo_buffer= NULL;

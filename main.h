@@ -6,6 +6,7 @@
 
 #define ANSI_COLOR_RED     "\x1b[31m" //red
 #define ANSI_COLOR_GREEN   "\x1b[32m"//green
+#define ANSI_COLOR_LIGHT_GREEN "\x1b[36m"    
 #define ANSI_COLOR_YELLOW  "\x1b[33m"//yellow
 #define ANSI_COLOR_BLUE    "\x1b[34m"//blue
 #define ANSI_COLOR_MAGENTA "\x1b[35m"//magenta
@@ -21,6 +22,7 @@
 #include <arpa/inet.h>
 #include <sys/sysinfo.h>
 #include <stdbool.h>
+#include <ctype.h>
 #ifdef APPARMOR 
 #include <sys/apparmor.h>
 #endif
@@ -41,6 +43,7 @@ int GetSecureBootStatus(void);
 int process_file(char *path,char *filename);
 void getProcessInfo(pid_t pid);
 
+int is_pid_directory(const char *name);
 void LinuxSecurityModule(void);
 //total cpu time
 void process_cpu_time(void);
@@ -54,6 +57,11 @@ int memory_info(void);
 //function for memory calculation implemented in extra_func.c
 //for cpu defined in extra/cpuinfo.c
 int cpuinfo(void);  
+struct freq {
+    unsigned long max_freq;
+    unsigned long min_freq;
+    unsigned long base_freq;
+};
 //network functions implemented in network.c
 void network(void);
 //for routing

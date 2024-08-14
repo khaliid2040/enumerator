@@ -158,13 +158,13 @@ void getProcessInfo(int pid) {
     resident *= page_size;
     dirty *= page_size;
 
-    printf("Process ID: %d\n", pid);
-    printf("Process Name: %s\n", comm);
-    printf("Process State: %s\n", state_string);
-    printf("Total CPU Time: %.2f seconds\n", total_cpu_time);
-    printf("CPU Time Percentage: %.2f %%\n", cpu_time_percent);
-    printf("User Mode CPU Time Percentage: %.2f %%\n", user_mode_percent);
-    printf("System Mode CPU Time Percentage: %.2f %%\n", system_mode_percent);
+    printf(ANSI_COLOR_LIGHT_GREEN "Process ID:\t\t\t\t"ANSI_COLOR_RESET "%d\n", pid);
+    printf(ANSI_COLOR_LIGHT_GREEN "Process Name:\t\t\t\t"ANSI_COLOR_RESET "%s\n", comm);
+    printf(ANSI_COLOR_LIGHT_GREEN "Process State:\t\t\t\t"ANSI_COLOR_RESET "%s\n", state_string);
+    printf(ANSI_COLOR_LIGHT_GREEN "Total CPU Time:\t\t\t\t"ANSI_COLOR_RESET "%.2f seconds\n", total_cpu_time);
+    printf(ANSI_COLOR_LIGHT_GREEN "CPU Time Percentage:\t\t\t"ANSI_COLOR_RESET "%.2f %%\n", cpu_time_percent);
+    printf(ANSI_COLOR_LIGHT_GREEN "User Mode CPU Time Percentage:\t\t"ANSI_COLOR_RESET "%.2f %%\n", user_mode_percent);
+    printf(ANSI_COLOR_LIGHT_GREEN "System Mode CPU Time Percentage:\t"ANSI_COLOR_RESET "%.2f %%\n", system_mode_percent);
     printf(ANSI_COLOR_YELLOW "Getting process virtual address\n" ANSI_COLOR_RESET);
     printf("%-16s%-16s%-16s%-16s\n", "Total(KiB)", "Shared(KiB)", "Resident(KiB)", "Dirty(KiB)");  
     printf("%-16d%-16d%-16d%-16d\n",total,shared,resident       ,dirty); 

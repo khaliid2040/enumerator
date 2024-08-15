@@ -12,7 +12,7 @@ void systeminfo(void)
     
     if (uname(kernel) != -1) {
         printf(ANSI_COLOR_LIGHT_GREEN "Hostname:\t" ANSI_COLOR_RESET "%s\n",kernel->nodename);
-        printf(ANSI_COLOR_LIGHT_GREEN "Kernel: \t"ANSI_COLOR_RESET "%s %s\n",kernel->sysname, kernel->release);
+        printf(ANSI_COLOR_LIGHT_GREEN "Kernel: \t"ANSI_COLOR_RESET "%s %s %s\n",kernel->sysname, kernel->release,kernel->machine);
     }
     free(kernel);
     //now checking for loaded modules
@@ -41,8 +41,45 @@ void systeminfo(void)
     if (env = getenv("XDG_SESSION_TYPE")) {
         printf(ANSI_COLOR_LIGHT_GREEN "Session Type:\t" ANSI_COLOR_RESET "%s\n",env);
     }
+    //used for determining user home directory
+    __uid_t uid= getuid();
+    struct passwd *pwd=getpwuid(uid);
+    char version[7];
     if (de = getenv("XDG_CURRENT_DESKTOP")) {
-        printf(ANSI_COLOR_LIGHT_GREEN "Desktop:\t" ANSI_COLOR_RESET "%s\n",de);
+        printf(ANSI_COLOR_LIGHT_GREEN "Desktop:\t" ANSI_COLOR_RESET "%s ",de);
+        
+        if (!strcmp(de,"KDE")) {
+            char path[40],*contents=NULL;
+            snprintf(path,sizeof(path),"/home/%s/.config/plasma-welcomerc",pwd->pw_name);
+            FILE *deVersion= fopen(path,"r");
+            if (deVersion==NULL) {
+                perror("fopen");
+                return;
+            }
+            size_t len= sizeof(contents);
+            while (getline(&contents,&len,deVersion) != -1) {
+                sscanf(contents + 16, "%s", version);  
+            }
+            printf("%s\n",version);
+            fclose(deVersion);
+            free(contents);
+        } else if(!strcmp(de,"GNOME")) {
+            char version[5],*contents=NULL;
+            FILE *gnome= popen("gnome-shell --version","r");
+            if (gnome==NULL) {
+                perror("popen");
+                return;
+            } 
+            size_t len= 0;
+            if (getline(&contents,&len,gnome) != -1) {
+                sscanf(contents + 12, "%s",version);
+            }
+            printf("%s\n",version);
+            pclose(gnome);
+            free(contents);
+        } else {
+            printf(ANSI_COLOR_RED "Unsupported\n"ANSI_COLOR_RESET); 
+        }
     }
     /*using the information provided by sysinfo library data structure*/
     struct sysinfo system_info;
@@ -98,9 +135,9 @@ void systeminfo(void)
     printf(ANSI_COLOR_LIGHT_GREEN "\nprocesses: " ANSI_COLOR_RESET "%d\t" ANSI_COLOR_LIGHT_GREEN "threads: " ANSI_COLOR_RESET "%d\n", num_processes,num_threads);
     /* since the program is doing system related things for security reasons it must not be run as root
     if next time needed we will remove this code but now it must be their for security reasons */
-    __uid_t uid= getuid();
+    uid= getuid();
     __gid_t gid= getgid();
-    struct passwd *pwd;
+    pwd;
     printf(ANSI_COLOR_YELLOW "Getting users...\n" ANSI_COLOR_RESET);
     printf("User\tUID\tGID\tShell\n");
     while ((pwd= getpwent()) != NULL) {

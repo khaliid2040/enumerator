@@ -150,7 +150,23 @@ void getProcessInfo(int pid) {
         return;
     }
     fclose(memFile);
-
+    //get number of threads 
+    char thPath[256];
+    struct dirent *entry;
+    unsigned int count_threads=0;
+    snprintf(thPath,sizeof(thPath),"/proc/%d/task",pid);
+    DIR *tasks= opendir(thPath);
+    if (thPath==NULL) {
+        perror("Error");
+        return;
+    }
+    while ((entry= readdir(tasks)) != NULL) {
+        if (!strcmp(entry->d_name,".") || !strcmp(entry->d_name,"..")) {
+            continue;
+        }
+        count_threads++;
+    }
+    closedir(tasks);
     // Convert pages to KiB
     long page_size = sysconf(_SC_PAGE_SIZE) / 1024; // Page size in KiB
     total *= page_size;
@@ -161,6 +177,7 @@ void getProcessInfo(int pid) {
     printf(ANSI_COLOR_LIGHT_GREEN "Process ID:\t\t\t\t"ANSI_COLOR_RESET "%d\n", pid);
     printf(ANSI_COLOR_LIGHT_GREEN "Process Name:\t\t\t\t"ANSI_COLOR_RESET "%s\n", comm);
     printf(ANSI_COLOR_LIGHT_GREEN "Process State:\t\t\t\t"ANSI_COLOR_RESET "%s\n", state_string);
+    printf(ANSI_COLOR_LIGHT_GREEN "Process Threads:\t\t\t" ANSI_COLOR_RESET "%u\n",count_threads);
     printf(ANSI_COLOR_LIGHT_GREEN "Total CPU Time:\t\t\t\t"ANSI_COLOR_RESET "%.2f seconds\n", total_cpu_time);
     printf(ANSI_COLOR_LIGHT_GREEN "CPU Time Percentage:\t\t\t"ANSI_COLOR_RESET "%.2f %%\n", cpu_time_percent);
     printf(ANSI_COLOR_LIGHT_GREEN "User Mode CPU Time Percentage:\t\t"ANSI_COLOR_RESET "%.2f %%\n", user_mode_percent);

@@ -232,9 +232,7 @@ int GetSecureBootStatus ()
         }
         } else if (secureboot == 0 || setupmode == 1) {
         printf(ANSI_COLOR_RED "SecureBoot disabled\n" ANSI_COLOR_RESET);
-        if (setupmode == 1) {
-            printf("Platform is in Setup Mode\n");
-        }
+        
         } else {
         printf(ANSI_COLOR_YELLOW "Cannot determine secure boot state.\n" ANSI_COLOR_RESET);
         }

@@ -12,7 +12,7 @@ void systeminfo(void)
     
     if (uname(kernel) != -1) {
         printf(ANSI_COLOR_LIGHT_GREEN "Hostname:\t" ANSI_COLOR_RESET "%s\n",kernel->nodename);
-        printf(ANSI_COLOR_LIGHT_GREEN "Kernel: \t"ANSI_COLOR_RESET "%s %s %s\n",kernel->sysname, kernel->release,kernel->machine);
+        printf(ANSI_COLOR_LIGHT_GREEN "Kernel: \t"ANSI_COLOR_RESET "%s %s %s\n",kernel->sysname, kernel->release,kernel->machine    );
     }
     free(kernel);
     //now checking for loaded modules
@@ -39,7 +39,7 @@ void systeminfo(void)
     }
     char *env, *de;
     if (env = getenv("XDG_SESSION_TYPE")) {
-        printf(ANSI_COLOR_LIGHT_GREEN "Session Type:\t" ANSI_COLOR_RESET "%s\n",env);
+        printf(ANSI_COLOR_LIGHT_GREEN "\nSession Type:\t" ANSI_COLOR_RESET "%s\n",env);
     }
     //used for determining user home directory
     __uid_t uid= getuid();
@@ -52,31 +52,34 @@ void systeminfo(void)
             char path[40],*contents=NULL;
             snprintf(path,sizeof(path),"/home/%s/.config/plasma-welcomerc",pwd->pw_name);
             FILE *deVersion= fopen(path,"r");
-            if (deVersion==NULL) {
-                perror("fopen");
-                return;
+            if (deVersion !=NULL) {
+            
+                size_t len= sizeof(contents);
+                while (getline(&contents,&len,deVersion) != -1) {
+                    sscanf(contents + 16, "%s", version);  
+                }
+                printf("%s\n",version);
+                fclose(deVersion);
+                free(contents);
+            } else {
+                //if the file doesn't exit print new line character
+                printf("\n");
             }
-            size_t len= sizeof(contents);
-            while (getline(&contents,&len,deVersion) != -1) {
-                sscanf(contents + 16, "%s", version);  
-            }
-            printf("%s\n",version);
-            fclose(deVersion);
-            free(contents);
         } else if(!strcmp(de,"GNOME")) {
             char version[5],*contents=NULL;
             FILE *gnome= popen("gnome-shell --version","r");
-            if (gnome==NULL) {
-                perror("popen");
-                return;
-            } 
-            size_t len= 0;
-            if (getline(&contents,&len,gnome) != -1) {
-                sscanf(contents + 12, "%s",version);
+            if (gnome !=NULL) {
+                size_t len= 0;
+                if (getline(&contents,&len,gnome) != -1) {
+                    sscanf(contents + 12, "%s",version);
+                }
+                printf("%s\n",version);
+                pclose(gnome);
+                free(contents);
+            } else {
+                //if the file doesn't exit print new line character
+                printf("\n");
             }
-            printf("%s\n",version);
-            pclose(gnome);
-            free(contents);
         } else {
             printf(ANSI_COLOR_RED "Unsupported\n"ANSI_COLOR_RESET); 
         }
@@ -88,10 +91,36 @@ void systeminfo(void)
         long uptime_sec = system_info.uptime; // Uptime in seconds
         long hours = uptime_sec / 3600; // Extracting hours
         long minutes = (uptime_sec % 3600) / 60; // Extracting minutes
-        printf(ANSI_COLOR_LIGHT_GREEN "Uptime:\t\t" ANSI_COLOR_RESET "%ld hour%s and %ld minute%s", 
+        printf(ANSI_COLOR_LIGHT_GREEN "Uptime:\t\t" ANSI_COLOR_RESET "%ld hour%s and %ld minute%s\n", 
            hours, (hours != 1) ? "s" : "", 
            minutes, (minutes != 1) ? "s" : "");
         
+    }
+    //information about battery get from sysfs
+    char capacity[5];
+    FILE *fp= fopen("/sys/class/power_supply/BAT0/capacity","r");
+    if (fp !=NULL) {
+        if (fgets(capacity,sizeof(capacity),fp) != NULL) {
+            size_t len= strlen(capacity);
+            char status[20];
+            capacity[len -1]= '\0';
+            FILE *state= fopen("/sys/class/power_supply/BAT0/status","r");
+            if (state !=NULL) {
+                if (fgets(status,sizeof(status),state) != NULL) {
+                    len=strlen(status);
+                    status[len - 1]='\0';
+                }
+                printf(ANSI_COLOR_LIGHT_GREEN "Battery:\t"ANSI_COLOR_RESET "%s%%",capacity);
+                if (!strcmp(status,"Discharging")) {
+
+                    printf(ANSI_COLOR_YELLOW " %s"ANSI_COLOR_RESET,status);
+                } else if(!strcmp(status,"Charging")) {
+                    printf(ANSI_COLOR_GREEN " %s"ANSI_COLOR_RESET,status);
+                }
+                fclose(state);
+            }
+        }
+        fclose(fp);
     }
     struct dirent *entry;
     DIR *proc_dir = opendir("/proc");

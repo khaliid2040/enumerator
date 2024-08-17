@@ -59,6 +59,22 @@ bool count_processor(int* cores_count, int* processors_count) {
     return check;
 }
 #ifdef LIBPCI
+void gpu_info(char *model,char *vendor) {
+    strcpy(vendor,"Intel");
+    struct pci_access *pac= pci_alloc();
+    pci_init(pac);
+    pci_scan_bus(pac);
+    struct pci_dev *dev= pac->devices;
+    char name[64];
+    while (dev != NULL) {
+        pci_fill_info(dev,PCI_FILL_BASES | PCI_FILL_IDENT | PCI_FILL_CLASS);
+        if (dev->device_class== PCI_CLASS_DISPLAY_VGA ) {
+            pci_lookup_name(pac,model,64,PCI_LOOKUP_DEVICE,dev->vendor_id,dev->device_id);
+        }
+        dev=dev->next;  
+    }
+    pci_cleanup(pac);
+}
 void get_pci_info(void) {
     struct pci_access *pac= pci_alloc();
     if (pac == NULL) {
@@ -185,8 +201,7 @@ int GetSecureBootStatus ()
 
         if (efi_get_variable (efi_guid_global, "SecureBoot", &data, &data_size,
                               &attributes) < 0) {
-                fprintf (stderr, "Failed to read \"SecureBoot\" "
-                                 "variable: %m\n");
+                fprintf(stderr,"Secure boot not supported\n");
                 return -1;
         }
 

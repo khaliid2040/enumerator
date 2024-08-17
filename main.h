@@ -47,7 +47,7 @@ typedef unsigned long page_t;
 #define supported
 #endif
 int GetSecureBootStatus(void);
-char *gpu_info();
+void gpu_info();
 int process_file(char *path,char *filename);
 void getProcessInfo(pid_t pid);
 

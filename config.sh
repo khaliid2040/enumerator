@@ -48,7 +48,7 @@ done
 libpci_path() {
     local path="$1"
     # Check for libpci independently
-    if ldconfig -p | grep -q "$LIBPCI" || [ -f "${path}/libpci.so" ]; then
+    if ldconfig -p | grep -q "$LIBPCI" && [ -d "${path}/pci" ]; then
         CFLAGS+=" -DLIBPCI"
         LDFLAGS+=" -lpci"
         echo -e "checking libpci: ${GREEN}OK${NC}"
@@ -60,15 +60,15 @@ libpci_path() {
 # Detect distribution and check for libpci
 if [ -f /usr/bin/apt ]; then
     CFLAGS+=" -DDEBIAN"
-    libpci_path "/usr/lib/x86_64-linux-gnu"
+    libpci_path "/usr/include/x86_64-linux-gnu"
     echo -e "Detected Debian-based distribution: ${GREEN}OK${NC}"
 elif [ -f /usr/bin/dnf ]; then
     CFLAGS+=" -DREADHAT"
-    libpci_path "/usr/lib64"
+    libpci_path "/usr/include"
     echo -e "Detected Redhat-based distribution: ${GREEN}OK${NC}"
 elif [ -f /usr/bin/pacman ]; then
     CFLAGS+=" -DARCH"
-    libpci_path "/usr/lib"
+    libpci_path "/usr/include"
     echo -e "Detected Arch-based distribution: ${GREEN}OK${NC}"
 else
     echo -e "${RED}Distribution unsupported${NC}"

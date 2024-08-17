@@ -55,6 +55,11 @@ void systeminfo(void)
     brand[48] = '\0';
     printf(ANSI_COLOR_LIGHT_GREEN "CPU: \t\t"ANSI_COLOR_RESET "%s\n",brand);
     #endif
+    #ifdef LIBPCI
+    char model[32],vendor[10];
+    gpu_info(model,vendor);
+    printf(ANSI_COLOR_LIGHT_GREEN "GPU:\t\t"ANSI_COLOR_RESET "%s %s\n",vendor,model);
+    #endif
     //used for determining user home directory
     __uid_t uid= getuid();
     struct passwd *pwd=getpwuid(uid);

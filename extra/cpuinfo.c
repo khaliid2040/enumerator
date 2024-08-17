@@ -1,9 +1,5 @@
 #include "../main.h"
 #include <dirent.h>
-#if defined(__x86_64__) || defined(__i386__)    
-#include <cpuid.h>          
-#define supported
-#endif
 unsigned int eax,ebx,ecx,edx;
 char vendor[13];
 void cpuid() {

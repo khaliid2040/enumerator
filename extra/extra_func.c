@@ -12,7 +12,7 @@ int process_file(char *path,char *filename) {
     while (fgets(file_buff,sizeof(file_buff),file) != NULL) {
         file_buff[strcspn(file_buff, "\n")] = '\0';
         //printf("%-500s\n",file_buff);
-        printf("%s60\n", file_buff); 
+        printf("%s\n", file_buff); 
     }
     fclose(file);
     return 0;

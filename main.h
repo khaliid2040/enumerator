@@ -33,13 +33,21 @@ typedef unsigned long cpuInfo;
 typedef const char* cpuProperty;
 typedef unsigned long page_t;
 #define GiB (1024 * 1024 * 1024)
+//for pci.h
 #ifdef LIBPCI
 #include <pci/pci.h>
 #endif
+//for efi.h
 #ifdef LIBEFI
 #include <efivar/efivar.h>
 #endif
+//only x86(64)
+#if defined(__x86_64__) || defined(__i386__)    
+#include <cpuid.h>          
+#define supported
+#endif
 int GetSecureBootStatus(void);
+char *gpu_info();
 int process_file(char *path,char *filename);
 void getProcessInfo(pid_t pid);
 

@@ -41,6 +41,20 @@ void systeminfo(void)
     if (env = getenv("XDG_SESSION_TYPE")) {
         printf(ANSI_COLOR_LIGHT_GREEN "\nSession Type:\t" ANSI_COLOR_RESET "%s\n",env);
     }
+
+    #ifdef supported // if the architecture is x86 both 32 bit and 64
+    unsigned int eax,ebx,ecx,edx;
+    char brand[50];
+    for (int i = 0; i < 3; ++i) {
+        __get_cpuid(0x80000002 + i, &eax, &ebx, &ecx, &edx);
+        memcpy(brand + i * 16, &eax, 4);
+        memcpy(brand + i * 16 + 4, &ebx, 4);
+        memcpy(brand + i * 16 + 8, &ecx, 4);
+        memcpy(brand + i * 16 + 12, &edx, 4);
+    }
+    brand[48] = '\0';
+    printf(ANSI_COLOR_LIGHT_GREEN "CPU: \t\t"ANSI_COLOR_RESET "%s\n",brand);
+    #endif
     //used for determining user home directory
     __uid_t uid= getuid();
     struct passwd *pwd=getpwuid(uid);
@@ -116,6 +130,8 @@ void systeminfo(void)
                     printf(ANSI_COLOR_YELLOW " %s"ANSI_COLOR_RESET,status);
                 } else if(!strcmp(status,"Charging")) {
                     printf(ANSI_COLOR_GREEN " %s"ANSI_COLOR_RESET,status);
+                } else {
+                    printf(" %s\n",status);
                 }
                 fclose(state);
             }

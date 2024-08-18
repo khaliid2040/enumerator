@@ -8,13 +8,12 @@
 void systeminfo(void)
 {
     //now getting the hostname and kernel information from using utsname same as kernel retrival method
-    struct utsname *kernel= malloc(sizeof(struct utsname));
+    struct utsname kernel;
     
-    if (uname(kernel) != -1) {
-        printf(ANSI_COLOR_LIGHT_GREEN "Hostname:\t" ANSI_COLOR_RESET "%s\n",kernel->nodename);
-        printf(ANSI_COLOR_LIGHT_GREEN "Kernel: \t"ANSI_COLOR_RESET "%s %s %s\n",kernel->sysname, kernel->release,kernel->machine    );
+    if (uname(&kernel) != -1) {
+        printf(ANSI_COLOR_LIGHT_GREEN "Hostname:\t" ANSI_COLOR_RESET "%s\n",kernel.nodename);
+        printf(ANSI_COLOR_LIGHT_GREEN "Kernel: \t"ANSI_COLOR_RESET "%s %s %s\n",kernel.sysname, kernel.release,kernel.machine);
     }
-    free(kernel);
     //now checking for loaded modules
     char *line=NULL;
     size_t len= 0;

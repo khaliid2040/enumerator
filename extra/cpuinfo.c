@@ -12,12 +12,12 @@ void cpuid() {
             memcpy(vendor+4, &edx, 4);
             memcpy(vendor+8, &ecx, 4);
             vendor[12] = '\0'; // Null-terminate the string
-            printf(ANSI_COLOR_LIGHT_GREEN "Vendor:\t\t"ANSI_COLOR_RESET "%s\n", vendor);
+            printf(ANSI_COLOR_LIGHT_GREEN "Vendor:\t\t\t\t\t"ANSI_COLOR_RESET "%s\n", vendor);
         } else{
             // Call CPUID instruction to retrieve information
             __get_cpuid(i, &eax, &ebx, &ecx, &edx);
             char *feature_names[]= {"fpu","vme","de","pse","tsc","pae","mce","cx8","apic","VMX"};
-            printf(ANSI_COLOR_LIGHT_GREEN "supported features:\t\t"ANSI_COLOR_RESET);
+            printf(ANSI_COLOR_LIGHT_GREEN "supported features:\t\t\t"ANSI_COLOR_RESET);
             for (int j = 0; j < sizeof(feature_names) / sizeof(feature_names[0]); j++) {
                 if ((edx >> j) & 1 && (j < 32 ? (ecx >> j) & 1 : (ecx >> (j - 32)) & 1)) {
                     printf("%s ", feature_names[j]);
@@ -45,15 +45,15 @@ void cpuid() {
                 sig[2] = edx;
                 // For demonstration purposes, let's print the signature
                 if (sig[0]==0x4B4D564B && sig[1]==0x564B4D56 && sig[2]== 0x0000004D) { 
-                    printf("KVM\n");
+                    printf("KVM");
                 } else if (sig[0]==0x61774D56 && sig[1]==0x4D566572 && sig[3]==0x65726175) {
-                    printf("VMWare\n");
+                    printf("VMWare");
                 }else if (sig[0]==0x72754D56 && sig[1]==0x56656361 && sig[2]==0x32746E65) {
-                    printf("Virtualbox\n");
+                    printf("Virtualbox");
                 }else if (sig[0]==0x72636968 && sig[1]==0x4D566572 && sig[2]==0x65746E65) {
-                    printf("Hyper-v\n");
+                    printf("Hyper-v");
                 }else {
-                    printf("unknown\n");
+                    printf("unknown");
                 }
             }
         }
@@ -271,7 +271,7 @@ int cpuinfo() {
         memcpy(brand + i * 16 + 12, &edx, 4);
     }
     brand[48] = '\0';
-    printf(ANSI_COLOR_LIGHT_GREEN "\nBrand:\t"ANSI_COLOR_RESET  "%s\n", brand);
+    printf(ANSI_COLOR_LIGHT_GREEN "\nBrand:\t\t\t\t\t"ANSI_COLOR_RESET  "%s\n", brand);
     printf(ANSI_COLOR_YELLOW "Getting cpu vurnuabilities\n" ANSI_COLOR_RESET);
     #endif  
     cpu_vulnerabilities();

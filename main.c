@@ -9,10 +9,12 @@ void systeminfo(void)
 {
     //now getting the hostname and kernel information from using utsname same as kernel retrival method
     struct utsname kernel;
-    
+    char hostname[256];
+    if (gethostname(hostname, sizeof(hostname)) == 0) {
+        printf(ANSI_COLOR_LIGHT_GREEN "Hostname: \t"ANSI_COLOR_RESET   "%s\n",hostname); 
+    }       
     if (uname(&kernel) != -1) {
-        printf(ANSI_COLOR_LIGHT_GREEN "Hostname:\t" ANSI_COLOR_RESET "%s\n",kernel.nodename);
-        printf(ANSI_COLOR_LIGHT_GREEN "Kernel: \t"ANSI_COLOR_RESET "%s %s %s\n",kernel.sysname, kernel.release,kernel.machine);
+            printf(ANSI_COLOR_LIGHT_GREEN "Kernel: \t"ANSI_COLOR_RESET "%s %s %s\n",kernel.sysname, kernel.release,kernel.machine);
     }
     //now checking for loaded modules
     char *line=NULL;

@@ -12,12 +12,12 @@ void cpuid() {
             memcpy(vendor+4, &edx, 4);
             memcpy(vendor+8, &ecx, 4);
             vendor[12] = '\0'; // Null-terminate the string
-            printf(ANSI_COLOR_LIGHT_GREEN "Vendor:\t\t\t\t\t"ANSI_COLOR_RESET "%s\n", vendor);
+            printf(ANSI_COLOR_LIGHT_GREEN "Vendor:\t\t\t"ANSI_COLOR_RESET "%s\n", vendor);
         } else{
             // Call CPUID instruction to retrieve information
             __get_cpuid(i, &eax, &ebx, &ecx, &edx);
             char *feature_names[]= {"fpu","vme","de","pse","tsc","pae","mce","cx8","apic","VMX"};
-            printf(ANSI_COLOR_LIGHT_GREEN "supported features:\t\t\t"ANSI_COLOR_RESET);
+            printf(ANSI_COLOR_LIGHT_GREEN "supported features:\t"ANSI_COLOR_RESET);
             for (int j = 0; j < sizeof(feature_names) / sizeof(feature_names[0]); j++) {
                 if ((edx >> j) & 1 && (j < 32 ? (ecx >> j) & 1 : (ecx >> (j - 32)) & 1)) {
                     printf("%s ", feature_names[j]);
@@ -33,7 +33,7 @@ void cpuid() {
                 } 
             //detecting the hypervisor in case if we run on virtual machine
             if (ecx & (1 << 31)) {
-                printf(ANSI_COLOR_LIGHT_GREEN "\nVirtualization detected:\t\t "ANSI_COLOR_RESET);
+                printf(ANSI_COLOR_LIGHT_GREEN "\nVirtualization detected: "ANSI_COLOR_RESET);
                 char *hypervisors[] = {"KVM", "Vmware", "Virtualbox", "hyper-v"};
                 int sig[3];
                 // Execute CPUID instruction to retrieve hypervisor signature
@@ -132,6 +132,7 @@ struct freq *frequency(void) {
     return frq;
 }
 void hwmon() {
+    printf("\n");
     struct dirent *entry;
     char path[SIZE],contents[SIZE];
     bool set=false;
@@ -210,8 +211,8 @@ int cpuinfo() {
     char spath[60],tpath[60];
     char size_cont[20],type_cont[30];
     if (count_processor(&cores,&processors)) {
-        printf(ANSI_COLOR_LIGHT_GREEN "cores:\t\t"ANSI_COLOR_RESET "%d\n",cores /2);
-        printf(ANSI_COLOR_LIGHT_GREEN "processor:\t" ANSI_COLOR_RESET "%d\n",processors);
+        printf(ANSI_COLOR_LIGHT_GREEN "cores:\t\t\t"ANSI_COLOR_RESET "%d\n",cores /2);
+        printf(ANSI_COLOR_LIGHT_GREEN "processor:\t\t" ANSI_COLOR_RESET "%d\n",processors);
     }
     //frequency got via sysfs as 
     struct freq *frq= frequency();
@@ -222,9 +223,25 @@ int cpuinfo() {
     float max= frq->max_freq / 1000000.0;
     float min = frq->min_freq / 100000.0;
     float base = frq->base_freq / 1000000.0;
-    printf(ANSI_COLOR_LIGHT_GREEN "Frequency:\t"ANSI_COLOR_RESET "max: %.1f GHz  min: %.1f GHz  base: %.1f GHz\n\n", max,min,base);
+    printf(ANSI_COLOR_LIGHT_GREEN "Frequency:\t\t"ANSI_COLOR_RESET "max: %.1f GHz  min: %.1f GHz  base: %.1f GHz\n\n", max,min,base);
     free(frq);
     //temperature
+    #ifdef supported    
+    // now getting the vendor 
+    cpuid();
+    //now we are going to print the brand using cpuid instruction
+    
+    char brand[50];
+    for (int i = 0; i < 3; ++i) {
+        __get_cpuid(0x80000002 + i, &eax, &ebx, &ecx, &edx);
+        memcpy(brand + i * 16, &eax, 4);
+        memcpy(brand + i * 16 + 4, &ebx, 4);
+        memcpy(brand + i * 16 + 8, &ecx, 4);
+        memcpy(brand + i * 16 + 12, &edx, 4);
+    }
+    brand[48] = '\0';
+    printf(ANSI_COLOR_LIGHT_GREEN "\nBrand:\t\t\t"ANSI_COLOR_RESET  "%s\n", brand);
+    #endif  
     hwmon();
     for (int i=0;i<processors;i++) {
         level--; //decrement each iteration and if fopen fails assume non exsted
@@ -255,25 +272,9 @@ int cpuinfo() {
             continue;
         }
         fclose(typeN);
-        printf("L%d:\t type: %s\t size: %s\n",level,type_cont,size_cont);
+        printf("L%d Cache : \t type: %s\t\t size: %s\n",level,type_cont,size_cont);
     }
-    #ifdef supported    
-    // now getting the vendor 
-    cpuid();
-    //now we are going to print the brand using cpuid instruction
-    
-    char brand[50];
-    for (int i = 0; i < 3; ++i) {
-        __get_cpuid(0x80000002 + i, &eax, &ebx, &ecx, &edx);
-        memcpy(brand + i * 16, &eax, 4);
-        memcpy(brand + i * 16 + 4, &ebx, 4);
-        memcpy(brand + i * 16 + 8, &ecx, 4);
-        memcpy(brand + i * 16 + 12, &edx, 4);
-    }
-    brand[48] = '\0';
-    printf(ANSI_COLOR_LIGHT_GREEN "\nBrand:\t\t\t\t\t"ANSI_COLOR_RESET  "%s\n", brand);
     printf(ANSI_COLOR_YELLOW "Getting cpu vurnuabilities\n" ANSI_COLOR_RESET);
-    #endif  
     cpu_vulnerabilities();
     return 0;
 }

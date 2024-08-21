@@ -70,10 +70,17 @@ elif [ -f /usr/bin/pacman ]; then
     CFLAGS+=" -DARCH"
     libpci_path "/usr/include"
     echo -e "Detected Arch-based distribution: ${GREEN}OK${NC}"
+elif [ -f /usr/bin/emerge ]; then
+    libpci_path "/usr/include"
+    CFLAGS+=" -DGENTOO"
+    echo -e "Detected Gentoo-based distribution: ${GREEN}OK${NC}"
 else
     echo -e "${RED}Distribution unsupported${NC}"
 fi
-
+# flatpak
+if [ -f /usr/bin/flatpak ]; then
+    CFLAGS+=" -DFLATPAK"
+    fi
 # Write results to config.mk
 echo "CFLAGS = ${CFLAGS}" > config.mk
 echo "LDFLAGS = ${LDFLAGS}" >> config.mk

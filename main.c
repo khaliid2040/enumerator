@@ -38,9 +38,34 @@ void systeminfo(void)
     } else {
         printf("BIOS\n");
     }
+    //systemd interact
+    //we only need the information if command succeed otherwise on failure like if used other init systems just pass without
+    //user notice
+    char output[20];
+    FILE *init= popen("systemctl --version","r");
+    if (init != NULL) {
+        if (fgets(output,12,init) != NULL) {
+            printf(ANSI_COLOR_LIGHT_GREEN "\nInit: \t\t"ANSI_COLOR_RESET "%s",output);
+        }
+        pclose(init);
+    }
+    //check units
+    int count_units=0;
+    DIR *units= opendir("/usr/lib/systemd/system");
+    struct dirent *unit_entry;
+    while ((unit_entry=readdir(units)) != NULL) {
+        if (!strcmp(unit_entry->d_name,".") || !strcmp(unit_entry->d_name,"..")) {
+            continue;
+        }
+    
+        count_units++;
+              
+    }
+    printf(" %d units installed\n",count_units);
+    closedir(units);
     char *env, *de;
     if (env = getenv("XDG_SESSION_TYPE")) {
-        printf(ANSI_COLOR_LIGHT_GREEN "\nSession Type:\t" ANSI_COLOR_RESET "%s\n",env);
+        printf(ANSI_COLOR_LIGHT_GREEN "Session Type:\t" ANSI_COLOR_RESET "%s\n",env);
     }
 
     #ifdef supported // if the architecture is x86 both 32 bit and 64
@@ -61,6 +86,9 @@ void systeminfo(void)
     gpu_info(model,vendor);
     printf(ANSI_COLOR_LIGHT_GREEN "GPU:\t\t"ANSI_COLOR_RESET "%s %s\n",vendor,model);
     #endif
+    //defined in extra/package.c
+    package_manager();
+    
     //used for determining user home directory
     __uid_t uid= getuid();
     struct passwd *pwd=getpwuid(uid);

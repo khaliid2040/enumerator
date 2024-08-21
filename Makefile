@@ -1,45 +1,64 @@
-CC=gcc
-EXECUTABLE=systeminfo
-INCLUDE_DIR = .
+# Compiler and flags
+CC = gcc
+LIBS = 
 ifneq ($(wildcard config.mk),)
     include config.mk
-endif	
-$(EXECUTABLE): main.o extra_func.o storage.o memory.o cpuinfo.o process.o network.o route.o arp.o system.o security.o
-	$(CC) -o $(EXECUTABLE) main.o extra_func.o storage.o memory.o cpuinfo.o process.o network.o route.o arp.o system.o security.o $(LDFLAGS)
+endif
+# Directories
+SRC_DIR_EXTRA = extra
+SRC_DIR_NET = net
+OBJ_DIR = obj
+BIN_DIR = ~/.local/bin
 
-main.o: main.c main.h
-	$(CC) -c -o main.o main.c $(CFLAGS) -I$(INCLUDE_DIR)
+# Executable name
+EXECUTABLE = systeminfo
 
-extra_func.o: extra/extra_func.c main.h
-	$(CC) -c -o extra_func.o extra/extra_func.c $(CFLAGS) -I$(INCLUDE_DIR)
+# List of object files
+OBJ_FILES = $(OBJ_DIR)/main.o $(OBJ_DIR)/extra_func.o $(OBJ_DIR)/storage.o \
+            $(OBJ_DIR)/memory.o $(OBJ_DIR)/cpuinfo.o $(OBJ_DIR)/process.o \
+            $(OBJ_DIR)/network.o $(OBJ_DIR)/route.o $(OBJ_DIR)/arp.o \
+            $(OBJ_DIR)/system.o $(OBJ_DIR)/security.o $(OBJ_DIR)/packages.o
 
-storage.o: extra/storage.c main.h
-	$(CC) -c -o storage.o extra/storage.c $(CFLAGS) -I$(INCLUDE_DIR)
-memory.o: extra/memory.c main.h
-	$(CC) -c -o memory.o extra/memory.c $(CFLAGS) -I$(INCLUDE_DIR)
-cpuinfo.o:	
-	$(CC) -c -o cpuinfo.o extra/cpuinfo.c $(CFLAGS) -I$(INCLUDE_DIR)
-process.o:
-	$(CC) -c -o process.o extra/process.c $(CFLAGS) -I$(INCLUDE_DIR)
-system.o:
-	$(CC) -c -o system.o extra/system.c $(CFLAGS) -I$(INCLUDE_DIR)
-network.o:
-	$(CC) -c -o network.o net/network.c $(CFLAGS) -I$(INCLUDE_DIR)
-route.o:
-	$(CC) -c -o route.o net/route.c $(CFLAGS) -I$(INCLUDE_DIR)
-arp.o:
-	$(CC) -c -o arp.o net/arp.c $(CFLAGS) -I$(INCLUDE_DIR)
-security.o:
-	$(CC) -c -o security.o extra/security.c $(CFLAGS) -I$(INCLUDE_DIR) $(LIBS	)
-install:
+# Main target
+$(EXECUTABLE): $(OBJ_FILES)
+	$(CC) -o $@ $(OBJ_FILES) $(LDFLAGS) $(LIBS)
+
+# Ensure object directory exists
+$(OBJ_DIR):
+	mkdir -p $(OBJ_DIR)
+
+# Compile object files from the main directory
+$(OBJ_DIR)/main.o: main.c main.h | $(OBJ_DIR)
+	$(CC) -c -o $@ main.c $(CFLAGS)
+
+# Compile object files from the extra directory
+$(OBJ_DIR)/%.o: $(SRC_DIR_EXTRA)/%.c main.h | $(OBJ_DIR)
+	$(CC) -c -o $@ $< $(CFLAGS)
+
+# Compile object files from the net directory
+$(OBJ_DIR)/%.o: $(SRC_DIR_NET)/%.c main.h | $(OBJ_DIR)
+	$(CC) -c -o $@ $< $(CFLAGS)
+
+# Phony targets
+.PHONY: all install checkdep clean
+
+# Default target
+all: $(EXECUTABLE)
+
+# Install target
+install: $(EXECUTABLE)
 	@echo "Checking .local"
-	@if [ -d ~/.local/bin ]; then\		
-		mv -v systeminfo /home/khaalid/.local/bin
-	@else\
-		mkdir -pv ~/.local/bin
-		mv -v systeminfo ~/.local/bin
-	fi	
+	@if [ -d $(BIN_DIR) ]; then \
+		mv -v $(EXECUTABLE) $(BIN_DIR); \
+	else \
+		mkdir -pv $(BIN_DIR); \
+		mv -v $(EXECUTABLE) $(BIN_DIR); \
+	fi
+
+# Check dependencies
 checkdep:
 	@./config.sh
+
+# Clean up build files
 clean:
-	rm -f *.o $(EXECUTABLE) config.mk
+	rm -f $(OBJ_DIR)/*.o $(EXECUTABLE) config.mk

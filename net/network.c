@@ -134,7 +134,29 @@ void network(void) {
 				printf("MAC %s",buffer);
 			}
 		}
+		//memset(buffer,0,sizeof(buffer));
+		snprintf(path,sizeof(path),"/sys/class/net/%s/operstate",net[i]);
+		FILE *state= fopen(path,"r");
+		if (state==NULL) {
+			perror("fopen");
+			continue;
+		}
+		printf("State: ");
+		if  (fgets(buffer,sizeof(buffer),state) != NULL) {
+			//trim new line character
+			int len= strlen(buffer);
+			buffer[len - 1]='\0';
+			//making colored output
+			if (!strcmp(buffer,"up")) {
+				printf(ANSI_COLOR_GREEN "%s\n" ANSI_COLOR_RESET,buffer);
+			} else if (!strcmp(buffer,"down")) {
+				printf(ANSI_COLOR_RED "%s\n"ANSI_COLOR_RESET,buffer);
+			} else {
+				printf(ANSI_COLOR_RED "%s\n"ANSI_COLOR_RESET,buffer);
+			}
+		}
 		fclose(address);
+		fclose(state);
 		free(net[i]);
 	}
 	printf(ANSI_COLOR_YELLOW "getting connection information...\n" ANSI_COLOR_RESET);

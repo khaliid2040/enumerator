@@ -96,4 +96,6 @@ struct acpi {
     struct acpi *next;
 };
 void acpi_info(void);
+//extra/package.c
+void package_manager();
 #endif

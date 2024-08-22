@@ -62,12 +62,6 @@ void systeminfo(void)
               
     }
     printf(" %d units installed\n",count_units);
-    closedir(units);
-    char *env, *de;
-    if (env = getenv("XDG_SESSION_TYPE")) {
-        printf(ANSI_COLOR_LIGHT_GREEN "Session Type:\t" ANSI_COLOR_RESET "%s\n",env);
-    }
-
     #ifdef supported // if the architecture is x86 both 32 bit and 64
     unsigned int eax,ebx,ecx,edx;
     char brand[50];
@@ -79,7 +73,11 @@ void systeminfo(void)
         memcpy(brand + i * 16 + 12, &edx, 4);
     }
     brand[48] = '\0';
-    printf(ANSI_COLOR_LIGHT_GREEN "CPU: \t\t"ANSI_COLOR_RESET "%s\n",brand);
+    printf(ANSI_COLOR_LIGHT_GREEN "CPU: \t\t"ANSI_COLOR_RESET "%s",brand);
+    int cores=0,processors=0;
+    if (count_processor(&cores,&processors)) {
+        printf(" cores: %d threads: %d\n",cores / 2,processors);
+    }
     #endif
     #ifdef LIBPCI
     char model[32],vendor[10];
@@ -88,7 +86,11 @@ void systeminfo(void)
     #endif
     //defined in extra/package.c
     package_manager();
-    
+    closedir(units);
+    char *env, *de;
+    if (env = getenv("XDG_SESSION_TYPE")) {
+        printf(ANSI_COLOR_LIGHT_GREEN "Session Type:\t" ANSI_COLOR_RESET "%s\n",env);
+    }   
     //used for determining user home directory
     __uid_t uid= getuid();
     struct passwd *pwd=getpwuid(uid);
@@ -142,7 +144,7 @@ void systeminfo(void)
         printf(ANSI_COLOR_LIGHT_GREEN "Uptime:\t\t" ANSI_COLOR_RESET "%ld hour%s and %ld minute%s\n", 
            hours, (hours != 1) ? "s" : "", 
            minutes, (minutes != 1) ? "s" : "");
-        
+        printf(ANSI_COLOR_LIGHT_GREEN "Memory:\t\t"ANSI_COLOR_RESET "%.1f GB\n",(float) system_info.totalram / 1024.0 / 1024.0 / 1024.0); //change from bytes to GB
     }
     //information about battery get from sysfs
     char capacity[5];
@@ -243,19 +245,7 @@ void systeminfo(void)
         }
     }
     endgrent();
-    printf(ANSI_COLOR_YELLOW "getting processor information\n" ANSI_COLOR_RESET);
     
-    /*
-        cpuinfo_buffer holds the buffer of the cpuinfo file
-        buffer_size is the size of the buffer
-        processors and cores are strings searched in  the file
-        
-    */
-    int cores=0,processors=0;
-    if (count_processor(&cores,&processors)) {
-        printf(ANSI_COLOR_LIGHT_GREEN "cores:\t" ANSI_COLOR_RESET "%d\n",cores / 2);
-        printf(ANSI_COLOR_LIGHT_GREEN "processors:\t"ANSI_COLOR_RESET "%d\n",processors);    
-    }
     //checking for Linux Security Modules
     // the function is implemented in extra_func.c
     printf(ANSI_COLOR_YELLOW "Getting security modules...\n"    ANSI_COLOR_RESET);

@@ -61,4 +61,4 @@ checkdep:
 
 # Clean up build files
 clean:
-	rm -f $(OBJ_DIR)/*.o $(EXECUTABLE) config.mk
+	rm -rf $(OBJ_DIR) $(EXECUTABLE) config.mk

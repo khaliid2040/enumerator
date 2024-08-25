@@ -84,6 +84,18 @@ void systeminfo(void)
     gpu_info(model,vendor);
     printf(ANSI_COLOR_LIGHT_GREEN "GPU:\t\t"ANSI_COLOR_RESET "%s %s\n",vendor,model);
     #endif
+    /*using the information provided by sysinfo library data structure*/
+    struct sysinfo system_info;
+    if (sysinfo(&system_info) == 0)
+    {
+        printf(ANSI_COLOR_LIGHT_GREEN "Memory:\t\t"ANSI_COLOR_RESET "%.1f GB\n",(float) system_info.totalram / 1024.0 / 1024.0 / 1024.0); //change from bytes to GB 
+        long uptime_sec = system_info.uptime; // Uptime in seconds
+        long hours = uptime_sec / 3600; // Extracting hours
+        long minutes = (uptime_sec % 3600) / 60; // Extracting minutes
+        printf(ANSI_COLOR_LIGHT_GREEN "Uptime:\t\t" ANSI_COLOR_RESET "%ld hour%s and %ld minute%s\n", 
+           hours, (hours != 1) ? "s" : "", 
+           minutes, (minutes != 1) ? "s" : "");
+    }
     //defined in extra/package.c
     package_manager();
     closedir(units);
@@ -99,7 +111,7 @@ void systeminfo(void)
         printf(ANSI_COLOR_LIGHT_GREEN "Desktop:\t" ANSI_COLOR_RESET "%s ",de);
         
         if (!strcmp(de,"KDE")) {
-            char path[40],*contents=NULL;
+            char path[40],*contents=NULL    ;
             snprintf(path,sizeof(path),"/home/%s/.config/plasma-welcomerc",pwd->pw_name);
             FILE *deVersion= fopen(path,"r");
             if (deVersion !=NULL) {
@@ -134,18 +146,7 @@ void systeminfo(void)
             printf(ANSI_COLOR_RED "Unsupported\n"ANSI_COLOR_RESET); 
         }
     }
-    /*using the information provided by sysinfo library data structure*/
-    struct sysinfo system_info;
-    if (sysinfo(&system_info) == 0)
-    {
-        long uptime_sec = system_info.uptime; // Uptime in seconds
-        long hours = uptime_sec / 3600; // Extracting hours
-        long minutes = (uptime_sec % 3600) / 60; // Extracting minutes
-        printf(ANSI_COLOR_LIGHT_GREEN "Uptime:\t\t" ANSI_COLOR_RESET "%ld hour%s and %ld minute%s\n", 
-           hours, (hours != 1) ? "s" : "", 
-           minutes, (minutes != 1) ? "s" : "");
-        printf(ANSI_COLOR_LIGHT_GREEN "Memory:\t\t"ANSI_COLOR_RESET "%.1f GB\n",(float) system_info.totalram / 1024.0 / 1024.0 / 1024.0); //change from bytes to GB
-    }
+
     //information about battery get from sysfs
     char capacity[5];
     FILE *fp= fopen("/sys/class/power_supply/BAT0/capacity","r");

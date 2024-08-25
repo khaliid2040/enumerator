@@ -16,14 +16,28 @@ void cpuid() {
         } else{
             // Call CPUID instruction to retrieve information
             __get_cpuid(i, &eax, &ebx, &ecx, &edx);
-            char *feature_names[]= {"fpu","vme","de","pse","tsc","pae","mce","cx8","apic","VMX"};
-            printf(ANSI_COLOR_LIGHT_GREEN "supported features:\t"ANSI_COLOR_RESET);
-            for (int j = 0; j < sizeof(feature_names) / sizeof(feature_names[0]); j++) {
-                if ((edx >> j) & 1 && (j < 32 ? (ecx >> j) & 1 : (ecx >> (j - 32)) & 1)) {
-                    printf("%s ", feature_names[j]);
+            const char *feature_names[] = {
+            "FPU", "VME", "DE", "PSE", "TSC", "PAE", "MCE", "CX8",
+            "APIC", "SEP", "MTRR", "PGE", "MCA", "CMOV", "PAT", "PSE-36",
+            "MMX", "FXSR", "SSE", "SSE2", "SS"};
+            // Check for features in EDX
+            printf(ANSI_COLOR_LIGHT_GREEN "Supported features:\t"ANSI_COLOR_RESET);
+            for (int i = 0; i < 32; i++) {
+                if ((edx >> i) & 1) {
+                    if (i < (sizeof(feature_names) / sizeof(feature_names[0]))) {
+                        printf("%s ", feature_names[i]);
+                    }
                 }
             }
-            // now for hyperthreading and simulatanous threading
+            //array of integers of correspond to simd instruction
+            const int simd[]= {0,19,20};
+            const char *simd_features[  ]= {"SSE3","SSE4.1","SSE4.2"};
+            for (int i=0; i<3; i++) {
+                if (ecx & ( 1 << simd[i])) {
+                    printf("%s  ", simd_features[i]); 
+                }
+            }
+                // now for hyperthreading and simulatanous threading
             if (ecx & (1<<28)) {
                 if (strcmp(vendor,"GenuineIntel")==0) {
                     printf("HT ");
@@ -79,58 +93,65 @@ int cpu_vulnerabilities(void) {
     closedir(path);
 }
 struct freq *frequency(void) {
-    struct freq *frq= malloc(sizeof(struct freq));
-    if (frq==NULL) {
+    struct freq *frq = malloc(sizeof(struct freq));
+    if (frq == NULL) {
         perror("malloc");
         return NULL;
     }
-    DIR *policies= opendir("/sys/devices/system/cpu/cpufreq");
-    int count_entries=0;
-    char path[256],contents[20];
-    struct dirent *entry;
-    while ((entry=readdir(policies)) != NULL) {
-        if (!strcmp(entry->d_name,".") || !strcmp(entry->d_name,"..")) {
-            continue;
-        }
 
-        snprintf(path,sizeof(path),"/sys/devices/system/cpu/cpufreq/%s/scaling_max_freq",entry->d_name);
-        FILE *maxfp= fopen(path,"r");
-        if (maxfp==NULL) {
-            perror("fopen");
-            continue;
-        }
-        if (fgets(contents,sizeof(contents),maxfp) != NULL) {
-            unsigned long max_freq =strtoul(contents,NULL,0);
-            frq->max_freq=max_freq;
+    // Initialize frequency values to some default or invalid value
+    frq->max_freq = 0;
+    frq->min_freq = 0;
+    frq->base_freq = 0;
 
-        }
-        fclose(maxfp);
-        snprintf(path,sizeof(path),"/sys/devices/system/cpu/cpufreq/%s/scaling_min_freq",entry->d_name);
-        FILE *base= fopen(path,"r");
-        if (base==NULL) {
-            perror("fopen");
-            continue;
-        }
-        if (fgets(contents,sizeof(contents),base) !=NULL) {
-            unsigned long min_freq= strtoul(contents,NULL,0);
-            frq->min_freq=min_freq;
-        }
-        fclose(base);
-        snprintf(path,sizeof(path),"/sys/devices/system/cpu/cpufreq/%s/base_frequency",entry->d_name);
-        FILE *minfp= fopen(path,"r");
-        if (minfp==NULL) {
-            perror("fopen");
-            continue;
-        }
-        if (fgets(contents,sizeof(contents),minfp) !=NULL) {
-            unsigned long base_freq= strtoul(contents,NULL,0);
-            frq->base_freq=base_freq;
-        }
-        fclose(minfp);
+    DIR *policies = opendir("/sys/devices/system/cpu/cpufreq");
+    if (policies == NULL) {
+        perror("opendir");
+        free(frq);
+        return NULL;
     }
+
+    char path[256], contents[20];
+    struct dirent *entry;
+
+    while ((entry = readdir(policies)) != NULL) {
+        if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0) {
+            continue;
+        }
+
+        // Process each directory entry (policy)
+        snprintf(path, sizeof(path), "/sys/devices/system/cpu/cpufreq/%s/scaling_max_freq", entry->d_name);
+        FILE *maxfp = fopen(path, "r");
+        if (maxfp != NULL) {
+            if (fgets(contents, sizeof(contents), maxfp) != NULL) {
+                frq->max_freq = strtoul(contents, NULL, 0);
+            }
+            fclose(maxfp);
+        }
+
+        snprintf(path, sizeof(path), "/sys/devices/system/cpu/cpufreq/%s/scaling_min_freq", entry->d_name);
+        FILE *minfp = fopen(path, "r");
+        if (minfp != NULL) {
+            if (fgets(contents, sizeof(contents), minfp) != NULL) {
+                frq->min_freq = strtoul(contents, NULL, 0);
+            }
+            fclose(minfp);
+        }
+
+        snprintf(path, sizeof(path), "/sys/devices/system/cpu/cpufreq/%s/base_frequency", entry->d_name);
+        FILE *basefp = fopen(path, "r");
+        if (basefp != NULL) {
+            if (fgets(contents, sizeof(contents), basefp) != NULL) {
+                frq->base_freq = strtoul(contents, NULL, 0);
+            }
+            fclose(basefp);
+        }
+    }
+
     closedir(policies);
     return frq;
 }
+
 void hwmon() {
     printf("\n");
     struct dirent *entry;
@@ -169,9 +190,9 @@ void hwmon() {
                 float cur_temp;
                 if (fgets(contents,SIZE,tem) != NULL) {
                     if (i==1) {
-                        printf(ANSI_COLOR_LIGHT_GREEN "Package:  " ANSI_COLOR_RESET);
+                        printf(ANSI_COLOR_LIGHT_GREEN "Package:\t\t" ANSI_COLOR_RESET);
                     } else {
-                        printf(ANSI_COLOR_LIGHT_GREEN "Core %d:  " ANSI_COLOR_RESET,i - 2);
+                        printf(ANSI_COLOR_LIGHT_GREEN "Core %d:\t\t\t" ANSI_COLOR_RESET,i - 2);
                     }
                     cur_temp = strtof(contents,NULL) / 1000.0;
                     printf("%.1f °C   ",cur_temp);
@@ -220,10 +241,10 @@ int cpuinfo() {
         perror("malloc");
         return -1;
     }
-    float max= frq->max_freq / 1000000.0;
-    float min = frq->min_freq / 100000.0;
-    float base = frq->base_freq / 1000000.0;
-    printf(ANSI_COLOR_LIGHT_GREEN "Frequency:\t\t"ANSI_COLOR_RESET "max: %.1f GHz  min: %.1f GHz  base: %.1f GHz\n\n", max,min,base);
+    float max= frq->max_freq / 1e6; // 1e6 = 1000000.0
+    float min = frq->min_freq / 1e3; // 1e3= 1000   
+    float base = frq->base_freq / 1e6; // 1e6 = 1000000.0
+    printf(ANSI_COLOR_LIGHT_GREEN "Frequency:\t\t"ANSI_COLOR_RESET "max: %.1f GHz  min: %.1f MHz  base: %.1f GHz\n\n", max,min,base);
     free(frq);
     //temperature
     #ifdef supported    
@@ -241,6 +262,15 @@ int cpuinfo() {
     }
     brand[48] = '\0';
     printf(ANSI_COLOR_LIGHT_GREEN "\nBrand:\t\t\t"ANSI_COLOR_RESET  "%s\n", brand);
+    // cpu family stepping and model
+    __get_cpuid(1, &eax, &ebx, &ecx, &edx);
+    
+    unsigned int family = ((eax >> 8) & 0x0F) + ((eax >> 20) & 0xFF);
+    unsigned int model = ((eax >> 4) & 0x0F) + ((eax >> 12) & 0xF0);
+    unsigned int stepping = eax & 0x0F;
+    printf(ANSI_COLOR_LIGHT_GREEN"Family\t\t\t"ANSI_COLOR_RESET "%u\n",family);
+    printf(ANSI_COLOR_LIGHT_GREEN"Model\t\t\t"ANSI_COLOR_RESET "%u\n",model);
+    printf(ANSI_COLOR_LIGHT_GREEN"Stepping\t\t"ANSI_COLOR_RESET "%u\n",stepping);
     #endif  
     hwmon();
     for (int i=0;i<processors;i++) {
@@ -272,7 +302,7 @@ int cpuinfo() {
             continue;
         }
         fclose(typeN);
-        printf("L%d Cache : \t type: %s\t\t size: %s\n",level,type_cont,size_cont);
+        printf("L%d Cache : \t\t type: %s\t\t\t size: %s\n",level,type_cont,size_cont);
     }
     printf(ANSI_COLOR_YELLOW "Getting cpu vurnuabilities\n" ANSI_COLOR_RESET);
     cpu_vulnerabilities();

@@ -87,7 +87,18 @@ int redhat_pkgmgr() {
     pclose(pkgmgr);
     return counter;
 }
-
+// arch-based distros package manager
+int arch_pkgmgr() {
+    char buffer[64];
+    FILE *pkgmgr= popen("pacman -Qq","r");
+    int count_packages=0;
+    //need handle errors
+    while (fgets(buffer,sizeof(buffer),pkgmgr) != NULL) {
+        count_packages++;
+    }
+    pclose(pkgmgr);
+    return count_packages;
+}
 // Flatpak package manager
 int count_flatpak_packages() {
     char buffer[128];
@@ -128,6 +139,9 @@ void package_manager() {
     #elif REDHAT
     packages = redhat_pkgmgr();
     printf("%d (rpm) %d (flatpak)\n", packages, flatpak);
+    #elif ARCH
+    packages= arch_pkgmgr();
+    printf("%d (pacman) %d (flatpak)\n",packages,flatpak);
     #else
     printf("No supported package manager defined.\n");
     #endif

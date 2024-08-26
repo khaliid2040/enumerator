@@ -7,39 +7,35 @@ RED='\033[0;31m'
 NC='\033[0m'
 
 # Libraries to check
-LIBS=("math" "apparmor" "selinux" "efivar")
+LIBS=("math" "apparmor" "selinux" "efivar" "blkid")
 LIBPCI="pci"
 
-# Check for the standard libraries  
+# Check for the standard libraries
 for LIB in "${LIBS[@]}"; do
-    if ldconfig -p | grep -q "$LIB"; then
-        if [ "$LIB" == "math" ]; then
+    if [ "$LIB" == "math" ]; then
+        if ldconfig -p | grep -q "libm.so"; then
             CFLAGS+=" -DMATH_H"
             LDFLAGS+=" -lm"
             echo -e "checking ${LIB}: ${GREEN}OK${NC}"
-        elif [ "$LIB" == "apparmor" ] && [ -f /usr/include/sys/apparmor.h ]; then
-            CFLAGS+=" -DAPPARMOR_H"
-            LDFLAGS+=" -lapparmor"
-            echo -e "checking ${LIB}: ${GREEN}OK${NC}"
-        elif [ "$LIB" == "selinux" ]; then
-            if [ -f /usr/include/selinux/selinux.h ]; then
-                CFLAGS+=" -DSELINUX_H"
-                LDFLAGS+=" -lselinux"
-                echo -e "checking ${LIB}: ${GREEN}OK${NC}"
-            else
-                echo -e "checking ${LIB}: ${RED}NO (header not found)${NC}"
-            fi
-        elif [ "$LIB" == "efivar" ]; then
-            if [ -f /usr/include/efivar/efivar.h ]; then
-                CFLAGS+=" -DLIBEFI"
-                LDFLAGS+=" -lefivar"
-                echo -e "checking ${LIB}: ${GREEN}OK${NC}"
-            else
-                echo -e "checking ${LIB}: ${RED}NO (header not found)${NC}"
-            fi
         else
             echo -e "checking ${LIB}: ${RED}NO${NC}"
         fi
+    elif [ "$LIB" == "apparmor" ] && [ -f /usr/include/sys/apparmor.h ]; then
+        CFLAGS+=" -DAPPARMOR_H"
+        LDFLAGS+=" -lapparmor"
+        echo -e "checking ${LIB}: ${GREEN}OK${NC}"
+    elif [ "$LIB" == "selinux" ] && [ -f /usr/include/selinux/selinux.h ]; then
+        CFLAGS+=" -DSELINUX_H"
+        LDFLAGS+=" -lselinux"
+        echo -e "checking ${LIB}: ${GREEN}OK${NC}"
+    elif [ "$LIB" == "efivar" ] && [ -f /usr/include/efivar/efivar.h ]; then
+        CFLAGS+=" -DLIBEFI"
+        LDFLAGS+=" -lefivar"
+        echo -e "checking ${LIB}: ${GREEN}OK${NC}"
+    elif [ "$LIB" == "blkid" ] && [ -f /usr/include/blkid/blkid.h ]; then
+        CFLAGS+=" -DBLKID"
+        LDFLAGS+=" -lblkid"
+        echo -e "checking ${LIB}: ${GREEN}OK${NC}"
     else
         echo -e "checking ${LIB}: ${RED}NO${NC}"
     fi
@@ -48,7 +44,7 @@ done
 libpci_path() {
     local path="$1"
     # Check for libpci independently
-    if ldconfig -p | grep -q "$LIBPCI" && [ -d "${path}/pci" ]; then
+    if [ -d "${path}/pci" ]; then
         CFLAGS+=" -DLIBPCI"
         LDFLAGS+=" -lpci"
         echo -e "checking libpci: ${GREEN}OK${NC}"
@@ -77,10 +73,12 @@ elif [ -f /usr/bin/emerge ]; then
 else
     echo -e "${RED}Distribution unsupported${NC}"
 fi
-# flatpak
+
+# Check for Flatpak
 if [ -f /usr/bin/flatpak ]; then
     CFLAGS+=" -DFLATPAK"
-    fi
+fi
+
 # Write results to config.mk
 echo "CFLAGS = ${CFLAGS}" > config.mk
 echo "LDFLAGS = ${LDFLAGS}" >> config.mk

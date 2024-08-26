@@ -96,6 +96,20 @@ void systeminfo(void)
            hours, (hours != 1) ? "s" : "", 
            minutes, (minutes != 1) ? "s" : "");
     }
+    //now for load average 
+    printf(ANSI_COLOR_LIGHT_GREEN "Load:\t\t"ANSI_COLOR_RESET);     
+    char loadbuf[48];
+    float ldavg1,ldavg5,ldavg15; 
+    FILE *load = fopen("/proc/loadavg","r");
+    if (load == NULL) {
+        perror("failed to open /proc/loadavg");
+    } else {
+        if (fgets(loadbuf,sizeof(loadbuf),load) != NULL) {
+            sscanf(loadbuf,"%f%f%f",&ldavg1,&ldavg5,&ldavg15);
+        }
+        fclose(load);
+    }
+    printf("%.2f %.2f %.2f\n",ldavg1,ldavg5,ldavg15);
     //defined in extra/package.c
     package_manager();
     closedir(units);
@@ -298,16 +312,16 @@ int main(int argc, char *argv[])
         printf(ANSI_COLOR_YELLOW "Getting basic information...\n" ANSI_COLOR_RESET);
         system_enum();
         cpuinfo();
+        printf(ANSI_COLOR_YELLOW "Getting memory information\n" ANSI_COLOR_RESET);
+        memory_info();
+        printf(ANSI_COLOR_YELLOW "\nGetting disk layout...\n" ANSI_COLOR_RESET);
+        storage();
         #ifdef LIBPCI
         printf(ANSI_COLOR_YELLOW "Getting PCI information..\n" ANSI_COLOR_RESET);
         get_pci_info();
         #endif
         printf(ANSI_COLOR_YELLOW "Getting sensor information..\n"ANSI_COLOR_RESET);
         acpi_info();
-        printf(ANSI_COLOR_YELLOW "\nGetting disk layout...\n" ANSI_COLOR_RESET);
-        storage();
-        printf(ANSI_COLOR_YELLOW "Getting memory information\n" ANSI_COLOR_RESET);
-        memory_info();
         } else if(N_flag) {
             printf(ANSI_COLOR_YELLOW "Getting network information\n" ANSI_COLOR_RESET);
             network();

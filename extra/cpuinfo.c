@@ -302,7 +302,7 @@ int cpuinfo() {
             continue;
         }
         fclose(typeN);
-        printf("L%d Cache : \t\t type: %s\t\t\t size: %s\n",level,type_cont,size_cont);
+        printf(ANSI_COLOR_LIGHT_GREEN "L%d Cache :"ANSI_COLOR_RESET "\t\t type: %s\t\t\t size: %s\n",level,type_cont,size_cont);
     }
     printf(ANSI_COLOR_YELLOW "Getting cpu vurnuabilities\n" ANSI_COLOR_RESET);
     cpu_vulnerabilities();

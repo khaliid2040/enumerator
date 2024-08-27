@@ -4,67 +4,75 @@
 #include <ctype.h>
 #include <grp.h>    
 #include "main.h"
-/*system information function*/
-void systeminfo(void)
-{
-    //now getting the hostname and kernel information from using utsname same as kernel retrival method
+/*system information functions*/
+void print_hostname_and_kernel() {
     struct utsname kernel;
     char hostname[256];
     if (gethostname(hostname, sizeof(hostname)) == 0) {
-        printf(ANSI_COLOR_LIGHT_GREEN "Hostname: \t"ANSI_COLOR_RESET   "%s\n",hostname); 
-    }       
+        printf(ANSI_COLOR_LIGHT_GREEN "Hostname: \t" ANSI_COLOR_RESET "%s\n", hostname);
+    }
     if (uname(&kernel) != -1) {
-            printf(ANSI_COLOR_LIGHT_GREEN "Kernel: \t"ANSI_COLOR_RESET "%s %s %s\n",kernel.sysname, kernel.release,kernel.machine);
+        printf(ANSI_COLOR_LIGHT_GREEN "Kernel: \t" ANSI_COLOR_RESET "%s %s %s\n", kernel.sysname, kernel.release, kernel.machine);
     }
-    //now checking for loaded modules
-    char *line=NULL;
-    size_t len= 0;
-    FILE *modules= fopen("/proc/modules","r");
-    unsigned int count=0;
-    while (getline(&line,&len,modules) != -1) {
-        count++;
+}
+
+void print_loaded_modules() {
+    char *line = NULL;
+    size_t len = 0;
+    FILE *modules = fopen("/proc/modules", "r");
+    unsigned int count = 0;
+    if (modules) {
+        while (getline(&line, &len, modules) != -1) {
+            count++;
+        }
+        fclose(modules);
+        printf(ANSI_COLOR_LIGHT_GREEN "Loaded modules:\t" ANSI_COLOR_RESET "%u\n", count);
+        free(line);
+    } else {
+        perror("Failed to open /proc/modules");
     }
-    printf(ANSI_COLOR_LIGHT_GREEN "Loaded modules:\t" ANSI_COLOR_RESET "%u\n",count);
-    fclose(modules);
-    free(line); 
-    //checking whether the firmware is UEFI or BIOS
+}
+
+void print_firmware_info() {
     printf(ANSI_COLOR_LIGHT_GREEN "Firmware:\t" ANSI_COLOR_RESET);
-    if (access("/sys/firmware/efi",F_OK) != -1) {
-        printf("UEFI:\t");
+    if (access("/sys/firmware/efi", F_OK) != -1) {
+        printf("UEFI\t");
         #ifdef LIBEFI
         GetSecureBootStatus();
         #endif
-        
     } else {
         printf("BIOS\n");
     }
-    //systemd interact
-    //we only need the information if command succeed otherwise on failure like if used other init systems just pass without
-    //user notice
+}
+
+void print_systemd_info() {
     char output[20];
-    FILE *init= popen("systemctl --version","r");
-    if (init != NULL) {
-        if (fgets(output,12,init) != NULL) {
-            printf(ANSI_COLOR_LIGHT_GREEN "\nInit: \t\t"ANSI_COLOR_RESET "%s",output);
+    FILE *init = popen("systemctl --version", "r");
+    if (init) {
+        if (fgets(output, sizeof(output)-1, init) != NULL) {
+            printf(ANSI_COLOR_LIGHT_GREEN "\nInit: \t\t" ANSI_COLOR_RESET "%s", output);
         }
         pclose(init);
     }
-    //check units
-    int count_units=0;
-    DIR *units= opendir("/usr/lib/systemd/system");
+
+    int count_units = 0;
+    DIR *units = opendir("/usr/lib/systemd/system");
     struct dirent *unit_entry;
-    while ((unit_entry=readdir(units)) != NULL) {
-        if (!strcmp(unit_entry->d_name,".") || !strcmp(unit_entry->d_name,"..")) {
-            continue;
+    if (units) {
+        while ((unit_entry = readdir(units)) != NULL) {
+            if (strcmp(unit_entry->d_name, ".") != 0 && strcmp(unit_entry->d_name, "..") != 0) {
+                count_units++;
+            }
         }
-    
-        count_units++;
-              
+        closedir(units);
     }
-    printf(" %d units installed\n",count_units);
-    #ifdef supported // if the architecture is x86 both 32 bit and 64
-    unsigned int eax,ebx,ecx,edx;
-    char brand[50];
+    printf(" %d units installed\n", count_units);
+}
+
+void print_cpu_info() {
+    #ifdef supported
+    unsigned int eax, ebx, ecx, edx;
+    char brand[50] = {0};
     for (int i = 0; i < 3; ++i) {
         __get_cpuid(0x80000002 + i, &eax, &ebx, &ecx, &edx);
         memcpy(brand + i * 16, &eax, 4);
@@ -72,48 +80,53 @@ void systeminfo(void)
         memcpy(brand + i * 16 + 8, &ecx, 4);
         memcpy(brand + i * 16 + 12, &edx, 4);
     }
-    brand[48] = '\0';
-    printf(ANSI_COLOR_LIGHT_GREEN "CPU: \t\t"ANSI_COLOR_RESET "%s",brand);
-    int cores=0,processors=0;
-    if (count_processor(&cores,&processors)) {
-        printf(" cores: %d threads: %d\n",cores / 2,processors);
+    printf(ANSI_COLOR_LIGHT_GREEN "CPU: \t\t" ANSI_COLOR_RESET "%s", brand);
+    int cores = 0, processors = 0;
+    if (count_processor(&cores, &processors)) {
+        printf(" cores: %d threads: %d\n", cores / 2, processors);
     }
     #endif
+}
+
+void print_gpu_info() {
     #ifdef LIBPCI
-    char model[32],vendor[10];
-    gpu_info(model,vendor);
-    printf(ANSI_COLOR_LIGHT_GREEN "GPU:\t\t"ANSI_COLOR_RESET "%s %s\n",vendor,model);
+    char model[32], vendor[10];
+    gpu_info(model, vendor);
+    printf(ANSI_COLOR_LIGHT_GREEN "GPU:\t\t" ANSI_COLOR_RESET "%s %s\n", vendor, model);
     #endif
-    /*using the information provided by sysinfo library data structure*/
+}
+
+void print_memory_and_uptime() {
     struct sysinfo system_info;
-    if (sysinfo(&system_info) == 0)
-    {
-        printf(ANSI_COLOR_LIGHT_GREEN "Memory:\t\t"ANSI_COLOR_RESET "%.1f GB\n",(float) system_info.totalram / 1024.0 / 1024.0 / 1024.0); //change from bytes to GB 
-        long uptime_sec = system_info.uptime; // Uptime in seconds
-        long hours = uptime_sec / 3600; // Extracting hours
-        long minutes = (uptime_sec % 3600) / 60; // Extracting minutes
-        printf(ANSI_COLOR_LIGHT_GREEN "Uptime:\t\t" ANSI_COLOR_RESET "%ld hour%s and %ld minute%s\n", 
-           hours, (hours != 1) ? "s" : "", 
-           minutes, (minutes != 1) ? "s" : "");
+    if (sysinfo(&system_info) == 0) {
+        printf(ANSI_COLOR_LIGHT_GREEN "Memory:\t\t" ANSI_COLOR_RESET "%.1f GB\n", (float)system_info.totalram / 1024.0 / 1024.0 / 1024.0);
+        long uptime_sec = system_info.uptime;
+        long hours = uptime_sec / 3600;
+        long minutes = (uptime_sec % 3600) / 60;
+        printf(ANSI_COLOR_LIGHT_GREEN "Uptime:\t\t" ANSI_COLOR_RESET "%ld hour%s and %ld minute%s\n",
+               hours, (hours != 1) ? "s" : "",
+               minutes, (minutes != 1) ? "s" : "");
     }
-    //now for load average 
-    printf(ANSI_COLOR_LIGHT_GREEN "Load:\t\t"ANSI_COLOR_RESET);     
+}
+
+void print_load_average() {
+    printf(ANSI_COLOR_LIGHT_GREEN "Load:\t\t" ANSI_COLOR_RESET);
     char loadbuf[48];
-    float ldavg1,ldavg5,ldavg15; 
-    FILE *load = fopen("/proc/loadavg","r");
-    if (load == NULL) {
-        perror("failed to open /proc/loadavg");
-    } else {
-        if (fgets(loadbuf,sizeof(loadbuf),load) != NULL) {
-            sscanf(loadbuf,"%f%f%f",&ldavg1,&ldavg5,&ldavg15);
+    float ldavg1, ldavg5, ldavg15;
+    FILE *load = fopen("/proc/loadavg", "r");
+    if (load) {
+        if (fgets(loadbuf, sizeof(loadbuf), load) != NULL) {
+            sscanf(loadbuf, "%f %f %f", &ldavg1, &ldavg5, &ldavg15);
+            printf("%.2f %.2f %.2f\n", ldavg1, ldavg5, ldavg15);
         }
         fclose(load);
+    } else {
+        perror("failed to open /proc/loadavg");
     }
-    printf("%.2f %.2f %.2f\n",ldavg1,ldavg5,ldavg15);
-    //defined in extra/package.c
-    package_manager();
-    closedir(units);
-    char *env, *de;
+}
+
+void print_desktop_environment() {
+        char *env, *de;
     if (env = getenv("XDG_SESSION_TYPE")) {
         printf(ANSI_COLOR_LIGHT_GREEN "Session Type:\t" ANSI_COLOR_RESET "%s\n",env);
     }   
@@ -160,112 +173,118 @@ void systeminfo(void)
             printf(ANSI_COLOR_RED "Unsupported\n"ANSI_COLOR_RESET); 
         }
     }
+}
 
-    //information about battery get from sysfs
+void print_battery_info() {
     char capacity[5];
-    FILE *fp= fopen("/sys/class/power_supply/BAT0/capacity","r");
-    if (fp !=NULL) {
-        if (fgets(capacity,sizeof(capacity),fp) != NULL) {
-            size_t len= strlen(capacity);
+    FILE *fp = fopen("/sys/class/power_supply/BAT0/capacity", "r");
+    if (fp) {
+        if (fgets(capacity, sizeof(capacity), fp) != NULL) {
             char status[20];
-            capacity[len -1]= '\0';
-            FILE *state= fopen("/sys/class/power_supply/BAT0/status","r");
-            if (state !=NULL) {
-                if (fgets(status,sizeof(status),state) != NULL) {
-                    len=strlen(status);
-                    status[len - 1]='\0';
+            size_t len = strlen(capacity);
+            capacity[len - 1] = '\0';
+            FILE *state = fopen("/sys/class/power_supply/BAT0/status", "r");
+            if (state) {
+                if (fgets(status, sizeof(status), state) != NULL) {
+                    len = strlen(status);
+                    status[len - 1] = '\0';
                 }
-                printf(ANSI_COLOR_LIGHT_GREEN "Battery:\t"ANSI_COLOR_RESET "%s%%",capacity);
-                if (!strcmp(status,"Discharging")) {
-
-                    printf(ANSI_COLOR_YELLOW " %s"ANSI_COLOR_RESET,status);
-                } else if(!strcmp(status,"Charging")) {
-                    printf(ANSI_COLOR_GREEN " %s"ANSI_COLOR_RESET,status);
+                printf(ANSI_COLOR_LIGHT_GREEN "Battery:\t" ANSI_COLOR_RESET "%s%%", capacity);
+                if (strcmp(status, "Discharging") == 0) {
+                    printf(ANSI_COLOR_YELLOW " %s" ANSI_COLOR_RESET, status);
+                } else if (strcmp(status, "Charging") == 0) {
+                    printf(ANSI_COLOR_GREEN " %s" ANSI_COLOR_RESET, status);
                 } else {
-                    printf(" %s\n",status);
+                    printf(" %s\n", status);
                 }
                 fclose(state);
             }
         }
         fclose(fp);
     }
-    struct dirent *entry;
+}
+
+void print_process_and_thread_count() {
     DIR *proc_dir = opendir("/proc");
     int num_processes = 0;
     int num_threads = 0;
-
-    if (proc_dir == NULL) {
-        perror("opendir");
-        return;
-    }
-
-    // First pass: Count the number of processes
-    while ((entry = readdir(proc_dir)) != NULL) {
-        if (is_pid_directory(entry->d_name)) {
-            num_processes++;
-        }
-    }
-
-    // Reset directory stream to count threads
-    rewinddir(proc_dir);
-    struct dirent *task_entry;
-    // Second pass: Count the number of threads
-    while ((entry = readdir(proc_dir)) != NULL) {
-        if (is_pid_directory(entry->d_name)) {
-            char task_path[256];
-            snprintf(task_path, sizeof(task_path), "/proc/%s/task", entry->d_name);
-            DIR *task_dir = opendir(task_path);
-            if (task_dir != NULL) {
-                while ((task_entry = readdir(task_dir)) != NULL) {
-                    if (is_pid_directory(task_entry->d_name)) {
-                        num_threads++;
-                    }
-                }
-                closedir(task_dir);
+    if (proc_dir) {
+        struct dirent *entry;
+        while ((entry = readdir(proc_dir)) != NULL) {
+            if (is_pid_directory(entry->d_name)) {
+                num_processes++;
             }
         }
+        rewinddir(proc_dir);
+        struct dirent *task_entry;
+        while ((entry = readdir(proc_dir)) != NULL) {
+            if (is_pid_directory(entry->d_name)) {
+                char task_path[256];
+                snprintf(task_path, sizeof(task_path), "/proc/%s/task", entry->d_name);
+                DIR *task_dir = opendir(task_path);
+                if (task_dir) {
+                    while ((task_entry = readdir(task_dir)) != NULL) {
+                        if (is_pid_directory(task_entry->d_name)) {
+                            num_threads++;
+                        }
+                    }
+                    closedir(task_dir);
+                }
+            }
+        }
+        closedir(proc_dir);
+        printf(ANSI_COLOR_LIGHT_GREEN "\nprocesses: " ANSI_COLOR_RESET "%d\t" ANSI_COLOR_LIGHT_GREEN "threads: " ANSI_COLOR_RESET "%d\n", num_processes, num_threads);
+    } else {
+        perror("opendir");
     }
+}
 
-    closedir(proc_dir);
-
-    printf(ANSI_COLOR_LIGHT_GREEN "\nprocesses: " ANSI_COLOR_RESET "%d\t" ANSI_COLOR_LIGHT_GREEN "threads: " ANSI_COLOR_RESET "%d\n", num_processes,num_threads);
-    /* since the program is doing system related things for security reasons it must not be run as root
-    if next time needed we will remove this code but now it must be their for security reasons */
-    uid= getuid();
-    __gid_t gid= getgid();
-    pwd;
+void print_user_and_group_info() {
+    __uid_t uid = getuid();
+    __gid_t gid = getgid();
+    struct passwd *pwd;
     printf(ANSI_COLOR_YELLOW "Getting users...\n" ANSI_COLOR_RESET);
     printf("User\tUID\tGID\tShell\n");
-    while ((pwd= getpwent()) != NULL) {
-        if (pwd->pw_uid==0 || pwd->pw_uid >=1000) {   //also we need to print root user if it exists because it                                      // it is a normal user which can be used after
-            if (strcmp(pwd->pw_name,"nobody")) {  //we don't want nobody user because it is not a normal user 
-                printf("%s\t%d\t%d\t%s\n",pwd->pw_name,pwd->pw_uid,pwd->pw_gid,pwd->pw_shell);
+    while ((pwd = getpwent()) != NULL) {
+        if (pwd->pw_uid == 0 || pwd->pw_uid >= 1000) {
+            if (strcmp(pwd->pw_name, "nobody") != 0) {
+                printf("%s\t%d\t%d\t%s\n", pwd->pw_name, pwd->pw_uid, pwd->pw_gid, pwd->pw_shell);
             }
         }
     }
     endpwent();
+
     struct group *grp;
-    //now for groups
     printf(ANSI_COLOR_YELLOW "retrieving groups...\n" ANSI_COLOR_RESET);
     printf("Group\tGID\tMembers\n");
-    while ((grp=getgrent()) != NULL) {
-        //same as users before we need to retrieve every group except system groups 
-        //also we may need wheel and sudo groups    
-        if (grp->gr_gid==0 || grp->gr_gid > 1000 || strcmp(grp->gr_name,"wheel") == 0|| strcmp(grp->gr_name,"sudo")==0  ) {
-            printf("%s\t%d\t",grp->gr_name,grp->gr_gid);
-            for (int i=0; grp->gr_mem[i] != NULL;i++) {
-                printf("%s\t",grp->gr_mem[i]);
+    while ((grp = getgrent()) != NULL) {
+        if (grp->gr_gid == 0 || grp->gr_gid > 1000 || strcmp(grp->gr_name, "wheel") == 0 || strcmp(grp->gr_name, "sudo") == 0) {
+            printf("%s\t%d\t", grp->gr_name, grp->gr_gid);
+            for (int i = 0; grp->gr_mem[i] != NULL; i++) {
+                printf("%s\t", grp->gr_mem[i]);
             }
             printf("\n");
         }
     }
     endgrent();
-    
-    //checking for Linux Security Modules
-    // the function is implemented in extra_func.c
-    printf(ANSI_COLOR_YELLOW "Getting security modules...\n"    ANSI_COLOR_RESET);
+}
+
+void systeminfo() {
+    print_hostname_and_kernel();
+    print_loaded_modules();
+    print_firmware_info();
+    print_systemd_info();
+    print_cpu_info();
+    print_gpu_info();
+    print_memory_and_uptime();
+    print_load_average();
+    print_desktop_environment();
+    print_battery_info();
+    print_process_and_thread_count();
+    print_user_and_group_info();
+    // LinuxSecurityModule() should be called here if defined elsewhere
+    printf(ANSI_COLOR_YELLOW "Getting security modules...\n" ANSI_COLOR_RESET);
     LinuxSecurityModule();
-    
 }
 int main(int argc, char *argv[])
 {

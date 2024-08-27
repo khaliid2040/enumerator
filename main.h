@@ -50,7 +50,28 @@ int GetSecureBootStatus(void);
 void gpu_info();
 int process_file(char *path,char *filename);
 void getProcessInfo(pid_t pid);
-
+//structure filled with data specific to process id
+// Function to get and print process info
+typedef struct {
+    unsigned long utime;
+    unsigned long stime;
+    unsigned long cutime;
+    unsigned long cstime;
+    int voluntary_ctxt_switches;
+    int nonvoluntary_ctxt_switches;  
+    char comm[256];
+    char state;
+    unsigned long total_mem;
+    unsigned long resident_mem;
+    unsigned long shared_mem;
+    unsigned long dirty_mem;
+    int thread_count;
+    char cgroup[64];
+    double total_cpu_time;
+    double cpu_time_percent;
+    double user_mode_percent;
+    double system_mode_percent;
+} ProcessInfo;
 int is_pid_directory(const char *name);
 void LinuxSecurityModule(void);
 //total cpu time
@@ -77,7 +98,7 @@ void route(void);
 //parsing and resding arp
 void arp(void);
 //used by extra/syste.c
-typedef struct System {
+typedef struct {
     char bios_vendor[SIZE];
     char release[9];
     char date[15];

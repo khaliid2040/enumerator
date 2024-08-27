@@ -88,18 +88,18 @@ void interface(const char *intface) {
 					char ipv4_addr[ADDR_SIZE];
 					struct sockaddr_in *sock= (struct sockaddr_in *) ifa->ifa_addr;
 					inet_ntop(AF_INET,&	sock->sin_addr,ipv4_addr,ADDR_SIZE);
-					printf("IPv4 %s\n",ipv4_addr);
+					printf(ANSI_COLOR_LIGHT_GREEN"IPv4:\t\t"ANSI_COLOR_RESET "%s\n",ipv4_addr);
 					if (ifa->ifa_netmask != NULL) {
 						struct sockaddr_in *subnet= (struct sockaddr_in *) ifa->ifa_netmask;
 						inet_ntop(AF_INET,&(subnet->sin_addr),subnetmask,sizeof(subnetmask));
-						printf("Subnet 	%s\n",subnetmask);
+						printf(ANSI_COLOR_LIGHT_GREEN "Subnet:\t\t"ANSI_COLOR_RESET "%s\n",subnetmask);
 					}
 							
 				} else if (family== AF_INET6) {
 					char ipv6_addr[ADDR_SIZE];
 					struct sockaddr_in6 *sock6= (struct sockaddr_in6 *) ifa->ifa_addr;
 					inet_ntop(AF_INET6,&sock6->sin6_addr,ipv6_addr,ADDR_SIZE);	
-					printf("IPv6 %s\n",ipv6_addr);
+					printf(ANSI_COLOR_LIGHT_GREEN "IPv6:\t\t	"ANSI_COLOR_RESET "%s\n",ipv6_addr);
 				}
 			}
 				
@@ -131,7 +131,7 @@ void network(void) {
 		FILE *address= fopen(path,"r");
 		if (address != NULL) {
 			while(fgets(buffer,SIZE,address) != NULL) {
-				printf("MAC %s",buffer);
+				printf(ANSI_COLOR_LIGHT_GREEN "MAC:\t\t"ANSI_COLOR_RESET "%s",buffer);
 			}
 		}
 		//memset(buffer,0,sizeof(buffer));
@@ -141,7 +141,7 @@ void network(void) {
 			perror("fopen");
 			continue;
 		}
-		printf("State: ");
+		printf(ANSI_COLOR_LIGHT_GREEN"State:\t\t"ANSI_COLOR_RESET);
 		if  (fgets(buffer,sizeof(buffer),state) != NULL) {
 			//trim new line character
 			int len= strlen(buffer);

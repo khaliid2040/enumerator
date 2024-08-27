@@ -62,127 +62,175 @@ void process_cpu_time(void) {
            "%user", "%nice", "%system", "%iowait", "%steal", "%idle", "%irq", "%softirq" ANSI_COLOR_RESET);
     Total_cpu_time();
 }
-
-// Function to get and print process info
-void getProcessInfo(int pid) {
-    // Read uptime from /proc/uptime
-    printf(ANSI_COLOR_YELLOW "Getting process info...\n" ANSI_COLOR_RESET);
-    double uptime, idletime;
-    FILE *uptimeFile = fopen("/proc/uptime", "r");
-    if (uptimeFile == NULL) {
-        perror("Error opening /proc/uptime");       
-        return;
+/*
+    The below functions are specific to process with process id
+*/
+int readUptime(double *uptime, double *idletime) {
+    FILE *file = fopen("/proc/uptime", "r");
+    if (!file) return -1;
+    if (fscanf(file, "%lf %lf", uptime, idletime) != 2) {
+        fclose(file);
+        return -1;
     }
-    fscanf(uptimeFile, "%lf %lf", &uptime, &idletime);
-    fclose(uptimeFile);
+    fclose(file);
+    return 0;
+}
+int readProcessStats(int pid, ProcessInfo *info) {
+    char path[256];
+    snprintf(path, sizeof(path), "/proc/%d/stat", pid);
 
-    // Read /proc/<pid>/stat
-    char statPath[256];
-    snprintf(statPath, sizeof(statPath), "/proc/%d/stat", pid);
-    FILE *statFile = fopen(statPath, "r");
-    if (statFile == NULL) {
-        printf(ANSI_COLOR_RED "Process %d not found\n" ANSI_COLOR_RESET, pid);
-        return;
+    FILE *file = fopen(path, "r");          
+    if (!file) return -1;  // File could not be opened
+
+    // Read the process stats. Make sure the format matches the actual format of /proc/[pid]/stat.
+    int fields_read = fscanf(file, "%*d (%[^)]) %c %*d %*d %*d %*d %*d %*u %*u %*u %*u %lu %lu %lu %lu",
+                             info->comm, &info->state, &info->utime, &info->stime, 
+                             &info->cutime, &info->cstime);
+
+    fclose(file);
+    // Check if all expected fields were successfully read.
+    return (fields_read == 6) ? 0 : -1;
+}  
+int readMemoryInfo(int pid, ProcessInfo *info) {
+    char path[256];
+    snprintf(path, sizeof(path), "/proc/%d/statm", pid);
+    FILE *file = fopen(path, "r");
+    if (!file) return -1;
+    if (fscanf(file, "%lu %lu %lu %*lu %*lu %*lu %lu", &info->total_mem, 
+               &info->resident_mem, &info->shared_mem, &info->dirty_mem) < 4) {
+        fclose(file);
+        return -1;
     }
-
-    // Variables to store stat values
-    unsigned long utime, stime, cutime, cstime;
-    char comm[256], state;
-    
-    // Read and parse the stat file to extract process state
-    int fields_read = fscanf(statFile, "%*d (%[^)])  %c %*d %*d %*d %*d %*d %*u %*u %*u %*u %lu %lu %lu %lu",
-                             comm, &state, &utime, &stime, &cutime, &cstime);
-
-    fclose(statFile);
-
-    if (fields_read != 6) {
-        perror("Error reading /proc/<pid>/stat");
-        return;
-    }
-
-    // Calculate total CPU time in seconds
-    long hertz = sysconf(_SC_CLK_TCK);
-    double total_cpu_time = (utime + stime) / (double) hertz;
-
-    // Calculate CPU time percentage compared to uptime
-    double cpu_time_percent = (total_cpu_time / uptime) * 100;
-
-    // Breakdown percentages
-    double user_mode_percent = (utime / (double) hertz) / total_cpu_time * 100;
-    double system_mode_percent = (stime / (double) hertz) / total_cpu_time * 100;
-
-    // Process state description
-    const char *state_string;
-    switch (state) {
-        case 'S':
-            state_string = "sleeping";
-            break;
-        case 'R':
-            state_string = "running";
-            break;
-        case 'Z':
-            state_string = "zombie";
-            break;
-        case 'T':
-            state_string = "stopped";
-            break;
-        case 'D':
-            state_string = "disk sleep";
-            break;
-        default:
-            state_string = "unknown";
-            break;
-    }
-
-    // Get memory information from /proc/<pid>/statm
-    char memPath[256];
-    snprintf(memPath, sizeof(memPath), "/proc/%d/statm", pid);
-    FILE *memFile = fopen(memPath, "r");
-    if (memFile == NULL) {
-        perror("Error opening /proc/<pid>/statm");
-        return;
-    }
-
-    unsigned long total, resident, shared, dirty;
-    if (fscanf(memFile, "%lu %lu %lu %*lu %*lu %*lu %lu", &total, &resident, &shared, &dirty) < 4) {
-        perror("Error reading /proc/<pid>/statm");
-        fclose(memFile);
-        return;
-    }
-    fclose(memFile);
-    //get number of threads 
-    char thPath[256];
+    fclose(file);
+    return 0;
+}
+int countThreads(int pid) {
+    char path[256];
+    snprintf(path, sizeof(path), "/proc/%d/task", pid);
+    DIR *dir = opendir(path);
+    if (!dir) return -1;
+    int count = 0;
     struct dirent *entry;
-    unsigned int count_threads=0;
-    snprintf(thPath,sizeof(thPath),"/proc/%d/task",pid);
-    DIR *tasks= opendir(thPath);
-    if (thPath==NULL) {
-        perror("Error");
-        return;
-    }
-    while ((entry= readdir(tasks)) != NULL) {
-        if (!strcmp(entry->d_name,".") || !strcmp(entry->d_name,"..")) {
-            continue;
+    while ((entry = readdir(dir)) != NULL) {
+        if (strcmp(entry->d_name, ".") && strcmp(entry->d_name, "..")) {
+            count++;
         }
-        count_threads++;
     }
-    closedir(tasks);
-    // Convert pages to KiB
-    long page_size = sysconf(_SC_PAGE_SIZE) / 1024; // Page size in KiB
-    total *= page_size;
-    shared *= page_size;
-    resident *= page_size;
-    dirty *= page_size;
+    closedir(dir);
+    return count;
+}
+int readCgroup(int pid, char *cgroup) {
+    char path[256];
+    snprintf(path, sizeof(path), "/proc/%d/cgroup", pid);
+    FILE *file = fopen(path, "r");
+    if (!file) return -1;
+    if (fgets(cgroup, 64, file) == NULL) {
+        fclose(file);
+        return -1;
+    }
+    fclose(file);
+    return 0;
+}
+int get_ctxt_switches(ProcessInfo *info,int pid) {
+    char path[64],lines[64];
+    snprintf(path,sizeof(path),"/proc/%d/status",pid);
+    FILE *fp= fopen(path,"r");
+    if (fp==NULL) {
+        return 1;
+    }
+    while (fgets(lines,sizeof(lines),fp) != NULL) {
+        if (strncmp(lines, "voluntary_ctxt_switches:", 24) == 0) {
+            if (sscanf(lines, "voluntary_ctxt_switches: %d", &info->voluntary_ctxt_switches) != 1) {
+                fprintf(stderr, "Error parsing voluntary context switches\n");
+                fclose(fp);
+                return EXIT_FAILURE;
+            }
+        }
+        if (strncmp(lines, "nonvoluntary_ctxt_switches:", 27) == 0) {
+            if (sscanf(lines, "nonvoluntary_ctxt_switches: %d", &info->nonvoluntary_ctxt_switches) != 1) {
+                fprintf(stderr, "Error parsing nonvoluntary context switches\n");
+                fclose(fp);
+                return EXIT_FAILURE;
+            }
+        }
+    }   
+    fclose(fp);
+    return 0;
+}
+void calculateCPUInfo(ProcessInfo *info, double uptime) {
+    long hertz = sysconf(_SC_CLK_TCK);
+    info->total_cpu_time = (info->utime + info->stime) / (double) hertz;
+    info->cpu_time_percent = (info->total_cpu_time / uptime) * 100;
+    info->user_mode_percent = (info->utime / (double) hertz) / info->total_cpu_time * 100;
+    info->system_mode_percent = (info->stime / (double) hertz) / info->total_cpu_time * 100;
+}
 
-    printf(ANSI_COLOR_LIGHT_GREEN "Process ID:\t\t\t\t"ANSI_COLOR_RESET "%d\n", pid);
-    printf(ANSI_COLOR_LIGHT_GREEN "Process Name:\t\t\t\t"ANSI_COLOR_RESET "%s\n", comm);
-    printf(ANSI_COLOR_LIGHT_GREEN "Process State:\t\t\t\t"ANSI_COLOR_RESET "%s\n", state_string);
-    printf(ANSI_COLOR_LIGHT_GREEN "Process Threads:\t\t\t" ANSI_COLOR_RESET "%u\n",count_threads);
-    printf(ANSI_COLOR_LIGHT_GREEN "Total CPU Time:\t\t\t\t"ANSI_COLOR_RESET "%.2f seconds\n", total_cpu_time);
-    printf(ANSI_COLOR_LIGHT_GREEN "CPU Time Percentage:\t\t\t"ANSI_COLOR_RESET "%.2f %%\n", cpu_time_percent);
-    printf(ANSI_COLOR_LIGHT_GREEN "User Mode CPU Time Percentage:\t\t"ANSI_COLOR_RESET "%.2f %%\n", user_mode_percent);
-    printf(ANSI_COLOR_LIGHT_GREEN "System Mode CPU Time Percentage:\t"ANSI_COLOR_RESET "%.2f %%\n", system_mode_percent);
+void printProcessInfo(const ProcessInfo *info,int pid) {
+    long page_size = sysconf(_SC_PAGE_SIZE) / 1024; // Page size in KiB
+    unsigned long total = info->total_mem * page_size;
+    unsigned long shared = info->shared_mem * page_size;
+    unsigned long resident = info->resident_mem * page_size;
+    unsigned long dirty = info->dirty_mem * page_size;
+
+    const char *state_string;
+    switch (info->state) {
+        case 'S': state_string = "sleeping"; break;
+        case 'R': state_string = "running"; break;
+        case 'Z': state_string = "zombie"; break;
+        case 'T': state_string = "stopped"; break;
+        case 'D': state_string = "disk sleep"; break;
+        default: state_string = "unknown"; break;
+    }
+
+    printf(ANSI_COLOR_LIGHT_GREEN "Process ID:\t\t\t\t" ANSI_COLOR_RESET "%d\n", pid);
+    printf(ANSI_COLOR_LIGHT_GREEN "Process Name:\t\t\t\t" ANSI_COLOR_RESET "%s\n", info->comm);
+    printf(ANSI_COLOR_LIGHT_GREEN "Process State:\t\t\t\t" ANSI_COLOR_RESET "%s\n", state_string);
+    printf(ANSI_COLOR_LIGHT_GREEN "Process Threads:\t\t\t" ANSI_COLOR_RESET "%d\n", info->thread_count);
+    printf(ANSI_COLOR_LIGHT_GREEN "Cgroup slice:\t\t\t\t" ANSI_COLOR_RESET "%s", info->cgroup);
+    printf(ANSI_COLOR_LIGHT_GREEN "Total CPU Time:\t\t\t\t" ANSI_COLOR_RESET "%.2f seconds\n", info->total_cpu_time);
+    printf(ANSI_COLOR_LIGHT_GREEN "Context switches:\t\t\t"ANSI_COLOR_RESET "voluntary=%d nonvoluntary=%d\n",info->voluntary_ctxt_switches,info->nonvoluntary_ctxt_switches);
+    printf(ANSI_COLOR_LIGHT_GREEN "CPU Time Percentage:\t\t\t" ANSI_COLOR_RESET "%.2f %%\n", info->cpu_time_percent);
+    printf(ANSI_COLOR_LIGHT_GREEN "User Mode CPU Time Percentage:\t\t" ANSI_COLOR_RESET "%.2f %%\n", info->user_mode_percent);
+    printf(ANSI_COLOR_LIGHT_GREEN "System Mode CPU Time Percentage:\t" ANSI_COLOR_RESET "%.2f %%\n", info->system_mode_percent);
     printf(ANSI_COLOR_YELLOW "Getting process virtual address\n" ANSI_COLOR_RESET);
     printf("%-16s%-16s%-16s%-16s\n", "Total(KiB)", "Shared(KiB)", "Resident(KiB)", "Dirty(KiB)");  
-    printf("%-16d%-16d%-16d%-16d\n",total,shared,resident       ,dirty); 
+    printf("%-16lu%-16lu%-16lu%-16lu\n", total, shared, resident, dirty);
+}
+void getProcessInfo(int pid) {
+    printf(ANSI_COLOR_YELLOW "Getting process info...\n" ANSI_COLOR_RESET);
+
+    ProcessInfo info = {0};
+    double uptime, idletime;
+
+    if (readUptime(&uptime, &idletime) != 0) {
+        perror("Error opening /proc/uptime");
+        return;
+    }
+
+    if (readProcessStats(pid, &info) != 0) {
+        fprintf(stderr,ANSI_COLOR_RED "process %d not found\n"ANSI_COLOR_RESET,pid);
+        return;
+    }
+
+    if (readMemoryInfo(pid, &info) != 0) {
+        perror("Error reading /proc/<pid>/statm");
+        return;
+    }
+
+    info.thread_count = countThreads(pid);
+    if (info.thread_count < 0) {
+        perror("Error counting threads");
+        return;
+    }
+
+    if (readCgroup(pid, info.cgroup) != 0) {
+        perror("Error reading cgroup");
+        return;
+    }
+    if (get_ctxt_switches(&info,pid)) {
+        fprintf(stderr,"error reading /proc/%d/status",pid);
+        return;
+    }
+    calculateCPUInfo(&info, uptime);
+    printProcessInfo(&info,pid);
 }

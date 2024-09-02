@@ -40,9 +40,9 @@ void selinux(void) {
     if (fgets(buffer, sizeof(buffer), mls_file) != NULL) {
         bool mls_enabled = atoi(buffer);
         if (mls_enabled) {
-            printf("SELinux: " ANSI_COLOR_GREEN "MLS enabled\n" ANSI_COLOR_RESET);
+            printf("SELinux:\t" ANSI_COLOR_GREEN "MLS enabled\n" ANSI_COLOR_RESET);
         } else {
-            printf("SELinux: " ANSI_COLOR_YELLOW "MLS disabled\n" ANSI_COLOR_RESET);
+            printf("SELinux:\t" ANSI_COLOR_YELLOW "MLS disabled\n" ANSI_COLOR_RESET);
         }
     } else {
         perror("fgets /sys/fs/selinux/mls");
@@ -54,9 +54,9 @@ void selinux(void) {
 void apparmor(void) {
     //check if enabled
     if (aa_is_enabled()) {
-        printf("Apparmor:" ANSI_COLOR_GREEN "enabled\n" ANSI_COLOR_RESET);
+        printf("Apparmor:\t" ANSI_COLOR_GREEN "enabled\n" ANSI_COLOR_RESET);
     } else {
-        printf("Apparmor: " ANSI_COLOR_RED "disabled\n" ANSI_COLOR_RESET);
+        printf("Apparmor:\t" ANSI_COLOR_RED "disabled\n" ANSI_COLOR_RESET);
     }
     char *mnt;
     aa_find_mountpoint(&mnt); //check mountpoint
@@ -81,9 +81,9 @@ void apparmor(void) {
             }
         }
     }
-    printf("profiles: %d\n",count);
-    printf("enforce: %d\n",estate);
-    printf("complaint: %d\n",cstate);
+    printf("profiles:\t %d\n",count);
+    printf("enforce:\t %d\n",estate);
+    printf("complaint:\t %d\n",cstate);
     free(buffer);
     fclose(fp);
 }
@@ -94,9 +94,34 @@ void LinuxSecurityModule(void) {
     apparmor();
     #elif defined(SELINUX_H)
     selinux();
-    #else
-    printf(ANSI_COLOR_RED "No LSM found\n" ANSI_COLOR_RESET);
-    #endif  
+    #endif
+    //also check for others
+    char buf[64];
+    FILE *fp = fopen("/sys/kernel/security/lsm","r");
+    if (!fp) {
+        fprintf(stderr,ANSI_COLOR_RED "failed to open /sys/kernel/security/lsm\n"ANSI_COLOR_RESET);
+        return;
+    }
+    if (fgets(buf,sizeof(buf),fp) != NULL) {
+        if (strstr(buf, "landlock")) {
+            printf("Landlock\t" ANSI_COLOR_GREEN "enabled\n" ANSI_COLOR_RESET);
+        } else 
+        if (strstr(buf, "bpf")) {
+            printf("BPF\t" ANSI_COLOR_GREEN "enabled\n"ANSI_COLOR_RESET);
+        }
+        if (strstr(buf, "tomoyo")) {
+            printf("Tomoyo\t" ANSI_COLOR_GREEN "enabled\n"ANSI_COLOR_RESET);
+        }
+        if (strstr(buf, "capability")) {
+            printf("Capability\t" ANSI_COLOR_GREEN "enabled\n"ANSI_COLOR_RESET);
+        }
+        if (strstr(buf, "lockdown")) {
+            printf("Lockdown\t" ANSI_COLOR_GREEN "enabled\n"ANSI_COLOR_RESET);
+        }
+        if (strstr(buf, "yama")) {
+            printf("Yama\t" ANSI_COLOR_GREEN "enabled\n"ANSI_COLOR_RESET);
+        }
+    }
 }
 
 #ifdef LIBEFI

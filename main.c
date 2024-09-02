@@ -4,6 +4,32 @@
 #include <ctype.h>
 #include <grp.h>    
 #include "main.h"
+
+// get the distribution name
+void distro_name() {
+    printf(ANSI_COLOR_LIGHT_GREEN "Distribution:\t"ANSI_COLOR_RESET);
+    FILE *file = fopen("/etc/os-release", "r");
+    if (file == NULL) {
+        perror("fopen");
+        return;
+    }
+
+    char *line=NULL;
+    size_t len=0;
+    while (getline(&line,&len,file) != -1) {
+        if (!strncmp(line,"NAME=",5)) {
+            char *name = line + 5;  // Skip "NAME="
+            // Remove leading and trailing quotes
+            if (name[0] == '"') name++;
+            size_t len = strlen(name);
+            if (name[len - 1] == '\n') name[len - 2] = '\0';
+            if (name[len - 1] == '"') name[len - 1] = '\0'; 
+            printf("%s\n",name);
+        }
+    }
+    free(line);
+    fclose(file);
+}
 /*system information functions*/
 void print_hostname_and_kernel() {
     struct utsname kernel;
@@ -182,7 +208,7 @@ void print_battery_info() {
         if (fgets(capacity, sizeof(capacity), fp) != NULL) {
             char status[20];
             size_t len = strlen(capacity);
-            capacity[len - 1] = '\0';
+            capacity[len - 1] = '\0';                   
             FILE *state = fopen("/sys/class/power_supply/BAT0/status", "r");
             if (state) {
                 if (fgets(status, sizeof(status), state) != NULL) {
@@ -270,6 +296,7 @@ void print_user_and_group_info() {
 }
 
 void systeminfo() {
+    distro_name();
     print_hostname_and_kernel();
     print_loaded_modules();
     print_firmware_info();

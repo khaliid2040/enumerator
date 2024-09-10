@@ -1,6 +1,7 @@
 #include "../main.h"
 #include <sys/statvfs.h>
 #include <mntent.h>
+
 #ifdef BLKID
 #include <blkid/blkid.h>
 
@@ -36,6 +37,32 @@ char *get_uuid(const char *node) {
 }
 #endif
 void storage(void) {
+	//get disk model
+	    char model[64] = {0};
+    const char *paths[] = {"/sys/block/nvme0n1/device/model", "/sys/block/sda/device/model"};
+    FILE *fp = NULL;
+    int found = 0;
+
+    printf(ANSI_COLOR_LIGHT_GREEN "Model\t\t" ANSI_COLOR_RESET);
+
+    // Try each path to find and read the model information
+    for (size_t i = 0; i < sizeof(paths) / sizeof(paths[0]); ++i) {
+        fp = fopen(paths[i], "r");
+        if (fp) {
+            if (fgets(model, sizeof(model), fp) != NULL) {
+                printf("%s", model);  // Model already includes newline
+                found = 1;
+                fclose(fp);
+                break;  // Stop checking other paths if model is found
+            }
+            fclose(fp);  // Close file if reading failed
+        }
+    }
+
+    if (!found) {
+        printf(ANSI_COLOR_RED "unknown\n" ANSI_COLOR_RESET);
+    }	
+	
     // Open the mount points file	
     FILE *mtab = setmntent("/etc/mtab", "r");
 	if (mtab != NULL) {

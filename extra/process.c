@@ -157,6 +157,29 @@ int get_ctxt_switches(ProcessInfo *info,int pid) {
     fclose(fp);
     return 0;
 }
+// get real, effected user id return 2 if succeed
+void get_uid_gid(ProcessInfo *info,int pid) {
+    char path[64],contents[64];
+    snprintf(path,sizeof(path),"/proc/%d/status",pid);
+    FILE *fp = fopen(path,"r");
+    if (!fp) {
+        return;
+    }
+    while (fgets(contents,sizeof(contents),fp) != NULL) {
+        if (!strncmp(contents, "Uid:", 4)) {
+            // Parse Uid: line, which might have tabs or spaces
+            if (sscanf(contents, "Uid:%d\t%d\t%d", &info->uid,&info->euid,&info->ruid) == 3) {
+                continue;
+            } 
+        }
+		if (!strncmp(contents,"Gid:",4)) {
+			if (sscanf(contents,"Gid:%d\t%d\t%d\t", &info->gid, &info->egid,&info->rgid) != 3) {
+				continue;
+			}
+			break;
+		}
+    }
+}
 void calculateCPUInfo(ProcessInfo *info, double uptime) {
     long hertz = sysconf(_SC_CLK_TCK);
     info->total_cpu_time = (info->utime + info->stime) / (double) hertz;
@@ -187,6 +210,8 @@ void printProcessInfo(const ProcessInfo *info,int pid) {
     printf(ANSI_COLOR_LIGHT_GREEN "Process State:\t\t\t\t" ANSI_COLOR_RESET "%s\n", state_string);
     printf(ANSI_COLOR_LIGHT_GREEN "Process Threads:\t\t\t" ANSI_COLOR_RESET "%d\n", info->thread_count);
     printf(ANSI_COLOR_LIGHT_GREEN "Cgroup slice:\t\t\t\t" ANSI_COLOR_RESET "%s", info->cgroup);
+    printf(ANSI_COLOR_LIGHT_GREEN "Uid/euid/uid\t\t\t\t"ANSI_COLOR_RESET "%u\t%u\t%u\t\n",info->uid,info->euid,info->ruid);
+    printf(ANSI_COLOR_LIGHT_GREEN "Gid/egid/rgid\t\t\t\t" ANSI_COLOR_RESET "%u\t%u\t%u\t\n" ,info->gid,info->egid,info->rgid);
     printf(ANSI_COLOR_LIGHT_GREEN "Total CPU Time:\t\t\t\t" ANSI_COLOR_RESET "%.2f seconds\n", info->total_cpu_time);
     printf(ANSI_COLOR_LIGHT_GREEN "Context switches:\t\t\t"ANSI_COLOR_RESET "voluntary=%d nonvoluntary=%d\n",info->voluntary_ctxt_switches,info->nonvoluntary_ctxt_switches);
     printf(ANSI_COLOR_LIGHT_GREEN "CPU Time Percentage:\t\t\t" ANSI_COLOR_RESET "%.2f %%\n", info->cpu_time_percent);
@@ -231,6 +256,7 @@ void getProcessInfo(int pid) {
         fprintf(stderr,"error reading /proc/%d/status",pid);
         return;
     }
+    get_uid_gid(&info,pid);
     calculateCPUInfo(&info, uptime);
     printProcessInfo(&info,pid);
 }

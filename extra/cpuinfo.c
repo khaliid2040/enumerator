@@ -74,6 +74,41 @@ void cpuid() {
         
         }
 }
+//the function above is good and optimal uses direct cpuid instrcution but it only available on x86/x86_64 so 
+//for other architectures we don't have option but to parse /proc/cpuinfo
+
+void generic_cpuinfo(struct Cpuinfo *cpu) {
+    char buffer[256];  // Increase buffer size to handle longer lines
+    FILE *fp = fopen("/proc/cpuinfo", "r");
+    if (!fp) {
+        perror("fopen");
+        return;
+    }
+
+    // Initialize CPU info to default values
+    cpu->vendor[0] = '\0';
+    cpu->model = 0;
+    cpu->family = 0;
+    cpu->stepping = 0;
+    cpu->model_name[0] = '\0';
+
+    while (fgets(buffer, sizeof(buffer), fp) != NULL) {
+        // Check the start of each line and parse accordingly
+        if (strncmp(buffer, "vendor_id", 9) == 0) {
+            sscanf(buffer, "vendor_id%*[ \t:]    %s", cpu->vendor);
+        } else if (strncmp(buffer, "cpu family", 10) == 0) {
+            sscanf(buffer, "cpu family%*[ \t:]    %u", &cpu->family);
+        } else if (strncmp(buffer, "model", 5) == 0 && !strstr(buffer, "model name")) {
+            sscanf(buffer, "model%*[ \t:]%u", &cpu->model);
+        } else if (strncmp(buffer, "model name", 10) == 0) {
+            sscanf(buffer, "model name%*[ \t:]%[^\n]", cpu->model_name);
+        } else if (strncmp(buffer, "stepping", 8) == 0) {
+            sscanf(buffer, "stepping%*[ \t:]%d", &cpu->stepping);
+        }
+    }
+    
+    fclose(fp);
+}
 int cpu_vulnerabilities(void) {
     struct dirent *entry;
     char *dir_path= "/sys/devices/system/cpu/vulnerabilities";
@@ -271,7 +306,15 @@ int cpuinfo() {
     printf(ANSI_COLOR_LIGHT_GREEN"Family\t\t\t"ANSI_COLOR_RESET "%u\n",family);
     printf(ANSI_COLOR_LIGHT_GREEN"Model\t\t\t"ANSI_COLOR_RESET "%u\n",model);
     printf(ANSI_COLOR_LIGHT_GREEN"Stepping\t\t"ANSI_COLOR_RESET "%u\n",stepping);
-    #endif  
+    #else
+        struct Cpuinfo cpu;
+        generic_cpuinfo(&cpu);
+        printf(ANSI_COLOR_LIGHT_GREEN "\nVendor:\t\t\t"ANSI_COLOR_RESET  "%s", cpu.vendor);
+        printf(ANSI_COLOR_LIGHT_GREEN "\nBrand:\t\t\t"ANSI_COLOR_RESET  "%s\n", cpu.model_name);
+        printf(ANSI_COLOR_LIGHT_GREEN"Family\t\t\t"ANSI_COLOR_RESET "%u\n",cpu.family);
+        printf(ANSI_COLOR_LIGHT_GREEN"Model\t\t\t"ANSI_COLOR_RESET "%u\n",cpu.model);
+        printf(ANSI_COLOR_LIGHT_GREEN"Stepping\t\t"ANSI_COLOR_RESET "%u\n",cpu.stepping);
+    #endif
     hwmon();
     for (int i=0;i<processors;i++) {
         level--; //decrement each iteration and if fopen fails assume non exsted

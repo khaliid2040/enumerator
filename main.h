@@ -48,6 +48,14 @@ typedef unsigned long page_t;
 #endif
 int GetSecureBootStatus(void);
 void gpu_info();
+//structure to fill parsed fields in /proc/cpuinfo 
+struct Cpuinfo {
+    char vendor[13];   
+    unsigned int model;
+    unsigned int family;
+    int stepping;
+    char model_name[64];  
+};
 int process_file(char *path,char *filename);
 void getProcessInfo(pid_t pid);
 //structure filled with data specific to process id
@@ -71,6 +79,8 @@ typedef struct {
     double cpu_time_percent;
     double user_mode_percent;
     double system_mode_percent;
+    int uid,euid,ruid;
+    int gid,egid,rgid;
 } ProcessInfo;
 int is_pid_directory(const char *name);
 void LinuxSecurityModule(void);
@@ -97,7 +107,7 @@ void network(void);
 void route(void);
 //parsing and resding arp
 void arp(void);
-//used by extra/syste.c
+//used by extra/system.c
 typedef struct {
     char bios_vendor[SIZE];
     char release[9];

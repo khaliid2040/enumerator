@@ -1,30 +1,29 @@
-# enumerator
-The program called enumerator is a c program i developed from scratch i intended it to make my daily work easir. I chose c programming because first it is faster and second 
-it's dependency management is easier i amde the program to become dependent from external libraries as much as possible. This is the beginning of the project and i will 
-maintain it. if it becomes like fixing bugs.
+# Enumerator
 
-PROJECT STRUCTURE 
-extra/: It contains code related to any functionality and also code in arguments like -p and -H is implemented 
-net/: It contains network information code 
-main.c: as every c program the main interface.
-config.sh: This is the main script that configures project for compiling. It is not big script like configure when using autoconf but it designed like autoconf the script will configre the CFLAGS and LDFLAGS and put them into config.mk and then the config.mk is included in the makefile. Another important responsibility of the script is to search for needed libraries and header files so if either shared library or header file didn't be found then it will probably disabled as in turn disabling all the code depend on libary to make the program more flexible and avoing any compiler linker errors that may arise. 
+**Enumerator** is a C program I developed from scratch to make my daily work easier. I chose C programming because:
 
-The program is not strictly depend on any library but for more functionality and using disabled features then it may be good idea to download those header files.
+1. It is faster.
+2. Dependency management is easier.
 
-COMPILATION GUIDELINE
-1. Use make but before compiling configure the project using:
-    make checkdep 
+I designed the program to minimize dependencies on external libraries as much as possible. This is the beginning of the project, and I will maintain it, including fixing any bugs that arise.
 
-NOTICE: if you want to configure with option please run the script manually to avoid issues ./config.sh is enough
-you can choose the color you want as theme to print output currently my program supports green,red,yellow and meganta
-ypu can choose your favorite color you want like this:
-./config.sh --color [color] 
-and it will configured accordingly.
-2. Then compile
-    make
+## Project Structure
 
-3. If you want to install (OPTIONAL):
-    make install
+- **extra/**: Contains code related to additional functionality and implementation of arguments like `-p` and `-H`.
+- **net/**: Contains code related to network information.
+- **main.c**: Contains the main interface of the program.
+- **config.sh**: This script configures the project for compilation. It is similar to `autoconf` but not as extensive. It configures `CFLAGS` and `LDFLAGS`, writes them to `config.mk`, and includes `config.mk` in the `Makefile`. The script also searches for needed libraries and header files. If a required library or header file is not found, it will be disabled, which in turn disables the corresponding code to make the program more flexible and avoid compiler or linker errors.
 
-4. Cleaning up
-    make clean
+While the program is not strictly dependent on any library, downloading the necessary header files might be beneficial for additional functionality and to enable disabled features.
+
+## Compilation Guidelines   
+
+1. **Configure the Project**:
+   Before compiling, configure the project using:
+   ```sh
+   make checkdep
+   It is better if you use the script directly for parsing arguments
+2. **Compile it**
+    make 
+3. **Install optional** 
+   it will be installed in /home/[user]/.local/bin but you can copy the binary directly and put where ever you want

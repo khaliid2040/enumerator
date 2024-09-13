@@ -205,18 +205,18 @@ void printProcessInfo(const ProcessInfo *info,int pid) {
         default: state_string = "unknown"; break;
     }
 
-    printf(ANSI_COLOR_LIGHT_GREEN "Process ID:\t\t\t\t" ANSI_COLOR_RESET "%d\n", pid);
-    printf(ANSI_COLOR_LIGHT_GREEN "Process Name:\t\t\t\t" ANSI_COLOR_RESET "%s\n", info->comm);
-    printf(ANSI_COLOR_LIGHT_GREEN "Process State:\t\t\t\t" ANSI_COLOR_RESET "%s\n", state_string);
-    printf(ANSI_COLOR_LIGHT_GREEN "Process Threads:\t\t\t" ANSI_COLOR_RESET "%d\n", info->thread_count);
-    printf(ANSI_COLOR_LIGHT_GREEN "Cgroup slice:\t\t\t\t" ANSI_COLOR_RESET "%s", info->cgroup);
-    printf(ANSI_COLOR_LIGHT_GREEN "Uid/euid/uid\t\t\t\t"ANSI_COLOR_RESET "%u\t%u\t%u\t\n",info->uid,info->euid,info->ruid);
-    printf(ANSI_COLOR_LIGHT_GREEN "Gid/egid/rgid\t\t\t\t" ANSI_COLOR_RESET "%u\t%u\t%u\t\n" ,info->gid,info->egid,info->rgid);
-    printf(ANSI_COLOR_LIGHT_GREEN "Total CPU Time:\t\t\t\t" ANSI_COLOR_RESET "%.2f seconds\n", info->total_cpu_time);
-    printf(ANSI_COLOR_LIGHT_GREEN "Context switches:\t\t\t"ANSI_COLOR_RESET "voluntary=%d nonvoluntary=%d\n",info->voluntary_ctxt_switches,info->nonvoluntary_ctxt_switches);
-    printf(ANSI_COLOR_LIGHT_GREEN "CPU Time Percentage:\t\t\t" ANSI_COLOR_RESET "%.2f %%\n", info->cpu_time_percent);
-    printf(ANSI_COLOR_LIGHT_GREEN "User Mode CPU Time Percentage:\t\t" ANSI_COLOR_RESET "%.2f %%\n", info->user_mode_percent);
-    printf(ANSI_COLOR_LIGHT_GREEN "System Mode CPU Time Percentage:\t" ANSI_COLOR_RESET "%.2f %%\n", info->system_mode_percent);
+    printf(DEFAULT_COLOR "Process ID:\t\t\t\t" ANSI_COLOR_RESET "%d\n", pid);
+    printf(DEFAULT_COLOR "Process Name:\t\t\t\t" ANSI_COLOR_RESET "%s\n", info->comm);
+    printf(DEFAULT_COLOR "Process State:\t\t\t\t" ANSI_COLOR_RESET "%s\n", state_string);
+    printf(DEFAULT_COLOR "Process Threads:\t\t\t" ANSI_COLOR_RESET "%d\n", info->thread_count);
+    printf(DEFAULT_COLOR "Cgroup slice:\t\t\t\t" ANSI_COLOR_RESET "%s", info->cgroup);
+    printf(DEFAULT_COLOR "Uid/euid/uid\t\t\t\t"ANSI_COLOR_RESET "%u\t%u\t%u\t\n",info->uid,info->euid,info->ruid);
+    printf(DEFAULT_COLOR "Gid/egid/rgid\t\t\t\t" ANSI_COLOR_RESET "%u\t%u\t%u\t\n" ,info->gid,info->egid,info->rgid);
+    printf(DEFAULT_COLOR "Total CPU Time:\t\t\t\t" ANSI_COLOR_RESET "%.2f seconds\n", info->total_cpu_time);
+    printf(DEFAULT_COLOR "Context switches:\t\t\t"ANSI_COLOR_RESET "voluntary=%d nonvoluntary=%d\n",info->voluntary_ctxt_switches,info->nonvoluntary_ctxt_switches);
+    printf(DEFAULT_COLOR "CPU Time Percentage:\t\t\t" ANSI_COLOR_RESET "%.2f %%\n", info->cpu_time_percent);
+    printf(DEFAULT_COLOR "User Mode CPU Time Percentage:\t\t" ANSI_COLOR_RESET "%.2f %%\n", info->user_mode_percent);
+    printf(DEFAULT_COLOR "System Mode CPU Time Percentage:\t" ANSI_COLOR_RESET "%.2f %%\n", info->system_mode_percent);
     printf(ANSI_COLOR_YELLOW "Getting process virtual address\n" ANSI_COLOR_RESET);
     printf("%-16s%-16s%-16s%-16s\n", "Total(KiB)", "Shared(KiB)", "Resident(KiB)", "Dirty(KiB)");  
     printf("%-16lu%-16lu%-16lu%-16lu\n", total, shared, resident, dirty);

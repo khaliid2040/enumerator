@@ -4,7 +4,34 @@ LDFLAGS=""
 CFLAGS="-march=native -O2 -pipe -I."
 GREEN='\033[0;32m'
 RED='\033[0;31m'
+YELLOW='\033[33m'
 NC='\033[0m'
+
+# letting the user choose a theme to compile with
+if [ "$1" == "--color" ]; then
+case $2 in
+    red)
+        CFLAGS+=" -DRED"
+        echo -e "Theme $2: ${GREEN}OK${NC}"
+    ;;
+    green)
+        CFLAGS+=" -DGREEN"
+        echo -e "Theme $2: ${GREEN}OK${NC}"
+    ;;
+    yellow)
+        CFLAGS+=" -DYELLOW"
+        echo -e "Theme $2: ${GREEN}OK${NC}"
+    ;; 
+    magenta)
+        CFLAGS+=" -DMAGENTA"
+        echo -e "Theme $2: ${GREEN}OK${NC}"
+        ;;
+    *)
+        CFLAGS+="-DDEFALT"
+        echo -e "Theme $2: ${RED}Unsupported${NC}"
+        echo -e "${YELLOW}Warning: color defaulting green light${NC}"
+esac
+fi
 
 # Libraries to check
 LIBS=("math" "apparmor" "selinux" "efivar" "blkid" "libudev")

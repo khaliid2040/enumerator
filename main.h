@@ -12,6 +12,19 @@
 #define ANSI_COLOR_MAGENTA "\x1b[35m"//magenta
 #define ANSI_COLOR_CYAN    "\x1b[36m"//cyan
 #define ANSI_COLOR_RESET   "\x1b[0m"//reset the colors
+
+//let the user decide which color to print for user preference
+#ifdef RED
+#define DEFAULT_COLOR    "\x1b[31m" // Red
+#elif defined(YELLOW)
+#define DEFAULT_COLOR    "\x1b[33m" // Yellow
+#elif defined(GREEN)
+#define DEFAULT_COLOR    "\x1b[32m" // Green
+#elif defined(MAGENTA)
+#define DEFAULT_COLOR     "\x1b[35m" // Magenta
+#else 
+#define DEFAULT_COLOR    "\x1b[36m" // Cyan
+#endif  
 // including libraries
 #include <stdio.h>
 #include <string.h>

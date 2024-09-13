@@ -7,7 +7,7 @@
 
 // get the distribution name
 static void distro_name() {
-    printf(ANSI_COLOR_LIGHT_GREEN "Distribution:\t"ANSI_COLOR_RESET);
+    printf(DEFAULT_COLOR "Distribution:\t"ANSI_COLOR_RESET);
     FILE *file = fopen("/etc/os-release", "r");
     if (file == NULL) {
         perror("fopen");
@@ -35,10 +35,10 @@ static void print_hostname_and_kernel() {
     struct utsname kernel;
     char hostname[256];
     if (gethostname(hostname, sizeof(hostname)) == 0) {
-        printf(ANSI_COLOR_LIGHT_GREEN "Hostname: \t" ANSI_COLOR_RESET "%s\n", hostname);
+        printf(DEFAULT_COLOR "Hostname: \t" ANSI_COLOR_RESET "%s\n", hostname);
     }
     if (uname(&kernel) != -1) {
-        printf(ANSI_COLOR_LIGHT_GREEN "Kernel: \t" ANSI_COLOR_RESET "%s %s %s\n", kernel.sysname, kernel.release, kernel.machine);
+        printf(DEFAULT_COLOR "Kernel: \t" ANSI_COLOR_RESET "%s %s %s\n", kernel.sysname, kernel.release, kernel.machine);
     }
 }
 
@@ -52,7 +52,7 @@ static void print_loaded_modules() {
             count++;
         }
         fclose(modules);
-        printf(ANSI_COLOR_LIGHT_GREEN "Loaded modules:\t" ANSI_COLOR_RESET "%u\n", count);
+        printf(DEFAULT_COLOR "Loaded modules:\t" ANSI_COLOR_RESET "%u\n", count);
         free(line);
     } else {
         perror("Failed to open /proc/modules");
@@ -60,7 +60,7 @@ static void print_loaded_modules() {
 }
 
 static void print_firmware_info() {
-    printf(ANSI_COLOR_LIGHT_GREEN "Firmware:\t" ANSI_COLOR_RESET);
+    printf(DEFAULT_COLOR "Firmware:\t" ANSI_COLOR_RESET);
     if (access("/sys/firmware/efi", F_OK) != -1) {
         printf("UEFI  ");
         #ifdef LIBEFI
@@ -76,7 +76,7 @@ static void print_systemd_info() {
     FILE *init = popen("systemctl --version", "r");
     if (init) {
         if (fgets(output, sizeof(output)-1, init) != NULL) {
-            printf(ANSI_COLOR_LIGHT_GREEN "\nInit: \t\t" ANSI_COLOR_RESET "%s)", output);
+            printf(DEFAULT_COLOR "\nInit: \t\t" ANSI_COLOR_RESET "%s)", output);
         }
         pclose(init);
     }
@@ -106,7 +106,7 @@ static void print_cpu_info() {
         memcpy(brand + i * 16 + 8, &ecx, 4);
         memcpy(brand + i * 16 + 12, &edx, 4);
     }
-    printf(ANSI_COLOR_LIGHT_GREEN "CPU: \t\t" ANSI_COLOR_RESET "%s", brand);
+    printf(DEFAULT_COLOR "CPU: \t\t" ANSI_COLOR_RESET "%s", brand);
     int cores = 0, processors = 0;
     if (count_processor(&cores, &processors)) {
         printf(" cores: %d threads: %d\n", cores / 2, processors);
@@ -118,25 +118,25 @@ static void print_gpu_info() {
     #ifdef LIBPCI
     char model[32], vendor[10];
     gpu_info(model, vendor);
-    printf(ANSI_COLOR_LIGHT_GREEN "GPU:\t\t" ANSI_COLOR_RESET "%s %s\n", vendor, model);
+    printf(DEFAULT_COLOR "GPU:\t\t" ANSI_COLOR_RESET "%s %s\n", vendor, model);
     #endif
 }
 
 static void print_memory_and_uptime() {
     struct sysinfo system_info;
     if (sysinfo(&system_info) == 0) {
-        printf(ANSI_COLOR_LIGHT_GREEN "Memory:\t\t" ANSI_COLOR_RESET "%.1f GB\n", (float)system_info.totalram / 1024.0 / 1024.0 / 1024.0);
+        printf(DEFAULT_COLOR "Memory:\t\t" ANSI_COLOR_RESET "%.1f GB\n", (float)system_info.totalram / 1024.0 / 1024.0 / 1024.0);
         long uptime_sec = system_info.uptime;
         long hours = uptime_sec / 3600;
         long minutes = (uptime_sec % 3600) / 60;
-        printf(ANSI_COLOR_LIGHT_GREEN "Uptime:\t\t" ANSI_COLOR_RESET "%ld hour%s and %ld minute%s\n",
+        printf(DEFAULT_COLOR "Uptime:\t\t" ANSI_COLOR_RESET "%ld hour%s and %ld minute%s\n",
                hours, (hours != 1) ? "s" : "",
                minutes, (minutes != 1) ? "s" : "");
     }
 }
 
 static void print_load_average() {
-    printf(ANSI_COLOR_LIGHT_GREEN "Load:\t\t" ANSI_COLOR_RESET);
+    printf(DEFAULT_COLOR "Load:\t\t" ANSI_COLOR_RESET);
     char loadbuf[48];
     float ldavg1, ldavg5, ldavg15;
     FILE *load = fopen("/proc/loadavg", "r");
@@ -154,14 +154,14 @@ static void print_load_average() {
 static void print_desktop_environment() {
         char *env, *de;
     if (env = getenv("XDG_SESSION_TYPE")) {
-        printf(ANSI_COLOR_LIGHT_GREEN "Session Type:\t" ANSI_COLOR_RESET "%s\n",env);
+        printf(DEFAULT_COLOR "Session Type:\t" ANSI_COLOR_RESET "%s\n",env);
     }   
     //used for determining user home directory
     __uid_t uid= getuid();
     struct passwd *pwd=getpwuid(uid);
     char version[7];
     if (de = getenv("XDG_CURRENT_DESKTOP")) {
-        printf(ANSI_COLOR_LIGHT_GREEN "Desktop:\t" ANSI_COLOR_RESET "%s ",de);
+        printf(DEFAULT_COLOR "Desktop:\t" ANSI_COLOR_RESET "%s ",de);
         
         if (!strcmp(de,"KDE")) {
             char path[40],*contents=NULL    ;
@@ -215,7 +215,7 @@ static void print_battery_info() {
                     len = strlen(status);
                     status[len - 1] = '\0';
                 }
-                printf(ANSI_COLOR_LIGHT_GREEN "Battery:\t" ANSI_COLOR_RESET "%s%%", capacity);
+                printf(DEFAULT_COLOR "Battery:\t" ANSI_COLOR_RESET "%s%%", capacity);
                 if (strcmp(status, "Discharging") == 0) {
                     printf(ANSI_COLOR_YELLOW " %s" ANSI_COLOR_RESET, status);
                 } else if (strcmp(status, "Charging") == 0) {
@@ -259,7 +259,7 @@ static void print_process_and_thread_count() {
             }
         }
         closedir(proc_dir);
-        printf(ANSI_COLOR_LIGHT_GREEN "\nprocesses: " ANSI_COLOR_RESET "%d\t" ANSI_COLOR_LIGHT_GREEN "threads: " ANSI_COLOR_RESET "%d\n", num_processes, num_threads);
+        printf(DEFAULT_COLOR "\nprocesses: " ANSI_COLOR_RESET "%d\t" DEFAULT_COLOR "threads: " ANSI_COLOR_RESET "%d\n", num_processes, num_threads);
     } else {
         perror("opendir");
     }

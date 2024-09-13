@@ -37,13 +37,13 @@ System_t *dmi_read() {
 void system_enum() {
     System_t *system= dmi_read();
     if (system != NULL) {
-       printf(ANSI_COLOR_LIGHT_GREEN "Bios vendor:"ANSI_COLOR_RESET "\t\t%s",system->bios_vendor);
-       printf(ANSI_COLOR_LIGHT_GREEN "Bios: version:"ANSI_COLOR_RESET "\t\t%s\n",system->release);
-       printf(ANSI_COLOR_LIGHT_GREEN "Bios release date:"ANSI_COLOR_RESET "\t%s",system->date);
-       printf(ANSI_COLOR_LIGHT_GREEN "Product Name:"ANSI_COLOR_RESET "\t\t%s",system->product_name);
-       printf(ANSI_COLOR_LIGHT_GREEN "product family:\t\t"ANSI_COLOR_RESET "%s",system->product_family);
-       printf(ANSI_COLOR_LIGHT_GREEN "System vendor"ANSI_COLOR_RESET "\t\t%s",system->sys_vendor);
-       printf(ANSI_COLOR_LIGHT_GREEN "Chassis Vendor"ANSI_COLOR_RESET "\t\t%s",system->chassis_vendor);
+       printf(DEFAULT_COLOR "Bios vendor:"ANSI_COLOR_RESET "\t\t%s",system->bios_vendor);
+       printf(DEFAULT_COLOR "Bios: version:"ANSI_COLOR_RESET "\t\t%s\n",system->release);
+       printf(DEFAULT_COLOR "Bios release date:"ANSI_COLOR_RESET "\t%s",system->date);
+       printf(DEFAULT_COLOR "Product Name:"ANSI_COLOR_RESET "\t\t%s",system->product_name);
+       printf(DEFAULT_COLOR "product family:\t\t"ANSI_COLOR_RESET "%s",system->product_family);
+       printf(DEFAULT_COLOR "System vendor"ANSI_COLOR_RESET "\t\t%s",system->sys_vendor);
+       printf(DEFAULT_COLOR "Chassis Vendor"ANSI_COLOR_RESET "\t\t%s",system->chassis_vendor);
        free(system);
     }
 }

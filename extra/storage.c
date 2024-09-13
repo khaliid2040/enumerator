@@ -55,8 +55,8 @@ static void process_udev() {
             udev_device_unref(dev);
             continue;   
         }
-        printf(ANSI_COLOR_LIGHT_GREEN "Node:\t\t"ANSI_COLOR_RESET "%s\n", udev_device_get_devnode(dev));
-        printf(ANSI_COLOR_LIGHT_GREEN "Device:\t\t" ANSI_COLOR_RESET "%s\n", udev_device_get_sysname(dev));
+        printf(DEFAULT_COLOR "Node:\t\t"ANSI_COLOR_RESET "%s\n", udev_device_get_devnode(dev));
+        printf(DEFAULT_COLOR "Device:\t\t" ANSI_COLOR_RESET "%s\n", udev_device_get_sysname(dev));
         // Now getting disk size
         tmp = udev_device_get_sysattr_value(dev, "size");
         if (tmp) {
@@ -68,7 +68,7 @@ static void process_udev() {
             block_size = (unsigned short int)atoi(tmp);
         }
 
-        printf(ANSI_COLOR_LIGHT_GREEN "SIZE:\t\t"ANSI_COLOR_RESET);
+        printf(DEFAULT_COLOR "SIZE:\t\t"ANSI_COLOR_RESET);
         if (strncmp(udev_device_get_sysname(dev), "sr", 2) != 0) {
             printf("%lld GB\n\n", (disk_size * block_size) / 1000000000);
         } else {
@@ -123,7 +123,7 @@ void storage(void) {
     FILE *fp = NULL;
     int found = 0;
 
-    printf(ANSI_COLOR_LIGHT_GREEN "Model\t\t" ANSI_COLOR_RESET);
+    printf(DEFAULT_COLOR "Model\t\t" ANSI_COLOR_RESET);
 
     // Try each path to find and read the model information
     for (size_t i = 0; i < sizeof(paths) / sizeof(paths[0]); ++i) {

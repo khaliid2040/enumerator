@@ -6,7 +6,7 @@
 #include "main.h"
 
 // get the distribution name
-void distro_name() {
+static void distro_name() {
     printf(ANSI_COLOR_LIGHT_GREEN "Distribution:\t"ANSI_COLOR_RESET);
     FILE *file = fopen("/etc/os-release", "r");
     if (file == NULL) {
@@ -31,7 +31,7 @@ void distro_name() {
     fclose(file);
 }
 /*system information functions*/
-void print_hostname_and_kernel() {
+static void print_hostname_and_kernel() {
     struct utsname kernel;
     char hostname[256];
     if (gethostname(hostname, sizeof(hostname)) == 0) {
@@ -42,7 +42,7 @@ void print_hostname_and_kernel() {
     }
 }
 
-void print_loaded_modules() {
+static void print_loaded_modules() {
     char *line = NULL;
     size_t len = 0;
     FILE *modules = fopen("/proc/modules", "r");
@@ -59,10 +59,10 @@ void print_loaded_modules() {
     }
 }
 
-void print_firmware_info() {
+static void print_firmware_info() {
     printf(ANSI_COLOR_LIGHT_GREEN "Firmware:\t" ANSI_COLOR_RESET);
     if (access("/sys/firmware/efi", F_OK) != -1) {
-        printf("UEFI\t");
+        printf("UEFI  ");
         #ifdef LIBEFI
         GetSecureBootStatus();
         #endif
@@ -71,12 +71,12 @@ void print_firmware_info() {
     }
 }
 
-void print_systemd_info() {
+static void print_systemd_info() {
     char output[20];
     FILE *init = popen("systemctl --version", "r");
     if (init) {
         if (fgets(output, sizeof(output)-1, init) != NULL) {
-            printf(ANSI_COLOR_LIGHT_GREEN "\nInit: \t\t" ANSI_COLOR_RESET "%s", output);
+            printf(ANSI_COLOR_LIGHT_GREEN "\nInit: \t\t" ANSI_COLOR_RESET "%s)", output);
         }
         pclose(init);
     }
@@ -95,7 +95,7 @@ void print_systemd_info() {
     printf(" %d units installed\n", count_units);
 }
 
-void print_cpu_info() {
+static void print_cpu_info() {
     #ifdef supported
     unsigned int eax, ebx, ecx, edx;
     char brand[50] = {0};
@@ -114,7 +114,7 @@ void print_cpu_info() {
     #endif
 }
 
-void print_gpu_info() {
+static void print_gpu_info() {
     #ifdef LIBPCI
     char model[32], vendor[10];
     gpu_info(model, vendor);
@@ -122,7 +122,7 @@ void print_gpu_info() {
     #endif
 }
 
-void print_memory_and_uptime() {
+static void print_memory_and_uptime() {
     struct sysinfo system_info;
     if (sysinfo(&system_info) == 0) {
         printf(ANSI_COLOR_LIGHT_GREEN "Memory:\t\t" ANSI_COLOR_RESET "%.1f GB\n", (float)system_info.totalram / 1024.0 / 1024.0 / 1024.0);
@@ -135,7 +135,7 @@ void print_memory_and_uptime() {
     }
 }
 
-void print_load_average() {
+static void print_load_average() {
     printf(ANSI_COLOR_LIGHT_GREEN "Load:\t\t" ANSI_COLOR_RESET);
     char loadbuf[48];
     float ldavg1, ldavg5, ldavg15;
@@ -151,7 +151,7 @@ void print_load_average() {
     }
 }
 
-void print_desktop_environment() {
+static void print_desktop_environment() {
         char *env, *de;
     if (env = getenv("XDG_SESSION_TYPE")) {
         printf(ANSI_COLOR_LIGHT_GREEN "Session Type:\t" ANSI_COLOR_RESET "%s\n",env);
@@ -201,7 +201,7 @@ void print_desktop_environment() {
     }
 }
 
-void print_battery_info() {
+static void print_battery_info() {
     char capacity[5];
     FILE *fp = fopen("/sys/class/power_supply/BAT0/capacity", "r");
     if (fp) {
@@ -230,7 +230,7 @@ void print_battery_info() {
     }
 }
 
-void print_process_and_thread_count() {
+static void print_process_and_thread_count() {
     DIR *proc_dir = opendir("/proc");
     int num_processes = 0;
     int num_threads = 0;
@@ -265,7 +265,7 @@ void print_process_and_thread_count() {
     }
 }
 
-void print_user_and_group_info() {
+static void print_user_and_group_info() {
     __uid_t uid = getuid();
     __gid_t gid = getgid();
     struct passwd *pwd;

@@ -2,6 +2,86 @@
 #include <sys/statvfs.h>
 #include <mntent.h>
 
+/* getting all the device and there sizes this is independent from the filesystem information 
+*  using information from mtent*/
+#ifdef LIBUDEV
+#include <libudev.h>
+static void process_udev() {
+    struct udev *udev;
+    struct udev_device *dev;
+    struct udev_enumerate *udev_enum;
+    struct udev_list_entry *list_entry, *devices;
+
+    // Initialize udev
+    udev = udev_new();
+    if (!udev) {
+        fprintf(stderr, ANSI_COLOR_RED "Error: failed initializing udev\n" ANSI_COLOR_RESET);
+        return;
+    }
+
+    // Create enumerate object
+    udev_enum = udev_enumerate_new(udev);
+    if (!udev_enum) {
+        fprintf(stderr, ANSI_COLOR_RED "Error: failed to create enumerate object\n" ANSI_COLOR_RESET);
+        udev_unref(udev);
+        return;
+    }
+
+    udev_enumerate_add_match_subsystem(udev_enum, "block");
+    udev_enumerate_scan_devices(udev_enum);
+
+    list_entry = udev_enumerate_get_list_entry(udev_enum);
+    if (!list_entry) {
+        fprintf(stderr, ANSI_COLOR_RED "Error: failed to get list entry\n" ANSI_COLOR_RESET);
+        udev_enumerate_unref(udev_enum);
+        udev_unref(udev);
+        return;
+    }
+    printf("\n"); // make a new line b/w model and printing device for clarity
+    udev_list_entry_foreach(devices, list_entry) {
+        const char *path, *tmp;
+        unsigned long long disk_size = 0;
+        unsigned short int block_size = 0;
+
+        path = udev_list_entry_get_name(devices);
+        dev = udev_device_new_from_syspath(udev, path);
+        if (!dev) {
+            fprintf(stderr, ANSI_COLOR_RED "Error: failed to get device from syspath\n" ANSI_COLOR_RESET);
+            continue;
+        }
+        // prevent printing partitions
+        if (!strcmp("partition",udev_device_get_devtype(dev)) || !strncmp("loop",udev_device_get_sysname(dev),4)
+            || !strncmp("sr",udev_device_get_sysname(dev),2)) {
+            udev_device_unref(dev);
+            continue;   
+        }
+        printf(ANSI_COLOR_LIGHT_GREEN "Node:\t\t"ANSI_COLOR_RESET "%s\n", udev_device_get_devnode(dev));
+        printf(ANSI_COLOR_LIGHT_GREEN "Device:\t\t" ANSI_COLOR_RESET "%s\n", udev_device_get_sysname(dev));
+        // Now getting disk size
+        tmp = udev_device_get_sysattr_value(dev, "size");
+        if (tmp) {
+            disk_size = strtoull(tmp, NULL, 10);
+        }
+
+        tmp = udev_device_get_sysattr_value(dev, "queue/logical_block_size");
+        if (tmp) {
+            block_size = (unsigned short int)atoi(tmp);
+        }
+
+        printf(ANSI_COLOR_LIGHT_GREEN "SIZE:\t\t"ANSI_COLOR_RESET);
+        if (strncmp(udev_device_get_sysname(dev), "sr", 2) != 0) {
+            printf("%lld GB\n\n", (disk_size * block_size) / 1000000000);
+        } else {
+            printf("n/a\n");
+        }
+
+        udev_device_unref(dev);
+    }
+
+    udev_enumerate_unref(udev_enum);
+    udev_unref(udev);
+} 
+#endif
 #ifdef BLKID
 #include <blkid/blkid.h>
 
@@ -62,7 +142,10 @@ void storage(void) {
     if (!found) {
         printf(ANSI_COLOR_RED "unknown\n" ANSI_COLOR_RESET);
     }	
-	
+	//it must be printed after the model printed
+    #ifdef LIBUDEV
+    process_udev();
+    #endif
     // Open the mount points file	
     FILE *mtab = setmntent("/etc/mtab", "r");
 	if (mtab != NULL) {

@@ -7,7 +7,7 @@ RED='\033[0;31m'
 NC='\033[0m'
 
 # Libraries to check
-LIBS=("math" "apparmor" "selinux" "efivar" "blkid")
+LIBS=("math" "apparmor" "selinux" "efivar" "blkid" "libudev")
 LIBPCI="pci"
 
 # Check for the standard libraries
@@ -35,6 +35,10 @@ for LIB in "${LIBS[@]}"; do
     elif [ "$LIB" == "blkid" ] && [ -f /usr/include/blkid/blkid.h ]; then
         CFLAGS+=" -DBLKID"
         LDFLAGS+=" -lblkid"
+        echo -e "checking ${LIB}: ${GREEN}OK${NC}"
+    elif [ "$LIB" == "libudev" ] && [ -f /usr/include/libudev.h ]; then
+        CFLAGS+=" -DLIBUDEV"
+        LDFLAGS+=" -ludev"
         echo -e "checking ${LIB}: ${GREEN}OK${NC}"
     else
         echo -e "checking ${LIB}: ${RED}NO${NC}"

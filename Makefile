@@ -59,6 +59,11 @@ install: $(EXECUTABLE)
 checkdep:
 	@./config.sh
 
+# for just simple help instead of person reading entire readme
+help:
+	@echo "make checkdep"
+	@echo "make"
+	@echo "make install (	optional)"
 # Clean up build files
 clean:
 	rm -rf $(OBJ_DIR) $(EXECUTABLE) config.mk

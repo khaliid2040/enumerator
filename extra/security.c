@@ -127,66 +127,36 @@ void LinuxSecurityModule(void) {
 #ifdef LIBEFI
 int GetSecureBootStatus ()
 {
-        uint8_t *data = NULL;
-        size_t data_size;
-        uint32_t attributes;
-        int32_t secureboot = -1;
-        int32_t setupmode = -1;
-        int32_t moksbstate = -1;
+ unsigned char *data = NULL;
+    size_t size;
+    unsigned int attributes;
+    unsigned int secureboot = -1;
+    unsigned int state = -1;
 
-        if (efi_get_variable (efi_guid_global, "SecureBoot", &data, &data_size,
-                              &attributes) < 0) {
-                fprintf(stderr,"Secure boot not supported\n");
-                return -1;
-        }
+    if (efi_get_variable (efi_guid_global, "SecureBoot", &data, &size,&attributes) < 0) {
+            fprintf(stderr,"Secure boot not supported\n");
+            return 1;
+    }   
 
-        if (data_size != 1) {
-                printf ("Strange data size %zd for \"SecureBoot\" variable\n",
-                        data_size);
-        }
-        if (data_size == 4 || data_size == 2 || data_size == 1) {
-                secureboot = 0;
-                memcpy(&secureboot, data, data_size);
-        }
+    if (size == 4 || size == 2 || size == 1) {
+        secureboot = 0;
+        memcpy(&secureboot, data, size);
+    }
+    free(data); 
+
+    data = NULL;
+    if (efi_get_variable (efi_guid_shim, "MokSBStateRT", &data, &size,&attributes) >= 0) {
+        state = 1;
         free (data);
-
-        data = NULL;
-        if (efi_get_variable (efi_guid_global, "SetupMode", &data, &data_size,
-                              &attributes) < 0) {
-                fprintf (stderr,ANSI_COLOR_RED "Failed to read \"SetupMode\" "
-                                 "variable: %m\n" ANSI_COLOR_RESET);
-                return -1;
-        }
-
-        if (data_size != 1) {
-                printf (ANSI_COLOR_YELLOW "Strange data size %zd for \"SetupMode\" variable\n" ANSI_COLOR_RESET,
-                        data_size);
-        }
-        if (data_size == 4 || data_size == 2 || data_size == 1) {
-                setupmode = 0;
-                memcpy(&setupmode, data, data_size);
-        }
-        free (data);
-
-        data = NULL;
-        if (efi_get_variable (efi_guid_shim, "MokSBStateRT", &data, &data_size,
-                              &attributes) >= 0) {
-                moksbstate = 1;
-                free (data);
-        }
-
-        if (secureboot == 1 && setupmode == 0) {
-        printf(ANSI_COLOR_GREEN "SecureBoot enabled\n" ANSI_COLOR_RESET);
-        if (moksbstate == 1) {
-            printf(ANSI_COLOR_RED "SecureBoot validation is disabled in shim\n" ANSI_COLOR_RESET);
-        }
-        } else if (secureboot == 0 || setupmode == 1) {
-        printf(ANSI_COLOR_RED "SecureBoot disabled" ANSI_COLOR_RESET);
-        
-        } else {
-        printf(ANSI_COLOR_YELLOW "Cannot determine secure boot state.\n" ANSI_COLOR_RESET);
-        }
-
+    }
+    if (secureboot) {
+        printf(ANSI_COLOR_GREEN "secureboot enabled"ANSI_COLOR_RESET);
+        return 1;
+    } else {
+        printf(ANSI_COLOR_RED "secureboot disabled");
         return 0;
+    }   
+
+        return 0;   
 }
 #endif  

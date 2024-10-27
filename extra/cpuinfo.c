@@ -3,7 +3,7 @@
 unsigned int eax,ebx,ecx,edx;
 char vendor[13];
 #ifdef supported
-void cpuid() {
+static void cpuid() {
     /* i intentionally compared leaf 0 and 1 because this is the only leaf values is being worked 
     it may be removed from the future */
     for (int i=0;i<2;i++) {
@@ -79,7 +79,7 @@ void cpuid() {
 //the function above is good and optimal uses direct cpuid instrcution but it only available on x86/x86_64 so 
 //for other architectures we don't have option but to parse /proc/cpuinfo
 #ifndef supported
-void generic_cpuinfo(struct Cpuinfo *cpu) {
+static void generic_cpuinfo(struct Cpuinfo *cpu) {
     char buffer[256];  // Increase buffer size to handle longer lines
     FILE *fp = fopen("/proc/cpuinfo", "r");
     if (!fp) {
@@ -112,7 +112,7 @@ void generic_cpuinfo(struct Cpuinfo *cpu) {
     fclose(fp);
 }
 #endif      
-int cpu_vulnerabilities(void) {
+static int cpu_vulnerabilities(void) {
     struct dirent *entry;
     char *dir_path= "/sys/devices/system/cpu/vulnerabilities";
     char file_path[MAX_LINE_LENGTH];
@@ -130,7 +130,7 @@ int cpu_vulnerabilities(void) {
     }
     closedir(path);
 }
-struct freq *frequency(void) {
+static struct freq *frequency(void) {
     struct freq *frq = malloc(sizeof(struct freq));
     if (frq == NULL) {
         perror("malloc");
@@ -190,7 +190,7 @@ struct freq *frequency(void) {
     return frq;
 }
 
-void hwmon() {
+static void hwmon() {
     printf("\n");
     struct dirent *entry;
     char path[SIZE],contents[SIZE];
@@ -227,13 +227,26 @@ void hwmon() {
                 }
                 float cur_temp;
                 if (fgets(contents,SIZE,tem) != NULL) {
-                    if (i==1) {
+                    /*if (i==1) {
                         printf(DEFAULT_COLOR "Package:\t\t" ANSI_COLOR_RESET);
                     } else {
                         printf(DEFAULT_COLOR "Core %d:\t\t\t" ANSI_COLOR_RESET,i - 2);
+                    }*/
+                   cur_temp = strtof(contents,NULL) / 1000.0;
+                   snprintf(path,sizeof(path),"/sys/class/hwmon/%s/temp%d_label",entry->d_name,i);
+                   FILE *label = fopen(path,"r");
+                   if (label) {
+                    if (fgets(contents,SIZE,label) != NULL) {
+                        int len = strlen(contents);
+                        // remove new line character
+                        if (contents[len -1] == '\n') {
+                            contents[len - 1] = '\0';
+                        }
+                        printf(DEFAULT_COLOR "%-10s:\t\t%.1f °C "ANSI_COLOR_RESET,contents,cur_temp);
                     }
-                    cur_temp = strtof(contents,NULL) / 1000.0;
-                    printf("%.1f °C   ",cur_temp);
+                   }
+                    fclose(label);
+                    //printf("%.1f °C  ",cur_temp);
                 }
                 fclose(tem);    
                 snprintf(path,SIZE,"/sys/class/hwmon/%s/temp%d_crit",entry->d_name,i);

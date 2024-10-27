@@ -30,7 +30,9 @@ System_t *dmi_read() {
     strncpy(system->sys_vendor,iterate[6],sizeof(system->sys_vendor));
     strncpy(system->chassis_vendor,iterate[7],sizeof(system->chassis_vendor));
     for (int i=0;i<8;i++) {
-        free(iterate[i]);
+        if (iterate[i]) {
+         free(iterate[i]);   
+        }
     }
     return system;
 }

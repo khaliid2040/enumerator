@@ -58,6 +58,20 @@ bool count_processor(int* cores_count, int* processors_count) {
     free(cpuinfo_buffer);
     return check;
 }
+void trim_whitespace(char *str) {
+    char *end;
+
+    // Trim leading space
+    while (isspace((unsigned char)*str)) str++;
+
+    // Trim trailing space
+    end = str + strlen(str) - 1;
+    while (end > str && isspace((unsigned char)*end)) end--;
+
+    // Null terminate after the last non-space character
+    *(end + 1) = '\0';
+}
+
 #ifdef LIBPCI
 void gpu_info(char *model,char *vendor) {
     struct pci_access *pac= pci_alloc();
@@ -132,7 +146,7 @@ struct acpi* get_acpi() {
             continue;
         }
 
-        // Open temp and state files
+        // Read temperature
         snprintf(path, PATH, "/sys/devices/virtual/thermal/%s/temp", entry->d_name);
         FILE *tempfp = fopen(path, "r");
         if (tempfp == NULL) {
@@ -142,30 +156,42 @@ struct acpi* get_acpi() {
             fclose(tempfp);
             continue;
         }
+        fclose(tempfp);
 
+        // Create new node
         node = malloc(sizeof(struct acpi));
         if (node == NULL) {   
             perror("malloc");
-            fclose(tempfp);
             continue;
         }
         node->next = NULL;
         
-        //node->temp = strtoul(contents, NULL, 10);
-        node->temp=strtof(contents,NULL);
-        fclose(tempfp);
+        // Store temperature, converting from string to float
+        node->temp = strtof(contents, NULL);
 
+        // Read mode (enabled/disabled)
         snprintf(path, PATH, "/sys/devices/virtual/thermal/%s/mode", entry->d_name);
         FILE *modefp = fopen(path, "r");
-        if (modefp == NULL) {
-            free(node);
-            continue;
+        if (modefp != NULL) {
+            if (fgets(contents, SIZE, modefp) != NULL) {
+                trim_whitespace(contents); // Optional: Use a trimming function if needed
+                strncpy(node->state, contents, sizeof(node->state) - 1);
+                node->state[sizeof(node->state) - 1] = '\0'; // Ensure null termination
+            }
+            fclose(modefp);
         }
-        if (fgets(contents, SIZE, modefp) != NULL) {
-            strncpy(node->state, contents, sizeof(node->state));
-            node->state[sizeof(node->state) - 3] = '\0'; // Ensure null termination
+
+        // Read type of sensor
+        snprintf(path, PATH, "/sys/devices/virtual/thermal/%s/type", entry->d_name);
+        FILE *typefp = fopen(path, "r");
+        if (typefp != NULL) {
+            if (fgets(contents, SIZE, typefp) != NULL) {
+                trim_whitespace(contents); // Optional: Use a trimming function if needed
+                strncpy(node->type, contents, sizeof(node->type) - 1);
+                node->type[sizeof(node->type) - 1] = '\0'; // Ensure null termination
+            }
+            fclose(typefp);
         }
-        fclose(modefp);
 
         // Add node to the linked list
         if (head == NULL) {
@@ -179,7 +205,6 @@ struct acpi* get_acpi() {
     closedir(thermal);
     return head;
 }
-
 void acpi_info() {
     struct acpi *head = get_acpi();
     if (head == NULL) {
@@ -189,17 +214,19 @@ void acpi_info() {
 
     struct acpi *current = head;
     unsigned int count = 0;
-    char tempb[7];
 
     // Print table headers
-    printf("%-10s %-10s %-10s\n", "Sensor", "State", "Temperature");
+    printf("%-10s\t%-10s\t%-10s\n", "Sensor", "State", "Temperature");
 
     while (current != NULL) {
-        snprintf(tempb, sizeof(tempb), "temp%u", count);
-        printf("%-10s %-10s %.1f °C\n", tempb, current->state, current->temp / 1000.0);
+
+        // Print the state and temperature
+        printf("%-10s\t%-10s\t%.1f °C\n", current->type,current->state, current->temp / 1000.0);
+
+        // Move to the next sensor and free the current node
         struct acpi *temp = current;
         current = current->next;
-        free(temp);  // Free each node after printing
+        free(temp);
         count++;
     }     
-}   
+}

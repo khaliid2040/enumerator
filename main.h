@@ -134,7 +134,7 @@ typedef struct {
 void system_enum(void);
 //used in extra_fun.c
 struct acpi {
-    char name[64];
+    char type[10];
     char state[10];
     float temp;
     struct acpi *next;

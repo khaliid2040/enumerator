@@ -1,7 +1,7 @@
 #include "../main.h"
 #include <fcntl.h>
 
-void Total_cpu_time(void) {
+static void Total_cpu_time(void) {
     FILE *fp;
     char line[MAX_LINE_LENGTH];
 
@@ -65,7 +65,7 @@ void process_cpu_time(void) {
 /*
     The below functions are specific to process with process id
 */
-int readUptime(double *uptime, double *idletime) {
+static int readUptime(double *uptime, double *idletime) {
     FILE *file = fopen("/proc/uptime", "r");
     if (!file) return -1;
     if (fscanf(file, "%lf %lf", uptime, idletime) != 2) {
@@ -75,7 +75,7 @@ int readUptime(double *uptime, double *idletime) {
     fclose(file);
     return 0;
 }
-int readProcessStats(int pid, ProcessInfo *info) {
+static int readProcessStats(int pid, ProcessInfo *info) {
     char path[256];
     snprintf(path, sizeof(path), "/proc/%d/stat", pid);
 
@@ -91,7 +91,7 @@ int readProcessStats(int pid, ProcessInfo *info) {
     // Check if all expected fields were successfully read.
     return (fields_read == 6) ? 0 : -1;
 }  
-int readMemoryInfo(int pid, ProcessInfo *info) {
+static int readMemoryInfo(int pid, ProcessInfo *info) {
     char path[256];
     snprintf(path, sizeof(path), "/proc/%d/statm", pid);
     FILE *file = fopen(path, "r");
@@ -104,7 +104,7 @@ int readMemoryInfo(int pid, ProcessInfo *info) {
     fclose(file);
     return 0;
 }
-int countThreads(int pid) {
+static int countThreads(int pid) {
     char path[256];
     snprintf(path, sizeof(path), "/proc/%d/task", pid);
     DIR *dir = opendir(path);
@@ -119,7 +119,7 @@ int countThreads(int pid) {
     closedir(dir);
     return count;
 }
-int readCgroup(int pid, char *cgroup) {
+static int readCgroup(int pid, char *cgroup) {
     char path[256];
     snprintf(path, sizeof(path), "/proc/%d/cgroup", pid);
     FILE *file = fopen(path, "r");
@@ -131,7 +131,7 @@ int readCgroup(int pid, char *cgroup) {
     fclose(file);
     return 0;
 }
-int get_ctxt_switches(ProcessInfo *info,int pid) {
+static int get_ctxt_switches(ProcessInfo *info,int pid) {
     char path[64],lines[64];
     snprintf(path,sizeof(path),"/proc/%d/status",pid);
     FILE *fp= fopen(path,"r");
@@ -158,7 +158,7 @@ int get_ctxt_switches(ProcessInfo *info,int pid) {
     return 0;
 }
 // get real, effected user id return 2 if succeed
-void get_uid_gid(ProcessInfo *info,int pid) {
+static void get_uid_gid(ProcessInfo *info,int pid) {
     char path[64],contents[64];
     snprintf(path,sizeof(path),"/proc/%d/status",pid);
     FILE *fp = fopen(path,"r");
@@ -180,7 +180,7 @@ void get_uid_gid(ProcessInfo *info,int pid) {
 		}
     }
 }
-void calculateCPUInfo(ProcessInfo *info, double uptime) {
+static void calculateCPUInfo(ProcessInfo *info, double uptime) {
     long hertz = sysconf(_SC_CLK_TCK);
     info->total_cpu_time = (info->utime + info->stime) / (double) hertz;
     info->cpu_time_percent = (info->total_cpu_time / uptime) * 100;
@@ -188,7 +188,7 @@ void calculateCPUInfo(ProcessInfo *info, double uptime) {
     info->system_mode_percent = (info->stime / (double) hertz) / info->total_cpu_time * 100;
 }
 
-void printProcessInfo(const ProcessInfo *info,int pid) {
+static void printProcessInfo(const ProcessInfo *info,int pid) {
     long page_size = sysconf(_SC_PAGE_SIZE) / 1024; // Page size in KiB
     unsigned long total = info->total_mem * page_size;
     unsigned long shared = info->shared_mem * page_size;

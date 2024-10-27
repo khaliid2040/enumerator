@@ -1,7 +1,7 @@
 #include "../main.h"
 
 // Gentoo package manager
-int gentoo_pkgmgr() {
+static int gentoo_pkgmgr() {
     struct dirent *entry;
     char path[256];
     int counter = 0;
@@ -48,7 +48,7 @@ int gentoo_pkgmgr() {
 }
 
 // Debian package manager
-int debian_pkgmgr() {
+static int debian_pkgmgr() {
     int counter = 0;
     FILE *pkgmgr;
     char buffer[256];
@@ -69,7 +69,7 @@ int debian_pkgmgr() {
 }
 
 // Red Hat package manager
-int redhat_pkgmgr() {
+static int redhat_pkgmgr() {
     int counter = 0;
     FILE *pkgmgr;
     char buffer[256];
@@ -88,7 +88,7 @@ int redhat_pkgmgr() {
     return counter;
 }
 // arch-based distros package manager
-int arch_pkgmgr() {
+static int arch_pkgmgr() {
     char buffer[64];
     FILE *pkgmgr= popen("pacman -Qq","r");
     int count_packages=0;
@@ -100,7 +100,7 @@ int arch_pkgmgr() {
     return count_packages;
 }
 // Flatpak package manager
-int count_flatpak_packages() {
+ static int count_flatpak_packages() {
     char buffer[128];
     int count = 0;
     FILE *fp = popen("flatpak list | wc -l", "r");

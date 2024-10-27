@@ -1,7 +1,7 @@
 #include "../main.h"
 #ifdef SELINUX_H
 #include <selinux/selinux.h> 
-void selinux(void) {
+static void selinux(void) {
     if (is_selinux_enabled()) {
         printf("SELinux: " ANSI_COLOR_GREEN "enabled\n" ANSI_COLOR_RESET);
     } else {
@@ -51,7 +51,7 @@ void selinux(void) {
 }
 #elif APPARMOR_H
 #include <sys/apparmor.h>
-void apparmor(void) {
+static void apparmor(void) {
     //check if enabled
     if (aa_is_enabled()) {
         printf("Apparmor:\t" ANSI_COLOR_GREEN "enabled\n" ANSI_COLOR_RESET);

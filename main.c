@@ -351,6 +351,10 @@ int main(int argc, char *argv[])
         // If -p is specified
         if (P_flag) {
             process_cpu_time();
+            //get this process information if specified 0 for debugging purposes
+            if (!p_value) {
+                p_value = getpid();
+            }
             getProcessInfo(p_value);
         } 
         // If only -H is specified

@@ -332,36 +332,34 @@ int cpuinfo() {
         printf(DEFAULT_COLOR"Stepping\t\t"ANSI_COLOR_RESET "%u\n",cpu.stepping);
     #endif
     hwmon();
-    for (int i=0;i<processors;i++) {
-        level--; //decrement each iteration and if fopen fails assume non exsted
-        if (level <0) {
-            break;  // prevent level becoming negative  
+    unsigned int eax, ebx, ecx, edx;
+    unsigned int cache_count = 0;
+    unsigned int cache_type, cache_level, cache_size;
+
+    while (1) {
+        // Use leaf 0x00000004 (Cache information) and iterate with cache_count (ECX)
+        __cpuid_count(0x4, cache_count, eax, ebx, ecx, edx);
+
+        cache_type = eax & 0x1F; // Bits 0-4: Cache type
+        if (cache_type == 0) {
+            // Cache type 0 means no more caches
+            break;
         }
-        snprintf(spath,sizeof(spath),"/sys/devices/system/cpu/cpu%d/cache/index%d/size",i,level); //size
-        snprintf(tpath,sizeof(tpath),"/sys/devices/system/cpu/cpu%d/cache/index%d/type",i,level);
-        FILE *sizeN= fopen(spath,"r");
-        if (sizeN==NULL) {
-            continue;   
-        }
-        if (fgets(size_cont,sizeof(size_cont),sizeN) == NULL) {
-            perror("fgets");
-            fclose(sizeN);
-            continue;
-        }   
-        fclose(sizeN);
-        //now for cache type
-        FILE *typeN= fopen(tpath,"r");
-        if (typeN==NULL) {
-            perror("fopen");
-            return 2;
-        }
-        if (fgets(type_cont,sizeof(type_cont),typeN) == NULL) { 
-            perror("fgets");
-            fclose(typeN);
-            continue;
-        }
-        fclose(typeN);
-        printf(DEFAULT_COLOR "L%d Cache :"ANSI_COLOR_RESET "\t\t type: %s\t\t\t size: %s\n",level,type_cont,size_cont);
+
+        cache_level = (eax >> 5) & 0x7;       // Bits 5-7: Cache level (L1, L2, L3, etc.)
+        // Cache size calculation as per CPUID spec
+        unsigned int ways = ((ebx >> 22) & 0x3FF) + 1;
+        unsigned int partitions = ((ebx >> 12) & 0x3FF) + 1;
+        unsigned int line_size = (ebx & 0xFFF) + 1;
+        unsigned int sets = ecx + 1;
+        cache_size = ways * partitions * line_size * sets;
+        printf(DEFAULT_COLOR"Cache L%d:\t\t"ANSI_COLOR_RESET "type: %s\n\t\t\tsize: %d KB\n\n", cache_level,
+                cache_type == 1 ? "Data cache":
+                cache_type == 2 ? "Instruction cache":
+                cache_type == 3 ? "Unified cache":
+                "unknown",
+                cache_size / 1024);
+        cache_count++; // Move to the next cache
     }
     printf(ANSI_COLOR_YELLOW "Getting cpu vurnuabilities\n" ANSI_COLOR_RESET);
     cpu_vulnerabilities();

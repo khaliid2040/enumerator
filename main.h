@@ -30,6 +30,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <syscall.h>
 #include <math.h>
 #include <dirent.h>
 #include <arpa/inet.h>
@@ -78,6 +79,7 @@ typedef struct {
     unsigned long stime;
     unsigned long cutime;
     unsigned long cstime;
+    unsigned int priority;
     int voluntary_ctxt_switches;
     int nonvoluntary_ctxt_switches;  
     char comm[256];

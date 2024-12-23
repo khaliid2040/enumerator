@@ -1,5 +1,6 @@
 #include "../main.h"
 #include <fcntl.h>
+#include <sys/resource.h>
 
 static void Total_cpu_time(void) {
     FILE *fp;
@@ -75,6 +76,12 @@ static int readUptime(double *uptime, double *idletime) {
     fclose(file);
     return 0;
 }
+
+// getpriority syscall to get the actual priority not nice value which glibc wrapper returns
+static inline int process_getpriority(unsigned int which,unsigned int who) {
+    return syscall(SYS_getpriority,which,who);
+}
+
 static int readProcessStats(int pid, ProcessInfo *info) {
     char path[256];
     snprintf(path, sizeof(path), "/proc/%d/stat", pid);
@@ -86,6 +93,7 @@ static int readProcessStats(int pid, ProcessInfo *info) {
     int fields_read = fscanf(file, "%*d (%[^)]) %c %*d %*d %*d %*d %*d %*u %*u %*u %*u %lu %lu %lu %lu",
                              info->comm, &info->state, &info->utime, &info->stime, 
                              &info->cutime, &info->cstime);
+    info->priority = process_getpriority(PRIO_PROCESS,pid);
 
     fclose(file);
     // Check if all expected fields were successfully read.
@@ -209,6 +217,7 @@ static void printProcessInfo(const ProcessInfo *info,int pid) {
     printf(DEFAULT_COLOR "Process Name:\t\t\t\t" ANSI_COLOR_RESET "%s\n", info->comm);
     printf(DEFAULT_COLOR "Process State:\t\t\t\t" ANSI_COLOR_RESET "%s\n", state_string);
     printf(DEFAULT_COLOR "Process Threads:\t\t\t" ANSI_COLOR_RESET "%d\n", info->thread_count);
+    printf(DEFAULT_COLOR "priority:\t\t\t\t"ANSI_COLOR_RESET "%d\n",info->priority);
     printf(DEFAULT_COLOR "Cgroup slice:\t\t\t\t" ANSI_COLOR_RESET "%s", info->cgroup);
     printf(DEFAULT_COLOR "Uid/euid/uid\t\t\t\t"ANSI_COLOR_RESET "%u\t%u\t%u\t\n",info->uid,info->euid,info->ruid);
     printf(DEFAULT_COLOR "Gid/egid/rgid\t\t\t\t" ANSI_COLOR_RESET "%u\t%u\t%u\t\n" ,info->gid,info->egid,info->rgid);

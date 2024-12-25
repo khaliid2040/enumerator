@@ -25,6 +25,9 @@
 #else 
 #define DEFAULT_COLOR    "\x1b[36m" // Cyan
 #endif  
+
+#define MAX_PATH 96
+#define UNIT_SIZE 1024.0 // each unit is 1024 in binary prefixes
 // including libraries
 #include <stdio.h>
 #include <string.h>
@@ -79,10 +82,14 @@ typedef struct {
     unsigned long stime;
     unsigned long cutime;
     unsigned long cstime;
+    unsigned long minflt; //minor page fault
+    unsigned long majrflt; // major page fault
+    unsigned int ppid;
     unsigned int priority;
     int voluntary_ctxt_switches;
     int nonvoluntary_ctxt_switches;  
     char comm[256];
+    char pcomm[256]; // parent /proc/[pid]/comm
     char state;
     unsigned long total_mem;
     unsigned long resident_mem;
@@ -144,4 +151,21 @@ struct acpi {
 void acpi_info(void);
 //extra/package.c
 void package_manager();
+
+// calculate size dynamically 
+//caller must set unit to KiB and supply units as KiB
+static inline double convert_size_unit(double size, char* unit, size_t len) {
+    double converted_size = size;
+    const char *units[4] = {"KiB", "MiB", "GiB", "TiB"};
+    memset(unit, 0, len);
+
+    for (int i = 0; i < 4; i++) {
+        if (converted_size <= UNIT_SIZE) {
+            strncpy(unit, units[i], len - 1);
+            break;
+        }
+        converted_size /= UNIT_SIZE;
+    }
+    return converted_size;
+}
 #endif

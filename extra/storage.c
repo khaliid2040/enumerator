@@ -117,9 +117,12 @@ char *get_uuid(const char *node) {
 }
 #endif
 void storage(void) {
-	//get disk model
-	    char model[64] = {0};
-    const char *paths[] = {"/sys/block/nvme0n1/device/model", "/sys/block/sda/device/model"};
+    // Get disk model
+    char model[64] = {0};
+    const char *paths[] = {
+        "/sys/block/nvme0n1/device/model",
+        "/sys/block/sda/device/model"
+    };
     FILE *fp = NULL;
     int found = 0;
 
@@ -130,63 +133,81 @@ void storage(void) {
         fp = fopen(paths[i], "r");
         if (fp) {
             if (fgets(model, sizeof(model), fp) != NULL) {
-                printf("%s", model);  // Model already includes newline
+                printf("%s", model); // Model already includes newline
                 found = 1;
                 fclose(fp);
-                break;  // Stop checking other paths if model is found
+                break;
             }
-            fclose(fp);  // Close file if reading failed
+            fclose(fp);
         }
     }
 
     if (!found) {
         printf(ANSI_COLOR_RED "unknown\n" ANSI_COLOR_RESET);
-    }	
-	//it must be printed after the model printed
-    #ifdef LIBUDEV
+    }
+
+    // Additional processing if LIBUDEV is enabled
+#ifdef LIBUDEV
     process_udev();
-    #endif
-    // Open the mount points file	
+#endif
+
+    // Open the mount points file
     FILE *mtab = setmntent("/etc/mtab", "r");
-	if (mtab != NULL) {
-    	// Print header
-    	printf("%-15s%-12s%-12s%-12s%-12s%-12s%-12s\n", "Device", "Filesystem", "Mountpoint", "Size(GiB)", "Free(GiB)", 
-		"Used(GiB)","UUID");
-		char *needed_filesystem[6]= {"ext4","ext3","ext2","btrfs","vfat","exfat"};
-    	// Read each entry from the mount points file
-    	struct mntent *entry;
-		int counter=0;
-    	while ((entry = getmntent(mtab)) != NULL) {
-    	    struct statvfs fs_info;
-    	    if (statvfs(entry->mnt_dir, &fs_info) == 0) {
-    	        unsigned long long block_size = fs_info.f_frsize ? fs_info.f_frsize : fs_info.f_bsize; // Get the block size
-    	        unsigned long long total_size = fs_info.f_blocks * block_size; // Total size in bytes
-    	        unsigned long long free_blocks = fs_info.f_bfree * block_size; // Free blocks in bytes
-    	        unsigned long long used_blocks = total_size - free_blocks; // Used blocks in bytes
-    	        double total_size_gib = total_size / (double)GiB; // Convert to GiB
-    	        double free_blocks_gib = free_blocks / (double)GiB; // Convert free blocks to GiB
-    	        double used_blocks_gib = used_blocks / (double)GiB; // Convert used blocks to GiB
-				int needed=0;
-				for (int i=0; i < sizeof(needed_filesystem)/ sizeof(needed_filesystem[0]); i++) {
-					if (strcmp(entry->mnt_type,needed_filesystem[i]) ==0) {
-						needed=1;
-						break;
-					}
-				}
-				//now getting device uuid
-				char *uuid= NULL;
-				if (needed) {
-                    #ifdef BLKID
-				    uuid = get_uuid(entry->mnt_fsname);
-				    #endif
-					printf("%-15s%-12s%-12s%-12.2f%-12.2f%-12.2f%-12s\n", entry->mnt_fsname, entry->mnt_type, 
-					entry->mnt_dir, total_size_gib, free_blocks_gib, used_blocks_gib, uuid ? uuid : "N/A");	
-				}
+    if (mtab != NULL) {
+        // Print table header
+        printf("%-16s%-16s%-16s% -16s%-16s%-16s%-1s\n",
+               "Device", "Filesystem", "Mountpoint", "Size",
+               "Free", "Used", "UUID");
 
-    	    }
-    	}
+        char *needed_filesystem[] = {"ext4", "ext3", "ext2", "btrfs", "vfat", "exfat"};
+        struct mntent *entry;
 
-    	// Close the mount points file
-    	endmntent(mtab);
-	}
+        // Read each entry from the mount points file
+        while ((entry = getmntent(mtab)) != NULL) {
+            struct statvfs fs_info;
+            if (statvfs(entry->mnt_dir, &fs_info) == 0) {
+                // Calculate sizes in KiB (since convert_size_unit expects KiB)
+                unsigned long long block_size_kib = fs_info.f_frsize / 1024;
+                unsigned long long total_size_kib = fs_info.f_blocks * block_size_kib;
+                unsigned long long free_blocks_kib = fs_info.f_bfree * block_size_kib;
+                unsigned long long used_blocks_kib =
+                    (fs_info.f_blocks - fs_info.f_bfree) * block_size_kib;
+
+                // Convert sizes to human-readable units
+                char unit_total[4], unit_free[4], unit_used[4];
+                double total_size = convert_size_unit(total_size_kib, unit_total, sizeof(unit_total));
+                double free_blocks = convert_size_unit(free_blocks_kib, unit_free, sizeof(unit_free));
+                double used_blocks = convert_size_unit(used_blocks_kib, unit_used, sizeof(unit_used));
+
+                // Check if filesystem type is needed
+                int needed = 0;
+                for (int i = 0; i < sizeof(needed_filesystem) / sizeof(needed_filesystem[0]); i++) {
+                    if (strcmp(entry->mnt_type, needed_filesystem[i]) == 0) {
+                        needed = 1;
+                        break;
+                    }
+                }
+
+                // Retrieve UUID if BLKID is enabled
+                char *uuid = NULL;
+#ifdef BLKID
+                uuid = get_uuid(entry->mnt_fsname);
+#endif
+
+                // Print only if needed
+                if (needed) {
+                    printf("%-15.15s% -15.12s%-15.12s%10.2f %-4s %10.2f %-4s %10.2f %-4s %-15.12s\n",
+                            entry->mnt_fsname, entry->mnt_type, entry->mnt_dir,
+                            total_size, unit_total,
+                            free_blocks, unit_free,
+                            used_blocks, unit_used,
+                            uuid ? uuid : "N/A");
+
+                }
+            }
+        }
+
+        // Close the mount points file
+        endmntent(mtab);
+    }
 }

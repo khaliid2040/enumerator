@@ -81,23 +81,53 @@ static int readUptime(double *uptime, double *idletime) {
 static inline int process_getpriority(unsigned int which,unsigned int who) {
     return syscall(SYS_getpriority,which,who);
 }
+/*get the command of the current process and it's parent 
+ *processInfo structure must be filled
+ * extract ppid from processInfo->ppid
+ */
+static bool get_comm_processes(int pid , ProcessInfo *info) {
+    char path[MAX_PATH];
+    FILE *fp;
+    snprintf(path,MAX_PATH,"/proc/%d/comm",pid);
+    fp = fopen(path,"r");
+    if (!fp)
+        return false;
+    if (fgets(info->comm,sizeof(info->comm),fp) == NULL) {
+        fclose(fp);
+        return false;
+    }
+    fclose(fp);
+    // parent command now
+    snprintf(path,MAX_PATH,"/proc/%d/comm",info->ppid);
+    fp = fopen(path,"r");
+    if (!fp)
+        return false;
+    if (fgets(info->pcomm,sizeof(info->pcomm),fp) == NULL) {
+        fclose(fp);
+        return false;
+    }
+    info->pcomm[strlen(info->pcomm) - 1] = '\0';
+    fclose(fp);
+    return true;
+}
 
 static int readProcessStats(int pid, ProcessInfo *info) {
-    char path[256];
+    char path[MAX_PATH];
     snprintf(path, sizeof(path), "/proc/%d/stat", pid);
 
     FILE *file = fopen(path, "r");          
     if (!file) return -1;  // File could not be opened
 
     // Read the process stats. Make sure the format matches the actual format of /proc/[pid]/stat.
-    int fields_read = fscanf(file, "%*d (%[^)]) %c %*d %*d %*d %*d %*d %*u %*u %*u %*u %lu %lu %lu %lu",
-                             info->comm, &info->state, &info->utime, &info->stime, 
+    int fields_read = fscanf(file, "%*d %*s %c %d %*d %*d %*d %*d %*u %u %*u %u %lu %lu %lu %lu",
+                             &info->state, &info->ppid, &info->minflt, &info->majrflt,&info->utime, &info->stime, 
                              &info->cutime, &info->cstime);
     info->priority = process_getpriority(PRIO_PROCESS,pid);
-
     fclose(file);
+    if (!get_comm_processes(pid,info))
+        return 1;
     // Check if all expected fields were successfully read.
-    return (fields_read == 6) ? 0 : -1;
+    return (fields_read == 8) ? 0 : -1;
 }  
 static int readMemoryInfo(int pid, ProcessInfo *info) {
     char path[256];
@@ -198,10 +228,11 @@ static void calculateCPUInfo(ProcessInfo *info, double uptime) {
 
 static void printProcessInfo(const ProcessInfo *info,int pid) {
     long page_size = sysconf(_SC_PAGE_SIZE) / 1024; // Page size in KiB
-    unsigned long total = info->total_mem * page_size;
-    unsigned long shared = info->shared_mem * page_size;
-    unsigned long resident = info->resident_mem * page_size;
-    unsigned long dirty = info->dirty_mem * page_size;
+    char unit[4][4];
+    unsigned long total = convert_size_unit(info->total_mem * page_size,unit[0],4);
+    unsigned long shared = convert_size_unit(info->shared_mem * page_size,unit[1],4);
+    unsigned long resident = convert_size_unit(info->resident_mem * page_size,unit[2],4);
+    unsigned long dirty = convert_size_unit(info->dirty_mem * page_size,unit[3],4);
 
     const char *state_string;
     switch (info->state) {
@@ -214,21 +245,25 @@ static void printProcessInfo(const ProcessInfo *info,int pid) {
     }
 
     printf(DEFAULT_COLOR "Process ID:\t\t\t\t" ANSI_COLOR_RESET "%d\n", pid);
-    printf(DEFAULT_COLOR "Process Name:\t\t\t\t" ANSI_COLOR_RESET "%s\n", info->comm);
+    printf(DEFAULT_COLOR "Process Name:\t\t\t\t" ANSI_COLOR_RESET "%s", info->comm);
     printf(DEFAULT_COLOR "Process State:\t\t\t\t" ANSI_COLOR_RESET "%s\n", state_string);
     printf(DEFAULT_COLOR "Process Threads:\t\t\t" ANSI_COLOR_RESET "%d\n", info->thread_count);
+    printf(DEFAULT_COLOR "Parent process:\t\t\t\t"ANSI_COLOR_RESET "%d(%s)\n",info->ppid,info->pcomm);
     printf(DEFAULT_COLOR "priority:\t\t\t\t"ANSI_COLOR_RESET "%d\n",info->priority);
     printf(DEFAULT_COLOR "Cgroup slice:\t\t\t\t" ANSI_COLOR_RESET "%s", info->cgroup);
     printf(DEFAULT_COLOR "Uid/euid/uid\t\t\t\t"ANSI_COLOR_RESET "%u\t%u\t%u\t\n",info->uid,info->euid,info->ruid);
     printf(DEFAULT_COLOR "Gid/egid/rgid\t\t\t\t" ANSI_COLOR_RESET "%u\t%u\t%u\t\n" ,info->gid,info->egid,info->rgid);
     printf(DEFAULT_COLOR "Total CPU Time:\t\t\t\t" ANSI_COLOR_RESET "%.2f seconds\n", info->total_cpu_time);
+    printf(DEFAULT_COLOR "major/minor page faults:\t\t"ANSI_COLOR_RESET "%d/%d\n",info->majrflt,info->minflt);
     printf(DEFAULT_COLOR "Context switches:\t\t\t"ANSI_COLOR_RESET "voluntary=%d nonvoluntary=%d\n",info->voluntary_ctxt_switches,info->nonvoluntary_ctxt_switches);
     printf(DEFAULT_COLOR "CPU Time Percentage:\t\t\t" ANSI_COLOR_RESET "%.2f %%\n", info->cpu_time_percent);
     printf(DEFAULT_COLOR "User Mode CPU Time Percentage:\t\t" ANSI_COLOR_RESET "%.2f %%\n", info->user_mode_percent);
     printf(DEFAULT_COLOR "System Mode CPU Time Percentage:\t" ANSI_COLOR_RESET "%.2f %%\n", info->system_mode_percent);
     printf(ANSI_COLOR_YELLOW "Getting process virtual address\n" ANSI_COLOR_RESET);
-    printf("%-16s%-16s%-16s%-16s\n", "Total(KiB)", "Shared(KiB)", "Resident(KiB)", "Dirty(KiB)");  
-    printf("%-16lu%-16lu%-16lu%-16lu\n", total, shared, resident, dirty);
+    printf("%s\t\t%s\t\t%s\t%s\n", "Total", "Shared", "Resident", "Dirty");
+    printf("%lu %s\t\t%lu %s\t\t%lu %s\t\t%lu %s\n", total, unit[0], shared, unit[1], resident, unit[2], dirty, unit[3]);
+
+
 }
 void getProcessInfo(int pid) {
     printf(ANSI_COLOR_YELLOW "Getting process info...\n" ANSI_COLOR_RESET);
@@ -240,10 +275,12 @@ void getProcessInfo(int pid) {
         perror("Error opening /proc/uptime");
         return;
     }
-
-    if (readProcessStats(pid, &info) != 0) {
+    int stat = readProcessStats(pid,&info);
+    if (stat == -1) {
         fprintf(stderr,ANSI_COLOR_RED "process %d not found\n"ANSI_COLOR_RESET,pid);
         return;
+    } else if (stat == 1) {
+        fprintf(stderr,"failed to get parent process command\n");
     }
 
     if (readMemoryInfo(pid, &info) != 0) {

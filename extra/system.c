@@ -1,5 +1,6 @@
 #include "../main.h"
-System_t *dmi_read() {
+
+static System_t *dmi_read() {
     char *sys_files[]= {"bios_vendor","bios_release","bios_date","bios_version",
     "product_name","product_family","sys_vendor","chassis_vendor"};
 
@@ -48,4 +49,121 @@ void system_enum() {
        printf(DEFAULT_COLOR "Chassis Vendor"ANSI_COLOR_RESET "\t\t%s",system->chassis_vendor);
        free(system);
     }
+}
+
+static void trim_whitespace(char *str) {
+    char *end;
+
+    // Trim leading space
+    while (isspace((unsigned char)*str)) str++;
+
+    // Trim trailing space
+    end = str + strlen(str) - 1;
+    while (end > str && isspace((unsigned char)*end)) end--;
+
+    // Null terminate after the last non-space character
+    *(end + 1) = '\0';
+}
+
+static struct acpi* get_acpi() {
+    char path[MAX_PATH], contents[SIZE];
+    struct dirent *entry;
+    struct acpi *node;
+    struct acpi *head = NULL;
+    struct acpi *tail = NULL; // To keep track of the end of the list
+    DIR *thermal = opendir("/sys/devices/virtual/thermal");
+    if (thermal == NULL) {
+        perror("opendir");
+        return NULL;
+    }   
+
+    while ((entry = readdir(thermal)) != NULL) {
+        // Skip . and .. directories
+        if (!strcmp(entry->d_name, "..") || !strcmp(entry->d_name, ".")) {
+            continue;
+        }
+
+        // Read temperature
+        snprintf(path, MAX_PATH, "/sys/devices/virtual/thermal/%s/temp", entry->d_name);
+        FILE *tempfp = fopen(path, "r");
+        if (tempfp == NULL) {
+            continue;
+        }
+        if (fgets(contents, sizeof(contents), tempfp) == NULL) {
+            fclose(tempfp);
+            continue;
+        }
+        fclose(tempfp);
+
+        // Create new node
+        node = malloc(sizeof(struct acpi));
+        if (node == NULL) {   
+            perror("malloc");
+            continue;
+        }
+        node->next = NULL;
+        
+        // Store temperature, converting from string to float
+        node->temp = strtof(contents, NULL);
+
+        // Read mode (enabled/disabled)
+        snprintf(path, MAX_PATH, "/sys/devices/virtual/thermal/%s/mode", entry->d_name);
+        FILE *modefp = fopen(path, "r");
+        if (modefp != NULL) {
+            if (fgets(contents, SIZE, modefp) != NULL) {
+                trim_whitespace(contents); // Optional: Use a trimming function if needed
+                strncpy(node->state, contents, sizeof(node->state) - 1);
+                node->state[sizeof(node->state) - 1] = '\0'; // Ensure null termination
+            }
+            fclose(modefp);
+        }
+
+        // Read type of sensor
+        snprintf(path, MAX_PATH, "/sys/devices/virtual/thermal/%s/type", entry->d_name);
+        FILE *typefp = fopen(path, "r");
+        if (typefp != NULL) {
+            if (fgets(contents, SIZE, typefp) != NULL) {
+                trim_whitespace(contents); // Optional: Use a trimming function if needed
+                strncpy(node->type, contents, sizeof(node->type) - 1);
+                node->type[sizeof(node->type) - 1] = '\0'; // Ensure null termination
+            }
+            fclose(typefp);
+        }
+
+        // Add node to the linked list
+        if (head == NULL) {
+            head = node;
+            tail = node;
+        } else {
+            tail->next = node;
+            tail = node;
+        }
+    }
+    closedir(thermal);
+    return head;
+}
+void acpi_info() {
+    struct acpi *head = get_acpi();
+    if (head == NULL) {
+        fprintf(stderr, "Failed to retrieve ACPI information\n");
+        return;
+    }
+
+    struct acpi *current = head;
+    unsigned int count = 0;
+
+    // Print table headers
+    printf("%-10s\t%-10s\t%-10s\n", "Sensor", "State", "Temperature");
+
+    while (current != NULL) {
+
+        // Print the state and temperature
+        printf("%-10s\t%-10s\t%.1f °C\n", current->type,current->state, current->temp / 1000.0);
+
+        // Move to the next sensor and free the current node
+        struct acpi *temp = current;
+        current = current->next;
+        free(temp);
+        count++;
+    }     
 }

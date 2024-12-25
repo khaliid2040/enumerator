@@ -124,8 +124,9 @@ static void print_gpu_info() {
 
 static void print_memory_and_uptime() {
     struct sysinfo system_info;
+    char unit[4];
     if (sysinfo(&system_info) == 0) {
-        printf(DEFAULT_COLOR "Memory:\t\t" ANSI_COLOR_RESET "%.1f GB\n", (float)system_info.totalram / 1024.0 / 1024.0 / 1024.0);
+        printf(DEFAULT_COLOR "Memory:\t\t" ANSI_COLOR_RESET "%.1f %s\n", (float)convert_size_unit(system_info.totalram / UNIT_SIZE,unit,4),unit);
         long uptime_sec = system_info.uptime;
         long hours = uptime_sec / 3600;
         long minutes = (uptime_sec % 3600) / 60;
@@ -231,35 +232,29 @@ static void print_battery_info() {
 }
 
 static void print_process_and_thread_count() {
-    DIR *proc_dir = opendir("/proc");
-    int num_processes = 0;
     int num_threads = 0;
+    struct dirent *entry,*task_entry;
+    struct sysinfo info;
+    DIR *proc_dir = opendir("/proc");
     if (proc_dir) {
-        struct dirent *entry;
-        while ((entry = readdir(proc_dir)) != NULL) {
-            if (is_pid_directory(entry->d_name)) {
-                num_processes++;
-            }
-        }
         rewinddir(proc_dir);
-        struct dirent *task_entry;
         while ((entry = readdir(proc_dir)) != NULL) {
             if (is_pid_directory(entry->d_name)) {
-                char task_path[256];
+                char task_path[MAX_PATH];
                 snprintf(task_path, sizeof(task_path), "/proc/%s/task", entry->d_name);
                 DIR *task_dir = opendir(task_path);
                 if (task_dir) {
                     while ((task_entry = readdir(task_dir)) != NULL) {
-                        if (is_pid_directory(task_entry->d_name)) {
-                            num_threads++;
-                        }
+                        num_threads++;
                     }
                     closedir(task_dir);
                 }
             }
         }
         closedir(proc_dir);
-        printf(DEFAULT_COLOR "\nprocesses: " ANSI_COLOR_RESET "%d\t" DEFAULT_COLOR "threads: " ANSI_COLOR_RESET "%d\n", num_processes, num_threads);
+        if (sysinfo(&info) == -1)
+            return;
+        printf(DEFAULT_COLOR "\nprocesses: " ANSI_COLOR_RESET "%d\t" DEFAULT_COLOR "threads: " ANSI_COLOR_RESET "%d\n", info.procs, num_threads);
     } else {
         perror("opendir");
     }

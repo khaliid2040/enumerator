@@ -271,6 +271,30 @@ static void hwmon() {
     
     closedir(hw);
 }
+static bool get_arch_and_endianess(char* arch,char*endianess,size_t len) {
+    FILE *fp;
+
+    fp = fopen("/sys/kernel/cpu_byteorder","r");
+    if (!fp)
+        return false;
+    if (fgets(endianess,len,fp) == NULL) {
+        fclose(fp);
+        return false;
+    }
+    fclose(fp);
+    fp = fopen("/sys/kernel/address_bits","r");
+    if (!fp)
+        return false;
+    if (fgets(arch,len,fp) == NULL) {
+        fclose(fp);
+        return false;
+    }
+    //remove /n
+    arch[strlen(arch) - 1] = '\0';
+    endianess[strlen(endianess) - 1] = '\0';
+    fclose(fp);
+    return true;
+}
 int cpuinfo() {
         printf(ANSI_COLOR_YELLOW "getting processor information\n" ANSI_COLOR_RESET);
     
@@ -336,13 +360,21 @@ int cpuinfo() {
         printf(DEFAULT_COLOR"Model\t\t\t"ANSI_COLOR_RESET "%u\n",cpu.model);
         printf(DEFAULT_COLOR"Stepping\t\t"ANSI_COLOR_RESET "%u\n",cpu.stepping);
     #endif
+    char arch[10],endianess[10];
+    if (get_arch_and_endianess(arch,endianess,10)) {
+        printf(DEFAULT_COLOR "Architecture:\t\t"ANSI_COLOR_RESET "%s-bit\n",arch);
+        printf(DEFAULT_COLOR "Endianess:\t\t" ANSI_COLOR_RESET "%s",endianess);
+    }
     hwmon();
     unsigned int eax, ebx, ecx, edx;
     unsigned int cache_count = 0;
     unsigned int cache_type, cache_level, cache_size;
+    unsigned int ways, partitions, line_size, sets;
+    unsigned int cache_sharing;
+    char unit[4];
+
 
     while (1) {
-        // Use leaf 0x00000004 (Cache information) and iterate with cache_count (ECX)
         __cpuid_count(0x4, cache_count, eax, ebx, ecx, edx);
 
         cache_type = eax & 0x1F; // Bits 0-4: Cache type
@@ -350,20 +382,26 @@ int cpuinfo() {
             // Cache type 0 means no more caches
             break;
         }
-
         cache_level = (eax >> 5) & 0x7;       // Bits 5-7: Cache level (L1, L2, L3, etc.)
-        // Cache size calculation as per CPUID spec
-        unsigned int ways = ((ebx >> 22) & 0x3FF) + 1;
-        unsigned int partitions = ((ebx >> 12) & 0x3FF) + 1;
-        unsigned int line_size = (ebx & 0xFFF) + 1;
-        unsigned int sets = ecx + 1;
+        ways = ((ebx >> 22) & 0x3FF) + 1;
+        partitions = ((ebx >> 12) & 0x3FF) + 1;
+        line_size = (ebx & 0xFFF) + 1;
+        sets = ecx + 1;
         cache_size = ways * partitions * line_size * sets;
-        printf(DEFAULT_COLOR"Cache L%d:\t\t"ANSI_COLOR_RESET "type: %s\n\t\t\tsize: %d KB\n\n", cache_level,
-                cache_type == 1 ? "Data cache":
-                cache_type == 2 ? "Instruction cache":
-                cache_type == 3 ? "Unified cache":
-                "unknown",
-                cache_size / 1024);
+        cache_size /= 1024; // convert size to KiB because convert_unit_size expects size in KiB
+        cache_sharing = ((eax >> 14) & 0xfff);
+
+        unsigned int instance = cores / cache_sharing;
+        if (instance == 0) instance = 1; // If instance is zero, then there is only one instance
+
+        double converted_size = convert_size_unit((double)cache_size * instance, unit, sizeof(unit));
+
+        printf(DEFAULT_COLOR"\nCache L%d:\t\t"ANSI_COLOR_RESET "type: %s\n\t\t\tsize: %.1f %s\n\t\t\tinstances: %d\n", cache_level,
+                cache_type == 1 ? "Data cache" :
+                cache_type == 2 ? "Instruction cache" :
+                cache_type == 3 ? "Unified cache" : "Unknown",
+                converted_size, unit, instance);
+
         cache_count++; // Move to the next cache
     }
     printf(ANSI_COLOR_YELLOW "Getting cpu vurnuabilities\n" ANSI_COLOR_RESET);

@@ -58,6 +58,11 @@ typedef unsigned long page_t;
 #ifdef LIBEFI
 #include <efivar/efivar.h>
 #endif
+// for libsenros.so and sensors.h
+#ifdef LIBSENSORS
+#include <sensors/sensors.h>
+bool get_sensors_information();
+#endif
 //only x86(64)
 #if defined(__x86_64__) || defined(__i386__)    
 #include <cpuid.h>          

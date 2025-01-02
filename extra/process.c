@@ -143,19 +143,22 @@ static int readMemoryInfo(int pid, ProcessInfo *info) {
     return 0;
 }
 static int countThreads(int pid) {
-    char path[256];
-    snprintf(path, sizeof(path), "/proc/%d/task", pid);
-    DIR *dir = opendir(path);
-    if (!dir) return -1;
-    int count = 0;
-    struct dirent *entry;
-    while ((entry = readdir(dir)) != NULL) {
-        if (strcmp(entry->d_name, ".") && strcmp(entry->d_name, "..")) {
-            count++;
+    char *content=NULL,path[MAX_PATH];
+    unsigned int Threads = 0;
+    FILE *fp;
+    size_t size = 0;
+    snprintf(path,MAX_PATH,"/proc/%d/status",pid);
+    fp = fopen(path,"r");
+    if (!fp)
+        return -1;
+    while (getline(&content,&size,fp) != -1) {
+        if (!strncmp(content,"Threads:",8)) {
+            if (!sscanf(content,"Threads: %u",&Threads) != 1) {
+                break;
+            }
         }
     }
-    closedir(dir);
-    return count;
+    return Threads;
 }
 static int readCgroup(int pid, char *cgroup) {
     char path[256];

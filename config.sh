@@ -34,7 +34,7 @@ esac
 fi
 
 # Libraries to check
-LIBS=("math" "apparmor" "selinux" "efivar" "blkid" "libudev")
+LIBS=("math" "apparmor" "selinux" "efivar" "blkid" "libudev" "libsensors")
 LIBPCI="pci"
 
 # Check for the standard libraries
@@ -66,6 +66,10 @@ for LIB in "${LIBS[@]}"; do
     elif [ "$LIB" == "libudev" ] && [ -f /usr/include/libudev.h ]; then
         CFLAGS+=" -DLIBUDEV"
         LDFLAGS+=" -ludev"
+        echo -e "checking ${LIB}: ${GREEN}OK${NC}"
+    elif [ "$LIB" == "libsensors" ] && [ -f /usr/include/sensors/sensors.h ]; then
+        CFLAGS+=" -DLIBSENSORS"
+        LDFLAGS+=" -lsensors"
         echo -e "checking ${LIB}: ${GREEN}OK${NC}"
     else
         echo -e "checking ${LIB}: ${RED}NO${NC}"

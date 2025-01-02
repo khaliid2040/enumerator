@@ -366,7 +366,9 @@ int main(int argc, char *argv[])
         get_pci_info();
         #endif
         printf(ANSI_COLOR_YELLOW "Getting sensor information..\n"ANSI_COLOR_RESET);
-        acpi_info();
+        #ifdef LIBSENSORS
+        get_sensors_information();
+        #endif
         } else if(N_flag) {
             printf(ANSI_COLOR_YELLOW "Getting network information\n" ANSI_COLOR_RESET);
             network();

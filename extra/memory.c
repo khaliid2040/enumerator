@@ -51,7 +51,6 @@ static double get_used_memory(char *unit, size_t len) {
             }
         }
     }
-    printf("Used: %lu %lu\n",total_mem , available);
     fclose(fp);
     free(content);
     return convert_size_unit((double)total_mem - available,unit,len);

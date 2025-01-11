@@ -60,7 +60,7 @@ bool count_processor(int* cores_count, int* processors_count) {
 }
 
 #ifdef LIBPCI
-void gpu_info(char *model,char *vendor) {
+void gpu_info(char *model,char *vendor,size_t len) {
     struct pci_access *pac= pci_alloc();
     pci_init(pac);
     pci_scan_bus(pac);
@@ -68,7 +68,7 @@ void gpu_info(char *model,char *vendor) {
     for (dev=pac->devices; dev != NULL; dev=dev->next) {
         pci_fill_info(dev,PCI_FILL_BASES | PCI_FILL_IDENT | PCI_FILL_CLASS);
         if (dev->device_class== PCI_CLASS_DISPLAY_VGA ) {
-             pci_lookup_name(pac,model,64,PCI_LOOKUP_DEVICE,dev->vendor_id,dev->device_id);
+             pci_lookup_name(pac,model,len,PCI_LOOKUP_DEVICE,dev->vendor_id,dev->device_id);
             //manually interpreting vendor id since libpci will give us long info
             switch (dev->vendor_id) {
                 case 0x8086: //intel

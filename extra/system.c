@@ -173,7 +173,8 @@ bool get_sensors_information() {
     const sensors_chip_name *chip, *chip_names = NULL;
     const sensors_feature *features;
     const sensors_subfeature *subfeature;
-    const char *chip_name, *label;
+    const char *chip_name;
+    char *label;
     int nr = 0, feature_nr = 0;
     double temp;
 
@@ -224,7 +225,7 @@ bool get_sensors_information() {
                 fprintf(stderr, "Failed to get value for %s\n", features->name);
                 continue;
             }
-
+            free(label);
             // Print formatted label and temperature
             printf("\t%s:\t+%.1f°C\n", formatted_label, temp);
         }

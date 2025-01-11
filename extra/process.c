@@ -158,6 +158,7 @@ static int countThreads(int pid) {
             }
         }
     }
+    free(content);
     return Threads;
 }
 static int readCgroup(int pid, char *cgroup) {

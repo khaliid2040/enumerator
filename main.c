@@ -116,8 +116,8 @@ static void print_cpu_info() {
 
 static void print_gpu_info() {
     #ifdef LIBPCI
-    char model[32], vendor[10];
-    gpu_info(model, vendor);
+    char model[32], vendor[32];
+    gpu_info(model, vendor,32);
     printf(DEFAULT_COLOR "GPU:\t\t" ANSI_COLOR_RESET "%s %s\n", vendor, model);
     #endif
 }
@@ -154,14 +154,14 @@ static void print_load_average() {
 
 static void print_desktop_environment() {
         char *env, *de;
-    if (env = getenv("XDG_SESSION_TYPE")) {
+    if ((env = getenv("XDG_SESSION_TYPE"))) {
         printf(DEFAULT_COLOR "Session Type:\t" ANSI_COLOR_RESET "%s\n",env);
     }   
     //used for determining user home directory
     __uid_t uid= getuid();
     struct passwd *pwd=getpwuid(uid);
     char version[7];
-    if (de = getenv("XDG_CURRENT_DESKTOP")) {
+    if ((de = getenv("XDG_CURRENT_DESKTOP"))) {
         printf(DEFAULT_COLOR "Desktop:\t" ANSI_COLOR_RESET "%s ",de);
         
         if (!strcmp(de,"KDE")) {
@@ -172,7 +172,7 @@ static void print_desktop_environment() {
             
                 size_t len= sizeof(contents);
                 while (getline(&contents,&len,deVersion) != -1) {
-                    sscanf(contents + 16, "%s", version);  
+                    snprintf(version,sizeof(version),"%.6s",contents + 16);  
                 }
                 printf("%s\n",version);
                 fclose(deVersion);

@@ -49,7 +49,7 @@ static void cpuid() {
                 } 
             //detecting the hypervisor in case if we run on virtual machine
             if (ecx & (1 << 31)) {
-                printf(DEFAULT_COLOR "\nVirtualization detected: "ANSI_COLOR_RESET);
+                printf(DEFAULT_COLOR "\nHypervisor detected:\t"ANSI_COLOR_RESET);
                 char *hypervisors[] = {"KVM", "Vmware", "Virtualbox", "hyper-v"};
                 int sig[3];
                 // Execute CPUID instruction to retrieve hypervisor signature
@@ -295,6 +295,32 @@ static bool get_arch_and_endianess(char* arch,char*endianess,size_t len) {
     fclose(fp);
     return true;
 }
+/*This code is wierd so let me explain:
+  * first in order to get number cpu sockets we gonna use the last successful read of 
+  * /sys/devices/system/cpu/cpu[N]/topology/physical_package_id the last one which correspond 
+  * to last thread of all threads across sockets. So the math will be last physical id + 1 so
+  * effectively translate to from 0-based count to 1-based count
+  * on failure the function will return 0, and on success will return the number of sockets*/
+static int get_cpu_sockets() {
+    int sockets =-1; // initially one
+    FILE *fp;
+    char buffer[5],path[72];
+    unsigned int count=0;
+    while (1) {
+    snprintf(path,sizeof(path),"/sys/devices/system/cpu/cpu%d/topology/physical_package_id",count);
+    count++;
+    fp = fopen(path,"r");
+    if (!fp)
+        break;
+    if (fgets(buffer,sizeof(buffer),fp) == NULL) {
+        fclose(fp);
+        break;
+    }
+    fclose(fp);
+    }
+    sockets = atoi(buffer);
+    return sockets +1;
+}
 int cpuinfo() {
         printf(ANSI_COLOR_YELLOW "getting processor information\n" ANSI_COLOR_RESET);
     
@@ -303,7 +329,8 @@ int cpuinfo() {
         buffer_size is the size of the buffer
         processors and cores are strings searched in  the file
         
-    */      
+    */     
+    unsigned int sockets = get_cpu_sockets(); 
     int cores=0,processors=0,level=4; //assumption: 4 cache levels
     char spath[60],tpath[60];
     char size_cont[20],type_cont[30];
@@ -315,6 +342,8 @@ int cpuinfo() {
         printf(DEFAULT_COLOR "cores:\t\t\t"ANSI_COLOR_RESET "%d\n",cores);
         printf(DEFAULT_COLOR "processor:\t\t" ANSI_COLOR_RESET "%d\n",processors);
     }
+   
+    printf(DEFAULT_COLOR"Sockets:\t\t"ANSI_COLOR_RESET "%d\n",sockets);
     //frequency got via sysfs as 
     struct freq *frq= frequency();
     if (frq == NULL) {
@@ -370,7 +399,7 @@ int cpuinfo() {
     unsigned int cache_count = 0;
     unsigned int cache_type, cache_level, cache_size;
     unsigned int ways, partitions, line_size, sets;
-    unsigned int cache_sharing;
+    unsigned int cache_sharing,associativity;
     char unit[4];
 
 
@@ -390,17 +419,18 @@ int cpuinfo() {
         cache_size = ways * partitions * line_size * sets;
         cache_size /= 1024; // convert size to KiB because convert_unit_size expects size in KiB
         cache_sharing = ((eax >> 14) & 0xfff);
-
+        associativity = (ebx >> 22) & 0x3FF; // Extract bits 31:22
+        if (cache_sharing == 0) cache_sharing = cores; //if it is zero then they are not sharing
         unsigned int instance = cores / cache_sharing;
         if (instance == 0) instance = 1; // If instance is zero, then there is only one instance
 
         double converted_size = convert_size_unit((double)cache_size * instance, unit, sizeof(unit));
 
-        printf(DEFAULT_COLOR"\nCache L%d:\t\t"ANSI_COLOR_RESET "type: %s\n\t\t\tsize: %.1f %s\n\t\t\tinstances: %d\n", cache_level,
+        printf(DEFAULT_COLOR"\nCache L%d:\t\t"ANSI_COLOR_RESET "type: %s\n\t\t\tsize: %.1f %s\n\t\t\tinstances: %d\n\t\t\tAssociativity: %d-ways\n", cache_level,
                 cache_type == 1 ? "Data cache" :
                 cache_type == 2 ? "Instruction cache" :
                 cache_type == 3 ? "Unified cache" : "Unknown",
-                converted_size, unit, instance);
+                converted_size, unit, instance, associativity);
 
         cache_count++; // Move to the next cache
     }

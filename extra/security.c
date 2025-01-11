@@ -57,6 +57,7 @@ static void apparmor(void) {
         printf("Apparmor:\t" ANSI_COLOR_GREEN "enabled\n" ANSI_COLOR_RESET);
     } else {
         printf("Apparmor:\t" ANSI_COLOR_RED "disabled\n" ANSI_COLOR_RESET);
+        return; // there is nothing to continue apparmor disabled
     }
     char *mnt;
     aa_find_mountpoint(&mnt); //check mountpoint
@@ -81,9 +82,9 @@ static void apparmor(void) {
             }
         }
     }
-    printf("profiles:\t %d\n",count);
-    printf("enforce:\t %d\n",estate);
-    printf("complaint:\t %d\n",cstate);
+    printf("\t\tprofiles:\t %d\n",count);
+    printf("\t\tenforce:\t %d\n",estate);
+    printf("\t\tcomplaint:\t %d\n\n",cstate);
     free(buffer);
     fclose(fp);
 }
@@ -110,7 +111,7 @@ void LinuxSecurityModule(void) {
             printf("BPF\t" ANSI_COLOR_GREEN "enabled\n"ANSI_COLOR_RESET);
         }
         if (strstr(buf, "tomoyo")) {
-            printf("Tomoyo\t" ANSI_COLOR_GREEN "enabled\n"ANSI_COLOR_RESET);
+            printf("Tomoyo\t\t" ANSI_COLOR_GREEN "enabled\n"ANSI_COLOR_RESET);
         }
         if (strstr(buf, "capability")) {
             printf("Capability\t" ANSI_COLOR_GREEN "enabled\n"ANSI_COLOR_RESET);
@@ -119,7 +120,7 @@ void LinuxSecurityModule(void) {
             printf("Lockdown\t" ANSI_COLOR_GREEN "enabled\n"ANSI_COLOR_RESET);
         }
         if (strstr(buf, "yama")) {
-            printf("Yama\t" ANSI_COLOR_GREEN "enabled\n"ANSI_COLOR_RESET);
+            printf("Yama\t\t" ANSI_COLOR_GREEN "enabled\n"ANSI_COLOR_RESET);
         }
     }
 }

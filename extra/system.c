@@ -1,5 +1,15 @@
 #include "../main.h"
 
+/*
+  * I noticed on some systems the program will just crash due to some files missing results the iterate array
+  * to be null strncpy() always dereferences the source so it will dereference the null pointer so before we pass we 
+  * need to verify if iterate array is valid if not then abort and just return
+*/
+static bool verify_data(const char *data) {
+    if (!data) return false;
+    return true;
+}
+
 static System_t *dmi_read() {
     char *sys_files[]= {"bios_vendor","bios_release","bios_date","bios_version",
     "product_name","product_family","sys_vendor","chassis_vendor"};
@@ -8,6 +18,7 @@ static System_t *dmi_read() {
     char *iterate[8];
     System_t *system= malloc(sizeof(System_t));
     for (int i=0;i < sizeof(sys_files) / sizeof(sys_files[0]); i++) {
+        iterate[i] = malloc(1); // pre allocate the memory so strncpy don't dereference a null pointer
         snprintf(path,SIZE,"/sys/class/dmi/id/%s",sys_files[i]);
         FILE *sys= fopen(path,"r");
         if (sys == NULL) {
@@ -17,10 +28,17 @@ static System_t *dmi_read() {
         }
           
         if (fgets(buffer,SIZE,sys) != NULL) {
-            iterate[i]= malloc(strlen(buffer)+ 1);
+            iterate[i]= realloc(iterate[i],strlen(buffer)+2);
             strcpy(iterate[i],buffer);
             fclose(sys);
         }
+    }
+    for (int i=0; i<7; i++) {
+        if (!verify_data(iterate[i])) {
+            fprintf(stderr,ANSI_COLOR_RED"Fatal: Encoutered Unexpected error:invalid array index %d\n"ANSI_COLOR_RESET,i);
+            return NULL;
+        }
+        
     }
     strncpy(system->bios_vendor,iterate[0],sizeof(system->bios_vendor));
     strncpy(system->release,iterate[1],sizeof(system->release));

@@ -4,6 +4,25 @@
 unsigned int eax,ebx,ecx,edx;
 char vendor[13];
 #ifdef supported
+/*on virtualbox i realized things are different cpuid isn't reliable so we need to use different methods*/
+static bool is_hypervisor_virtualbox() {
+    FILE *fp;
+    char buffer[20];
+
+    fp = fopen("/sys/class/dmi/id/board_vendor","r");
+    if (!fp)
+        return false; //we are in trouble it shouldn't fail we don't have any other hope :(
+    if (fgets(buffer,sizeof(buffer),fp) == NULL) {
+        fclose(fp);
+        return false; // nop also this shouldn't happen again we are in trouble
+    }
+    if (!strncmp("Oracle",buffer,6)) {
+        fclose(fp);
+        return true; // finally we got something expected :)
+    }
+    fclose(fp);
+    return false; // we shouldn't reach here
+}
 static void cpuid() {
     /* i intentionally compared leaf 0 and 1 because this is the only leaf values is being worked 
     it may be removed from the future */
@@ -60,12 +79,12 @@ static void cpuid() {
                 sig[1] = ecx;
                 sig[2] = edx;
                 // For demonstration purposes, let's print the signature
-                if (sig[0]==0x4B4D564B && sig[1]==0x564B4D56 && sig[2]== 0x0000004D) { 
+                if (!is_hypervisor_virtualbox() && sig[0]==0x4B4D564B && sig[1]==0x564B4D56 && sig[2]== 0x0000004D) { 
                     printf("KVM");
                 } else if (sig[0]==0x61774D56 && sig[1]==0x4D566572 && sig[3]==0x65726175) {
                     printf("VMWare");
-                }else if (sig[0]==0x72754D56 && sig[1]==0x56656361 && sig[2]==0x32746E65) {
-                    printf("Virtualbox");
+                }else if (is_hypervisor_virtualbox()) {
+                    printf("Oracle virtualbox");
                 }else if (sig[0]==0x72636968 && sig[1]==0x4D566572 && sig[2]==0x65746E65) {
                     printf("Hyper-v");
                 }else {
@@ -421,6 +440,7 @@ int cpuinfo() {
         cache_sharing = ((eax >> 14) & 0xfff);
         associativity = (ebx >> 22) & 0x3FF; // Extract bits 31:22
         if (cache_sharing == 0) cache_sharing = cores; //if it is zero then they are not sharing
+        if (cache_sharing == 0) cache_sharing = 1; // finally if still zero because cores are zero the last resort is assume 1
         unsigned int instance = cores / cache_sharing;
         if (instance == 0) instance = 1; // If instance is zero, then there is only one instance
 

@@ -32,32 +32,6 @@ int is_pid_directory(const char *name) {
     }
     return 1;
 }
-bool count_processor(int* cores_count, int* processors_count) {
-    bool check=false;
-    char *cpuinfo_buffer= NULL;
-    size_t buffer_size= 0;
-    cpuProperty processors = "processor";
-    cpuProperty cores = "cores";
-    FILE *cpuinfo = fopen("/proc/cpuinfo","r");
-
-    if (cpuinfo == NULL) {
-        printf("Failed to open cpuinfo file.\n");
-
-    }
-    while (getline(&cpuinfo_buffer, &buffer_size, cpuinfo) != -1)
-    {
-        if (strstr(cpuinfo_buffer, processors) != NULL) {
-            (*processors_count)++;
-        }
-        if (strstr(cpuinfo_buffer, cores) != NULL) {
-            (*cores_count)++;
-        }
-        check=true;
-    }
-    fclose(cpuinfo);
-    free(cpuinfo_buffer);
-    return check;
-}
 
 #ifdef LIBPCI
 void gpu_info(char *model,char *vendor,size_t len) {

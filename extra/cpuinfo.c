@@ -1,6 +1,6 @@
 #include "../main.h"
 #include <dirent.h>
-#define HT_SMT 0x10000000 // hyperthreading on intel and/or simulatanous multi threading
+
 unsigned int eax,ebx,ecx,edx;
 char vendor[13];
 #ifdef supported
@@ -354,10 +354,6 @@ int cpuinfo() {
     char spath[60],tpath[60];
     char size_cont[20],type_cont[30];
     if (count_processor(&cores,&processors)) {
-        //only 
-        __get_cpuid(0x1,&eax,&ebx,&ecx,&edx);
-        if (ecx & HT_SMT)
-            cores = cores / 2;
         printf(DEFAULT_COLOR "cores:\t\t\t"ANSI_COLOR_RESET "%d\n",cores);
         printf(DEFAULT_COLOR "processor:\t\t" ANSI_COLOR_RESET "%d\n",processors);
     }

@@ -109,7 +109,7 @@ static void print_cpu_info() {
     printf(DEFAULT_COLOR "CPU: \t\t" ANSI_COLOR_RESET "%s", brand);
     int cores = 0, processors = 0;
     if (count_processor(&cores, &processors)) {
-        printf(" cores: %d threads: %d\n", cores / 2, processors);
+        printf(" cores: %d threads: %d\n", cores, processors);
     }
     #endif
 }

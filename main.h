@@ -28,6 +28,7 @@
 
 #define MAX_PATH 96
 #define UNIT_SIZE 1024.0 // each unit is 1024 in binary prefixes
+#define HT_SMT 0x10000000 // hyperthreading on intel and/or simulatanous multi threading
 // including libraries
 #include <stdio.h>
 #include <string.h>
@@ -46,8 +47,7 @@
 #ifdef SELINUX
 #include <selinux/selinux.h>
 #endif  
-typedef unsigned long cpuInfo;
-typedef const char* cpuProperty;
+
 typedef unsigned long page_t;
 #define GiB (1024 * 1024 * 1024)
 //for pci.h
@@ -113,8 +113,6 @@ int is_pid_directory(const char *name);
 void LinuxSecurityModule(void);
 //total cpu time
 void process_cpu_time(void);
-//process number of cores and processors
-bool count_processor(int* cores, int* processors);
 //for accessing function defined in extra/storage.c
 void get_pci_info(void);
 void storage(void);
@@ -172,5 +170,16 @@ static inline double convert_size_unit(double size, char* unit, size_t len) {
         converted_size /= UNIT_SIZE;
     }
     return converted_size;
+}
+//get number of cores and processors
+static inline bool count_processor(int* cores, int* processors) {
+    unsigned int nprocessors = get_nprocs();
+    unsigned int eax,ebx,ecx,edx;
+    *processors = nprocessors; // in logical processors(threads) we done here
+
+    __get_cpuid(0x1,&eax,&ebx,&ecx,&edx);
+        if (ecx & HT_SMT)
+            *cores = nprocessors / 2; // currently as i know hyperthreading feature achieved 2 threads per physical core
+        return true;
 }
 #endif

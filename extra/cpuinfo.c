@@ -4,25 +4,7 @@
 unsigned int eax,ebx,ecx,edx;
 char vendor[13];
 #ifdef supported
-/*on virtualbox i realized things are different cpuid isn't reliable so we need to use different methods*/
-static bool is_hypervisor_virtualbox() {
-    FILE *fp;
-    char buffer[20];
 
-    fp = fopen("/sys/class/dmi/id/board_vendor","r");
-    if (!fp)
-        return false; //we are in trouble it shouldn't fail we don't have any other hope :(
-    if (fgets(buffer,sizeof(buffer),fp) == NULL) {
-        fclose(fp);
-        return false; // nop also this shouldn't happen again we are in trouble
-    }
-    if (!strncmp("Oracle",buffer,6)) {
-        fclose(fp);
-        return true; // finally we got something expected :)
-    }
-    fclose(fp);
-    return false; // we shouldn't reach here
-}
 static void cpuid() {
     /* i intentionally compared leaf 0 and 1 because this is the only leaf values is being worked 
     it may be removed from the future */
@@ -66,30 +48,14 @@ static void cpuid() {
                     printf("SMT ");
                     }
                 } 
-            //detecting the hypervisor in case if we run on virtual machine
-            if (ecx & (1 << 31)) {
-                printf(DEFAULT_COLOR "\nHypervisor detected:\t"ANSI_COLOR_RESET);
-                char *hypervisors[] = {"KVM", "Vmware", "Virtualbox", "hyper-v"};
-                int sig[3];
-                // Execute CPUID instruction to retrieve hypervisor signature
-                __cpuid(0x40000000U, eax, ebx, ecx, edx);
-
-                // Store the retrieved signature
-                sig[0] = ebx;
-                sig[1] = ecx;
-                sig[2] = edx;
-                // For demonstration purposes, let's print the signature
-                if (!is_hypervisor_virtualbox() && sig[0]==0x4B4D564B && sig[1]==0x564B4D56 && sig[2]== 0x0000004D) { 
-                    printf("KVM");
-                } else if (sig[0]==0x61774D56 && sig[1]==0x4D566572 && sig[3]==0x65726175) {
-                    printf("VMWare");
-                }else if (is_hypervisor_virtualbox()) {
-                    printf("Oracle virtualbox");
-                }else if (sig[0]==0x72636968 && sig[1]==0x4D566572 && sig[2]==0x65746E65) {
-                    printf("Hyper-v");
-                }else {
-                    printf("unknown");
-                }
+            Virtualization virt = detect_hypervisor();
+            switch (virt) {
+                case KVM: printf("KVM"); break;
+                case Virtualbox: printf("Virtualbox"); break;
+                case Vmware: printf("Vmware"); break;
+                case hyperv: printf("Microsoft hyper-v"); break;
+                case xen: printf("Xen"); break;
+                case unknown: printf(ANSI_COLOR_RED"unknown"ANSI_COLOR_RESET); break;
             }
         }
         
@@ -419,8 +385,9 @@ int cpuinfo() {
 
 
     while (1) {
+        #if defined(__x86_64) || defined(__i386__) // at least do not do anything on other architectures
         __cpuid_count(0x4, cache_count, eax, ebx, ecx, edx);
-
+        #endif
         cache_type = eax & 0x1F; // Bits 0-4: Cache type
         if (cache_type == 0) {
             // Cache type 0 means no more caches

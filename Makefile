@@ -17,7 +17,8 @@ EXECUTABLE = systeminfo
 OBJ_FILES = $(OBJ_DIR)/main.o $(OBJ_DIR)/extra_func.o $(OBJ_DIR)/storage.o \
             $(OBJ_DIR)/memory.o $(OBJ_DIR)/cpuinfo.o $(OBJ_DIR)/process.o \
             $(OBJ_DIR)/network.o $(OBJ_DIR)/route.o $(OBJ_DIR)/arp.o \
-            $(OBJ_DIR)/system.o $(OBJ_DIR)/security.o $(OBJ_DIR)/packages.o
+            $(OBJ_DIR)/system.o $(OBJ_DIR)/security.o $(OBJ_DIR)/packages.o \
+			$(OBJ_DIR)/virt.o
 
 # Main target
 $(EXECUTABLE): $(OBJ_FILES)

@@ -155,6 +155,20 @@ void acpi_info(void);
 //extra/package.c
 void package_manager();
 
+//everything about virtualization and containerization
+//used by extra/virt.c
+typedef enum {
+    KVM,
+    Virtualbox,
+    Vmware,
+    hyperv,
+    xen,
+    docker,
+    podman,
+    none,
+    unknown
+} Virtualization;
+Virtualization detect_hypervisor();
 // calculate size dynamically 
 //caller must set unit to KiB and supply units as KiB
 static inline double convert_size_unit(double size, char* unit, size_t len) {
@@ -176,10 +190,11 @@ static inline bool count_processor(int* cores, int* processors) {
     unsigned int nprocessors = get_nprocs();
     unsigned int eax,ebx,ecx,edx;
     *processors = nprocessors; // in logical processors(threads) we done here
-
+    #if defined(__x86_64__) || defined(__i386__) // at least do not do anything on other architectures
     __get_cpuid(0x1,&eax,&ebx,&ecx,&edx);
         if (ecx & HT_SMT)
             *cores = nprocessors / 2; // currently as i know hyperthreading feature achieved 2 threads per physical core
+    #endif
         return true;
 }
 #endif

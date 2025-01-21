@@ -34,12 +34,12 @@ esac
 fi
 
 # Libraries to check
-LIBS=("math" "apparmor" "selinux" "efivar" "blkid" "libudev" "libsensors")
-LIBPCI="pci"
+LIBS=("libmath" "libapparmor" "libselinux" "libudev" "libsensors")
+LIBPCI="libpci"
 
 # Check for the standard libraries
 for LIB in "${LIBS[@]}"; do
-    if [ "$LIB" == "math" ]; then
+    if [ "$LIB" == "libmath" ]; then
         if ldconfig -p | grep -q "libm.so"; then
             CFLAGS+=" -DMATH_H"
             LDFLAGS+=" -lm"
@@ -47,21 +47,13 @@ for LIB in "${LIBS[@]}"; do
         else
             echo -e "checking ${LIB}: ${RED}NO${NC}"
         fi
-    elif [ "$LIB" == "apparmor" ] && [ -f /usr/include/sys/apparmor.h ]; then
+    elif [ "$LIB" == "libapparmor" ] && [ -f /usr/include/sys/apparmor.h ]; then
         CFLAGS+=" -DAPPARMOR_H"
         LDFLAGS+=" -lapparmor"
         echo -e "checking ${LIB}: ${GREEN}OK${NC}"
-    elif [ "$LIB" == "selinux" ] && [ -f /usr/include/selinux/selinux.h ]; then
+    elif [ "$LIB" == "libselinux" ] && [ -f /usr/include/selinux/selinux.h ]; then
         CFLAGS+=" -DSELINUX_H"
         LDFLAGS+=" -lselinux"
-        echo -e "checking ${LIB}: ${GREEN}OK${NC}"
-    elif [ "$LIB" == "efivar" ] && [ -f /usr/include/efivar/efivar.h ]; then
-        CFLAGS+=" -DLIBEFI"
-        LDFLAGS+=" -lefivar"
-        echo -e "checking ${LIB}: ${GREEN}OK${NC}"
-    elif [ "$LIB" == "blkid" ] && [ -f /usr/include/blkid/blkid.h ]; then
-        CFLAGS+=" -DBLKID"
-        LDFLAGS+=" -lblkid"
         echo -e "checking ${LIB}: ${GREEN}OK${NC}"
     elif [ "$LIB" == "libudev" ] && [ -f /usr/include/libudev.h ]; then
         CFLAGS+=" -DLIBUDEV"

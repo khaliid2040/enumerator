@@ -63,9 +63,7 @@ static void print_firmware_info() {
     printf(DEFAULT_COLOR "Firmware:\t" ANSI_COLOR_RESET);
     if (access("/sys/firmware/efi", F_OK) != -1) {
         printf("UEFI  ");
-        #ifdef LIBEFI
         GetSecureBootStatus();
-        #endif
     } else {
         printf("BIOS\n");
     }

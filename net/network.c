@@ -5,7 +5,6 @@
 #define ADDR_SIZE 48
 #include <stdio.h>
 #include <stdlib.h>
-#define SIZE 100
 
 void printNetworkConnections() {
     const char* protocols[] = {"tcp", "udp"};

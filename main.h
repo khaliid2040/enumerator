@@ -1,6 +1,6 @@
 #ifndef MAIN_H
 #define MAIN_H
-#define SIZE 1024 // size often used for file buffers
+#define SIZE 256 // size often used for file buffers
 #define MAX_LINE_LENGTH 1024 //needs update in the project to be combined SIZE and MAX_LINE_LENGTH
 //for ansi escape codes to get colors
 
@@ -37,6 +37,7 @@
 #include <syscall.h>
 #include <math.h>
 #include <dirent.h>
+#include <fcntl.h>
 #include <arpa/inet.h>
 #include <sys/sysinfo.h>
 #include <stdbool.h>
@@ -68,8 +69,7 @@ bool get_sensors_information();
 #include <cpuid.h>          
 #define supported
 #endif
-int GetSecureBootStatus(void);
-void gpu_info();
+
 //structure to fill parsed fields in /proc/cpuinfo 
 struct Cpuinfo {
     char vendor[13];   
@@ -78,8 +78,7 @@ struct Cpuinfo {
     int stepping;
     char model_name[64];  
 };
-int process_file(char *path,char *filename);
-void getProcessInfo(pid_t pid);
+
 //structure filled with data specific to process id
 // Function to get and print process info
 typedef struct {
@@ -109,29 +108,13 @@ typedef struct {
     int uid,euid,ruid;
     int gid,egid,rgid;
 } ProcessInfo;
-int is_pid_directory(const char *name);
-void LinuxSecurityModule(void);
-//total cpu time
-void process_cpu_time(void);
-//for accessing function defined in extra/storage.c
-void get_pci_info(void);
-void storage(void);
-//for accessng memory_info defined in memory.c
-int memory_info(void);
-//function for memory calculation implemented in extra_func.c
-//for cpu defined in extra/cpuinfo.c
-int cpuinfo(void);  
+
 struct freq {
     unsigned long max_freq;
     unsigned long min_freq;
     unsigned long base_freq;
 };
-//network functions implemented in network.c
-void network(void);
-//for routing
-void route(void);
-//parsing and resding arp
-void arp(void);
+
 //used by extra/system.c
 typedef struct {
     char bios_vendor[SIZE];
@@ -143,7 +126,7 @@ typedef struct {
     char sys_vendor[SIZE];
     char chassis_vendor[SIZE];
 } System_t;
-void system_enum(void);
+
 //used in extra_fun.c
 struct acpi {
     char type[10];
@@ -151,9 +134,6 @@ struct acpi {
     float temp;
     struct acpi *next;
 };
-void acpi_info(void);
-//extra/package.c
-void package_manager();
 
 //everything about virtualization and containerization
 //used by extra/virt.c
@@ -168,6 +148,42 @@ typedef enum {
     none,
     unknown
 } Virtualization;
+
+
+int GetSecureBootStatus(void);
+
+void gpu_info();
+
+int process_file(char *path,char *filename);
+void getProcessInfo(pid_t pid);
+
+int is_pid_directory(const char *name);
+
+void LinuxSecurityModule(void);
+//total cpu time
+void process_cpu_time(void);
+//for accessing function defined in extra/storage.c
+void get_pci_info(void);
+void storage(void);
+//for accessng memory_info defined in memory.c
+int memory_info(void);
+//function for memory calculation implemented in extra_func.c
+//for cpu defined in extra/cpuinfo.c
+int cpuinfo(void);  
+
+//network functions implemented in network.c
+void network(void);
+//for routing
+void route(void);
+//parsing and resding arp
+void arp(void);
+
+void system_enum(void);
+
+void acpi_info(void);
+//extra/package.c
+void package_manager();
+
 Virtualization detect_hypervisor();
 // calculate size dynamically 
 //caller must set unit to KiB and supply units as KiB

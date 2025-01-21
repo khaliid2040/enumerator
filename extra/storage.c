@@ -2,6 +2,116 @@
 #include <sys/statvfs.h>
 #include <mntent.h>
 
+/*
+ * reference and explaination refer to 
+ * MBR: https://en.wikipedia.org/wiki/Master_boot_record
+ * GPT  https://en.wikipedia.org/wiki/GUID_Partition_Table
+*/
+static void get_partition_table(const char *device) {
+    int fd;
+    unsigned char buffer[512];
+    char path[MAX_PATH];
+
+    snprintf(path,sizeof(path),"/dev/%s",device);
+    printf(DEFAULT_COLOR"Partition table:\t"ANSI_COLOR_RESET);
+    fd = open(path,O_RDONLY,0644);
+    if (fd == -1) {
+        printf("N/A\n");
+        return;
+    }
+    if (pread(fd,buffer,sizeof(buffer),0) == -1) {
+        printf("N/A\n");
+        close(fd);
+        return;
+    }
+    if (buffer[510] == 0x55 && buffer[511] == 0xAA && buffer[450] != 0xEE) {
+        printf("MBR/DOS\n");
+    }
+
+    if (pread(fd,buffer,sizeof(buffer),512) == -1) {
+        printf("N/A\n");
+        close(fd);
+        return;
+    }
+    if (!memcmp(buffer,"EFI PART",8)) {
+        printf("GPT\n");
+        return;
+    }
+
+    close(fd);
+}
+
+static void get_disk(const char* device) {
+    // Get disk model
+    char model[64] = {0};
+    const char *paths[] = {
+        "/sys/block/nvme0n1/device/model",
+        "/sys/block/sda/device/model"
+    };
+    FILE *fp = NULL;
+
+    printf(DEFAULT_COLOR "Model\t\t\t" ANSI_COLOR_RESET);
+
+    if(!strcmp("nvme0n1",device)) {
+        fp = fopen(paths[0],"r");
+        
+        if (fp) {
+            if (fgets(model,sizeof(model),fp) == NULL)
+                strncpy(model,"unknown",sizeof(model));
+            fclose(fp);
+        } else {
+            strncpy(model,"unknown",sizeof(model));
+        }
+
+    } else if (!strcmp("sda",device)) {
+        fp = fopen(paths[1],"r");
+        if (fp) {
+            if (fgets(model,sizeof(model),fp) == NULL)
+                strncpy(model,"unknown",sizeof(model));
+            fclose(fp);
+        } else {
+            strncpy(model,"unknown",sizeof(model));
+        }
+    }
+
+    printf("%s",model);
+
+}
+static int get_device_uuid(const char *device,char* uuid, size_t size) {
+    DIR *dir;
+    struct dirent *entry;
+    char path[96], buffer[120];
+    const char *partition;
+    dir = opendir("/dev/disk/by-uuid");
+    if (!dir) {
+        perror("opendir");
+        return 0;
+    }
+    
+    while ((entry = readdir(dir)) != NULL) {
+        if (!strcmp(entry->d_name,".") || !strcmp(entry->d_name,"..")) {
+            continue;
+        }
+        snprintf(path, sizeof(path), "/dev/disk/by-uuid/%s", entry->d_name);
+        ssize_t len = readlink(path, buffer, sizeof(buffer) - 1);
+        if (len == -1) {
+            closedir(dir);
+            return 0;
+        }
+
+        buffer[len] = '\0';  // Null-terminate the buffer
+        partition = device + 5;
+        // Check if the partition matches the current symlink target
+        if (strstr(buffer, partition)) {
+            strncpy(uuid, entry->d_name, size);
+            closedir(dir);
+            return 1; // UUID matched
+        }
+    }
+
+    closedir(dir);
+    return 0; // No match found
+}
 /* getting all the device and there sizes this is independent from the filesystem information 
 *  using information from mtent*/
 #ifdef LIBUDEV
@@ -55,8 +165,10 @@ static void process_udev() {
             udev_device_unref(dev);
             continue;   
         }
-        printf(DEFAULT_COLOR "Node:\t\t"ANSI_COLOR_RESET "%s\n", udev_device_get_devnode(dev));
-        printf(DEFAULT_COLOR "Device:\t\t" ANSI_COLOR_RESET "%s\n", udev_device_get_sysname(dev));
+        printf(DEFAULT_COLOR "Node:\t\t\t"ANSI_COLOR_RESET "%s\n", udev_device_get_devnode(dev));
+        printf(DEFAULT_COLOR "Device:\t\t\t" ANSI_COLOR_RESET "%s\n", udev_device_get_sysname(dev));
+        get_disk(udev_device_get_sysname(dev));
+        get_partition_table(udev_device_get_sysname(dev));
         // Now getting disk size
         tmp = udev_device_get_sysattr_value(dev, "size");
         if (tmp) {
@@ -68,7 +180,7 @@ static void process_udev() {
             block_size = (unsigned short int)atoi(tmp);
         }
 
-        printf(DEFAULT_COLOR "SIZE:\t\t"ANSI_COLOR_RESET);
+        printf(DEFAULT_COLOR "SIZE:\t\t\t"ANSI_COLOR_RESET);
         if (strncmp(udev_device_get_sysname(dev), "sr", 2) != 0) {
             printf("%lld GB\n\n", (disk_size * block_size) / 1000000000);
         } else {
@@ -82,75 +194,12 @@ static void process_udev() {
     udev_unref(udev);
 } 
 #endif
-#ifdef BLKID
-#include <blkid/blkid.h>
 
-char *get_uuid(const char *node) {      
-    blkid_probe pr;
-    const char *uuid = NULL;
-    pr = blkid_new_probe_from_filename(node);
-    if (!pr) {
-        return NULL;
-    }
-
-    if (blkid_do_probe(pr) != 0) {
-        blkid_free_probe(pr);
-        return NULL;
-    }
-
-    if (blkid_probe_lookup_value(pr, "UUID", &uuid, NULL) != 0) {
-        blkid_free_probe(pr);
-        return NULL;
-    }
-
-    // Copy the UUID string to a newly allocated buffer
-    char *uuid_copy = NULL;
-    if (uuid) {
-        uuid_copy = strdup(uuid); // Use strdup to allocate and copy the UUID string
-        if (!uuid_copy) {
-            perror("strdup");
-        }
-    }
-
-    blkid_free_probe(pr);
-    return uuid_copy; // Return the newly allocated copy of the UUID
-}
-#endif
 void storage(void) {
-    // Get disk model
-    char model[64] = {0};
-    const char *paths[] = {
-        "/sys/block/nvme0n1/device/model",
-        "/sys/block/sda/device/model"
-    };
-    FILE *fp = NULL;
-    int found = 0;
-
-    printf(DEFAULT_COLOR "Model\t\t" ANSI_COLOR_RESET);
-
-    // Try each path to find and read the model information
-    for (size_t i = 0; i < sizeof(paths) / sizeof(paths[0]); ++i) {
-        fp = fopen(paths[i], "r");
-        if (fp) {
-            if (fgets(model, sizeof(model), fp) != NULL) {
-                printf("%s", model); // Model already includes newline
-                found = 1;
-                fclose(fp);
-                break;
-            }
-            fclose(fp);
-        }
-    }
-
-    if (!found) {
-        printf(ANSI_COLOR_RED "unknown\n" ANSI_COLOR_RESET);
-    }
-
-    // Additional processing if LIBUDEV is enabled
+        // Additional processing if LIBUDEV is enabled
 #ifdef LIBUDEV
     process_udev();
 #endif
-
     // Open the mount points file
     FILE *mtab = setmntent("/etc/mtab", "r");
     if (mtab != NULL) {
@@ -189,14 +238,11 @@ void storage(void) {
                 }
 
                 // Retrieve UUID if BLKID is enabled
-                char *uuid = NULL;
-#ifdef BLKID
-                uuid = get_uuid(entry->mnt_fsname);
-#endif
-
+                char uuid[96];
+                get_device_uuid(entry->mnt_fsname,uuid,sizeof(uuid));
                 // Print only if needed
                 if (needed) {
-                    printf("%-15.15s% -15.12s%-15.12s%10.2f %-4s %10.2f %-4s %10.2f %-4s %-15.12s\n",
+                    printf("%-15.15s% -15.12s%-15.12s%10.2f %-4s %10.2f %-4s %10.2f %-4s %s\n",
                             entry->mnt_fsname, entry->mnt_type, entry->mnt_dir,
                             total_size, unit_total,
                             free_blocks, unit_free,
@@ -206,7 +252,6 @@ void storage(void) {
                 }
             }
         }
-
         // Close the mount points file
         endmntent(mtab);
     }

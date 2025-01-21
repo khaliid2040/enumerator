@@ -33,6 +33,7 @@ int is_pid_directory(const char *name) {
     return 1;
 }
 
+
 #ifdef LIBPCI
 void gpu_info(char *model,char *vendor,size_t len) {
     struct pci_access *pac= pci_alloc();

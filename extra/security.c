@@ -125,39 +125,21 @@ void LinuxSecurityModule(void) {
     }
 }
 
-#ifdef LIBEFI
-int GetSecureBootStatus ()
-{
- unsigned char *data = NULL;
-    size_t size;
-    unsigned int attributes;
-    unsigned int secureboot = -1;
-    unsigned int state = -1;
+int GetSecureBootStatus() {
+    int fd;
+    unsigned char state; // 1 byte indicating if 0x1 enabled on 0x0 disabled
 
-    if (efi_get_variable (efi_guid_global, "SecureBoot", &data, &size,&attributes) < 0) {
-            fprintf(stderr,"Secure boot not supported\n");
-            return 1;
-    }   
-
-    if (size == 4 || size == 2 || size == 1) {
-        secureboot = 0;
-        memcpy(&secureboot, data, size);
+    fd = open("/sys/firmware/efi/efivars/SecureBoot-8be4df61-93ca-11d2-aa0d-00e098032b8c",O_RDONLY, 0644);
+    if (fd == -1) return -1;
+    if (pread(fd,&state,1,4) == -1) {
+        close(fd);
+        return -1;
     }
-    free(data); 
-
-    data = NULL;
-    if (efi_get_variable (efi_guid_shim, "MokSBStateRT", &data, &size,&attributes) >= 0) {
-        state = 1;
-        free (data);
-    }
-    if (secureboot) {
+    if (state == 0x0) {
+        printf(ANSI_COLOR_RED"secureboot disabled"ANSI_COLOR_RESET);
+    } else if (state == 0x1) {
         printf(ANSI_COLOR_GREEN "secureboot enabled"ANSI_COLOR_RESET);
-        return 1;
-    } else {
-        printf(ANSI_COLOR_RED "secureboot disabled");
-        return 0;
-    }   
-
-        return 0;   
-}
-#endif  
+    }
+    close(fd);
+    return 0;
+} 

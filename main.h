@@ -48,7 +48,7 @@
 #ifdef SELINUX
 #include <selinux/selinux.h>
 #endif  
-
+//#include <include/common.h>
 typedef unsigned long page_t;
 #define GiB (1024 * 1024 * 1024)
 //for pci.h
@@ -70,106 +70,17 @@ bool get_sensors_information();
 #define supported
 #endif
 
-//structure to fill parsed fields in /proc/cpuinfo 
-struct Cpuinfo {
-    char vendor[13];   
-    unsigned int model;
-    unsigned int family;
-    int stepping;
-    char model_name[64];  
-};
-
-//structure filled with data specific to process id
-// Function to get and print process info
-typedef struct {
-    unsigned long utime;
-    unsigned long stime;
-    unsigned long cutime;
-    unsigned long cstime;
-    unsigned long minflt; //minor page fault
-    unsigned long majrflt; // major page fault
-    unsigned int ppid;
-    unsigned int priority;
-    int voluntary_ctxt_switches;
-    int nonvoluntary_ctxt_switches;  
-    char comm[256];
-    char pcomm[256]; // parent /proc/[pid]/comm
-    char state;
-    unsigned long total_mem;
-    unsigned long resident_mem;
-    unsigned long shared_mem;
-    unsigned long dirty_mem;
-    int thread_count;
-    char cgroup[64];
-    double total_cpu_time;
-    double cpu_time_percent;
-    double user_mode_percent;
-    double system_mode_percent;
-    int uid,euid,ruid;
-    int gid,egid,rgid;
-} ProcessInfo;
-
-struct freq {
-    unsigned long max_freq;
-    unsigned long min_freq;
-    unsigned long base_freq;
-};
-
-//used by extra/system.c
-typedef struct {
-    char bios_vendor[SIZE];
-    char release[9];
-    char date[15];
-    char version[10];
-    char product_name[SIZE];
-    char product_family[SIZE];
-    char sys_vendor[SIZE];
-    char chassis_vendor[SIZE];
-} System_t;
-
-//used in extra_fun.c
-struct acpi {
-    char type[10];
-    char state[10];
-    float temp;
-    struct acpi *next;
-};
-
-//everything about virtualization and containerization
-//used by extra/virt.c
-typedef enum {
-    KVM,
-    Virtualbox,
-    Vmware,
-    hyperv,
-    xen,
-    docker,
-    podman,
-    none,
-    unknown
-} Virtualization;
-
+// local headers in include directory
+//#include "include/common.h"
+#include "include/cpuinfo.h"
+#include "include/process.h"
+#include "include/system.h"
 
 int GetSecureBootStatus(void);
-
-void gpu_info();
-
-int process_file(char *path,char *filename);
-void getProcessInfo(pid_t pid);
-
-int is_pid_directory(const char *name);
-
-void LinuxSecurityModule(void);
-//total cpu time
-void process_cpu_time(void);
-//for accessing function defined in extra/storage.c
-void get_pci_info(void);
+void LinuxSecurityModule();
 void storage(void);
 //for accessng memory_info defined in memory.c
 int memory_info(void);
-//function for memory calculation implemented in extra_func.c
-//for cpu defined in extra/cpuinfo.c
-int cpuinfo(void);  
 
 //network functions implemented in network.c
 void network(void);
@@ -178,13 +89,11 @@ void route(void);
 //parsing and resding arp
 void arp(void);
 
-void system_enum(void);
-
-void acpi_info(void);
 //extra/package.c
 void package_manager();
 
-Virtualization detect_hypervisor();
+
+
 // calculate size dynamically 
 //caller must set unit to KiB and supply units as KiB
 static inline double convert_size_unit(double size, char* unit, size_t len) {

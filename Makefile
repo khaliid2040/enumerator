@@ -7,6 +7,7 @@ endif
 # Directories
 SRC_DIR_EXTRA = extra
 SRC_DIR_NET = net
+SRC_DIR_SYSTEM = system
 OBJ_DIR = obj
 BIN_DIR = ~/.local/bin
 
@@ -28,12 +29,16 @@ $(EXECUTABLE): $(OBJ_FILES)
 $(OBJ_DIR):
 	mkdir -p $(OBJ_DIR)
 
-# Compile object files from the main directory
+# Compile object files from the root directory
 $(OBJ_DIR)/main.o: main.c main.h | $(OBJ_DIR)
 	$(CC) -c -o $@ main.c $(CFLAGS)
 
 # Compile object files from the extra directory
 $(OBJ_DIR)/%.o: $(SRC_DIR_EXTRA)/%.c main.h | $(OBJ_DIR)
+	$(CC) -c -o $@ $< $(CFLAGS)
+
+# Compile object files from the system directory
+$(OBJ_DIR)/%.o: $(SRC_DIR_SYSTEM)/%.c main.h | $(OBJ_DIR)
 	$(CC) -c -o $@ $< $(CFLAGS)
 
 # Compile object files from the net directory

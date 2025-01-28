@@ -1,13 +1,24 @@
 #include "../main.h"
-#ifdef SELINUX_H
-#include <selinux/selinux.h> 
-static void selinux(void) {
-    if (is_selinux_enabled()) {
-        printf("SELinux: " ANSI_COLOR_GREEN "enabled\n" ANSI_COLOR_RESET);
-    } else {
-        printf("SELinux: " ANSI_COLOR_RED "disabled\n" ANSI_COLOR_RESET);
-    }
 
+static bool is_apparmor_enabled() {
+    FILE *fp;
+    char content[5];
+
+    
+    fp = fopen("/sys/module/apparmor/parameters/enabled","r");
+    if (!fp) return false;
+    if (fgets(content,sizeof(content),fp) == NULL) {fclose(fp); return false;}
+
+    if (!strcmp(content,"Y"))
+        return true;
+    if (!access("/sys/kernel/security/apparmor",F_OK)) return true;
+}
+
+static void selinux(void) {
+    /**  we don't need to verify if selinux is enabled and loaded 
+      * because it is already handled in config.sh script so we just to see the state if it is enforcing to permissive
+      * if selinux disabled then this function shouldn't be executed. However if selinux is enabled then there could be 
+      * in two state either disabled or enbled.*/
     FILE *state_file, *mls_file;
     char buffer[1024];
 
@@ -21,9 +32,9 @@ static void selinux(void) {
     if (fgets(buffer, sizeof(buffer), state_file) != NULL) {
         bool enforce = atoi(buffer);
         if (enforce) {
-            printf("SELinux: " ANSI_COLOR_GREEN "enforce\n" ANSI_COLOR_RESET);
+            printf("SELinux:\t" ANSI_COLOR_GREEN "enforce\n" ANSI_COLOR_RESET);
         } else {
-            printf("SELinux: " ANSI_COLOR_YELLOW "permissive\n" ANSI_COLOR_RESET);
+            printf("SELinux:\t" ANSI_COLOR_YELLOW "permissive\n" ANSI_COLOR_RESET);
         }
     } else {
         perror("fgets /sys/fs/selinux/enforce");
@@ -49,27 +60,23 @@ static void selinux(void) {
     }
     fclose(mls_file);
 }
-#elif APPARMOR_H
-#include <sys/apparmor.h>
+
 static void apparmor(void) {
-    //check if enabled
-    if (aa_is_enabled()) {
-        printf("Apparmor:\t" ANSI_COLOR_GREEN "enabled\n" ANSI_COLOR_RESET);
-    } else {
-        printf("Apparmor:\t" ANSI_COLOR_RED "disabled\n" ANSI_COLOR_RESET);
-        return; // there is nothing to continue apparmor disabled
+    char *buffer;
+    unsigned int count,estate,cstate;
+    char profile[SIZE],state[SIZE];
+    size_t size;
+    
+    if (is_apparmor_enabled()) {
+        printf("Apparmor:\t"ANSI_COLOR_GREEN "enabled\n"ANSI_COLOR_RESET);
+    } else{
+        printf("Apparmor:\t"ANSI_COLOR_RED "disabled\n"ANSI_COLOR_RESET);
+        return; // it is disabled nothing to do
     }
-    char *mnt;
-    aa_find_mountpoint(&mnt); //check mountpoint
-    unsigned int count=0,estate=0,cstate=0;
-    char profile_path[SIZE];
-    char *buffer= malloc(SIZE);
-    size_t size= sizeof(buffer);
-    char state[10],profile[SIZE];
-    snprintf(profile_path,SIZE,"%s/profiles",mnt);
-    FILE *fp= fopen(profile_path,"r");
+    
+    FILE *fp= fopen("/sys/kernel/security/apparmor/profiles","r");
     if (fp == NULL) {
-        fprintf(stderr,ANSI_COLOR_RED "couldn't open %s\n" ANSI_COLOR_RESET ,profile_path);
+        fprintf(stderr,ANSI_COLOR_RED "couldn't open /sys/kernel/security/apparmor %s\n" ANSI_COLOR_RESET ,strerror(errno));
         return;
     }
     while (getline(&buffer,&size,fp) != -1) {
@@ -88,13 +95,13 @@ static void apparmor(void) {
     free(buffer);
     fclose(fp);
 }
-#endif
+
 //for   checking the Linux security Modules
 void LinuxSecurityModule(void) {
-    #ifdef APPARMOR_H
-    apparmor();
-    #elif defined(SELINUX_H)
+    #ifdef SELINUX_H
     selinux();
+    #elif defined(APPARMOR_H)
+    apparmor();
     #endif
     //also check for others
     char buf[64];
@@ -108,7 +115,7 @@ void LinuxSecurityModule(void) {
             printf("Landlock\t" ANSI_COLOR_GREEN "enabled\n" ANSI_COLOR_RESET);
         } else 
         if (strstr(buf, "bpf")) {
-            printf("BPF\t" ANSI_COLOR_GREEN "enabled\n"ANSI_COLOR_RESET);
+            printf("BPF\t\t" ANSI_COLOR_GREEN "enabled\n"ANSI_COLOR_RESET);
         }
         if (strstr(buf, "tomoyo")) {
             printf("Tomoyo\t\t" ANSI_COLOR_GREEN "enabled\n"ANSI_COLOR_RESET);

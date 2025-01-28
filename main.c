@@ -134,6 +134,30 @@ static void print_memory_and_uptime() {
     }
 }
 
+static void print_disk_info() {
+    FILE *fp;
+    unsigned long long disk_size;
+    char model[64],unit[5];
+    const char *paths[] = {
+        "/sys/block/nvme0n1/device/model",
+        "/sys/block/sda/device/model"
+    }; // we don't have any other option but to gues the disk
+    const char *disks[] = {"nvme0n1", "sda"}; // also guess this one since the root disk can be either sata based or nvme
+    for (int i=0; i < 2; i++) {
+        disk_size = get_disk_size(disks[i]);
+        if (!disk_size) continue;
+        fp = fopen(paths[i],"r");
+        if (!fp) continue;
+        if (fgets(model,sizeof(model),fp) == NULL) continue;
+        fclose(fp);
+        break;
+    }
+    
+    model[strlen(model) - 1] = '\0'; // remove \n 
+    trim_whitespace(model);
+    printf(DEFAULT_COLOR"Disk:\t\t"ANSI_COLOR_RESET "%s size: %.1f %s\n",model,
+                    convert_size_unit((float)(disk_size / UNIT_SIZE),unit,sizeof(unit)),unit);
+}
 static void print_load_average() {
     printf(DEFAULT_COLOR "Load:\t\t" ANSI_COLOR_RESET);
     char loadbuf[48];
@@ -296,6 +320,7 @@ void systeminfo() {
     print_systemd_info();
     print_cpu_info();
     print_gpu_info();
+    print_disk_info();
     print_memory_and_uptime();
     print_load_average();
     print_desktop_environment();
@@ -352,6 +377,7 @@ int main(int argc, char *argv[])
         } 
         // If only -H is specified
         else if (H_flag) {
+        
         printf(ANSI_COLOR_YELLOW "Getting basic information...\n" ANSI_COLOR_RESET);
         system_enum();
         cpuinfo();

@@ -8,6 +8,7 @@
 typedef struct {
     unsigned long utime;
     unsigned long stime;
+    unsigned long starttime;
     unsigned long cutime;
     unsigned long cstime;
     unsigned long minflt; //minor page fault

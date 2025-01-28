@@ -119,15 +119,15 @@ static int readProcessStats(int pid, ProcessInfo *info) {
     if (!file) return -1;  // File could not be opened
 
     // Read the process stats. Make sure the format matches the actual format of /proc/[pid]/stat.
-    int fields_read = fscanf(file, "%*d %*s %c %d %*d %*d %*d %*d %*u %u %*u %u %lu %lu %lu %lu",
+    int fields_read = fscanf(file, "%*d %*s %c %d %*d %*d %*d %*d %*u %u %*u %u %lu %lu %lu %lu %*lu %*lu %*lu %*lu %*lu %lu",
                              &info->state, &info->ppid, &info->minflt, &info->majrflt,&info->utime, &info->stime, 
-                             &info->cutime, &info->cstime);
+                             &info->cutime, &info->cstime,&info->starttime);
     info->priority = process_getpriority(PRIO_PROCESS,pid);
     fclose(file);
     if (!get_comm_processes(pid,info))
         return 1;
     // Check if all expected fields were successfully read.
-    return (fields_read == 8) ? 0 : -1;
+    return (fields_read == 9) ? 0 : -1;
 }  
 static int readMemoryInfo(int pid, ProcessInfo *info) {
     char path[256];
@@ -224,11 +224,30 @@ static void get_uid_gid(ProcessInfo *info,int pid) {
 }
 static void calculateCPUInfo(ProcessInfo *info, double uptime) {
     long hertz = sysconf(_SC_CLK_TCK);
+
+    // Calculate total CPU time in seconds
     info->total_cpu_time = (info->utime + info->stime) / (double) hertz;
-    info->cpu_time_percent = (info->total_cpu_time / uptime) * 100;
-    info->user_mode_percent = (info->utime / (double) hertz) / info->total_cpu_time * 100;
-    info->system_mode_percent = (info->stime / (double) hertz) / info->total_cpu_time * 100;
+
+    // Calculate process wall-clock runtime
+    double process_runtime = uptime - (info->starttime / (double) hertz);
+
+    // Avoid division by zero
+    if (process_runtime > 0) {
+        info->cpu_time_percent = (info->total_cpu_time / process_runtime) * 100;
+    } else {
+        info->cpu_time_percent = 0;
+    }
+
+    // Avoid division by zero for total CPU time
+    if (info->total_cpu_time > 0) {
+        info->user_mode_percent = (info->utime / (double) hertz) / info->total_cpu_time * 100;
+        info->system_mode_percent = (info->stime / (double) hertz) / info->total_cpu_time * 100;
+    } else {
+        info->user_mode_percent = 0;
+        info->system_mode_percent = 0;
+    }
 }
+
 
 static void printProcessInfo(const ProcessInfo *info,int pid) {
     long page_size = sysconf(_SC_PAGE_SIZE) / 1024; // Page size in KiB

@@ -55,7 +55,7 @@ Virtualization detect_hypervisor() {
         // for virtual machines
         if (is_hypervisor_virtualbox()) return Virtualbox;
         if (ebx == 0x4B4D564B && ecx == 0x564B4D56 && edx == 0x0000004D) return KVM;
-        if (ebx == 0x61774d56 && ecx == 0x4d566572 && edx == 0x65726175) return Vmware;
+        if (ebx == 0x61774d56 && ecx == 0x4d566572 && edx == 0x65726177) return Vmware;
         if (ebx == 0x7263694d && ecx == 0x666f736f && edx == 0x76482074) return hyperv;
         if (ebx == 0x566e6558 && ecx == 0x65584d4d && edx == 0x4d4d566e) return xen;
 

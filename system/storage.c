@@ -2,6 +2,21 @@
 #include <sys/statvfs.h>
 #include <mntent.h>
 
+//this function is exported used in main.c
+long long get_disk_size(const char* device) {
+    char path[MAX_PATH];
+    unsigned long long size;
+    char content[32];
+    FILE *fp;
+
+    snprintf(path,MAX_PATH,"/sys/block/%s/size",device);
+    fp = fopen(path,"r");
+    if (!fp) return 0;
+    if (fgets(content,sizeof(content),fp) == NULL) return 0;
+    fclose(fp);
+    size = strtoull(content,NULL,0);
+    return size * 512;
+}
 /*
  * reference and explaination refer to 
  * MBR: https://en.wikipedia.org/wiki/Master_boot_record

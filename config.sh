@@ -34,28 +34,12 @@ esac
 fi
 
 # Libraries to check
-LIBS=("libmath" "libapparmor" "libselinux" "libudev" "libsensors")
+LIBS=("libudev" "libsensors")
 LIBPCI="libpci"
 
 # Check for the standard libraries
 for LIB in "${LIBS[@]}"; do
-    if [ "$LIB" == "libmath" ]; then
-        if ldconfig -p | grep -q "libm.so"; then
-            CFLAGS+=" -DMATH_H"
-            LDFLAGS+=" -lm"
-            echo -e "checking ${LIB}: ${GREEN}OK${NC}"
-        else
-            echo -e "checking ${LIB}: ${RED}NO${NC}"
-        fi
-    elif [ "$LIB" == "libapparmor" ] && [ -f /usr/include/sys/apparmor.h ]; then
-        CFLAGS+=" -DAPPARMOR_H"
-        LDFLAGS+=" -lapparmor"
-        echo -e "checking ${LIB}: ${GREEN}OK${NC}"
-    elif [ "$LIB" == "libselinux" ] && [ -f /usr/include/selinux/selinux.h ]; then
-        CFLAGS+=" -DSELINUX_H"
-        LDFLAGS+=" -lselinux"
-        echo -e "checking ${LIB}: ${GREEN}OK${NC}"
-    elif [ "$LIB" == "libudev" ] && [ -f /usr/include/libudev.h ]; then
+    if [ "$LIB" == "libudev" ] && [ -f /usr/include/libudev.h ]; then
         CFLAGS+=" -DLIBUDEV"
         LDFLAGS+=" -ludev"
         echo -e "checking ${LIB}: ${GREEN}OK${NC}"
@@ -67,6 +51,14 @@ for LIB in "${LIBS[@]}"; do
         echo -e "checking ${LIB}: ${RED}NO${NC}"
     fi
 done
+
+# detect selinux differently
+if [ -d "/sys/fs/selinux" ]; then
+    CFLAGS+=" -DSELINUX_H"
+fi
+if [ -d "/sys/kernel/security/apparmor" ]; then
+    CFLAGS+=" -DAPPARMOR_H"
+fi
 
 libpci_path() {
     local path="$1"

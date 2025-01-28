@@ -34,4 +34,6 @@ void get_pci_info(void);
 void system_enum(void);
 
 void acpi_info(void);
+
+void trim_whitespace(char *str);
 #endif // SYSTEM_H

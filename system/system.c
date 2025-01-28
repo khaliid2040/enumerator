@@ -69,7 +69,7 @@ void system_enum() {
     }
 }
 
-static void trim_whitespace(char *str) {
+void trim_whitespace(char *str) {
     char *end;
 
     // Trim leading space

@@ -42,6 +42,8 @@
 #include <sys/sysinfo.h>
 #include <stdbool.h>
 #include <ctype.h>
+#include <errno.h>
+#include <sys/wait.h>
 #ifdef APPARMOR 
 #include <sys/apparmor.h>
 #endif
@@ -78,7 +80,10 @@ bool get_sensors_information();
 
 int GetSecureBootStatus(void);
 void LinuxSecurityModule();
+
 void storage(void);
+long long get_disk_size(const char* device);
+
 //for accessng memory_info defined in memory.c
 int memory_info(void);
 
@@ -92,7 +97,7 @@ void arp(void);
 //extra/package.c
 void package_manager();
 
-
+void pager_output();
 
 // calculate size dynamically 
 //caller must set unit to KiB and supply units as KiB

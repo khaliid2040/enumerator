@@ -143,20 +143,23 @@ static void print_disk_info() {
         "/sys/block/sda/device/model"
     }; // we don't have any other option but to gues the disk
     const char *disks[] = {"nvme0n1", "sda"}; // also guess this one since the root disk can be either sata based or nvme
+    printf(DEFAULT_COLOR"Disk:\t\t"ANSI_COLOR_RESET);
     for (int i=0; i < 2; i++) {
         disk_size = get_disk_size(disks[i]);
         if (!disk_size) continue;
         fp = fopen(paths[i],"r");
         if (!fp) continue;
-        if (fgets(model,sizeof(model),fp) == NULL) continue;
+        if (fgets(model,sizeof(model),fp) == NULL) {
+            fclose(fp);
+            continue;
+        }
+        model[strlen(model) - 1] = '\0'; // remove \n 
+        trim_whitespace(model);
+        printf("%s ",model);
         fclose(fp);
         break;
     }
-    
-    model[strlen(model) - 1] = '\0'; // remove \n 
-    trim_whitespace(model);
-    printf(DEFAULT_COLOR"Disk:\t\t"ANSI_COLOR_RESET "%s size: %.1f %s\n",model,
-                    convert_size_unit((float)(disk_size / UNIT_SIZE),unit,sizeof(unit)),unit);
+    printf("size %.1f %s\n",convert_size_unit((float)(disk_size / UNIT_SIZE),unit,sizeof(unit)),unit);
 }
 static void print_load_average() {
     printf(DEFAULT_COLOR "Load:\t\t" ANSI_COLOR_RESET);

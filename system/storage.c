@@ -88,7 +88,7 @@ static void get_disk(const char* device) {
             strncpy(model,"unknown",sizeof(model));
         }
     }
-
+    model[strlen(model)] = '\n';
     printf("%s",model);
 
 }

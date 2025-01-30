@@ -256,3 +256,121 @@ bool get_sensors_information() {
     return true;
 }
 #endif
+
+bool is_init_systemd() {
+    FILE *fp;
+    char content[15];
+
+    fp = fopen("/proc/1/comm","r");
+    if (!fp) return false;
+    if (fgets(content,sizeof(content),fp) == NULL) return false;
+    if (!strcmp(content,"systemd\n")) {
+        fclose(fp);
+        return true;
+    }
+    fclose(fp);
+    return false;
+}
+/* detect systemd version and return version string to location pointed by version paramter
+ * on success return 0 and on error return -1
+ * check if init system is systemd before calling those functions
+ */
+#ifdef SYSTEMD
+int get_systemd_version(char **version) {
+    sd_bus *bus = NULL;
+    sd_bus_error error = SD_BUS_ERROR_NULL;
+    sd_bus_message *reply = NULL;
+    int r;
+
+    // Connect to the system bus
+    r = sd_bus_default_system(&bus);
+    if (r < 0) {
+        fprintf(stderr, "Failed to connect to system bus: %s\n", strerror(-r));
+        return -1;
+    }
+
+    // Get systemd version property
+    r = sd_bus_get_property(bus,
+                            "org.freedesktop.systemd1",    // Service
+                            "/org/freedesktop/systemd1",   // Object path
+                            "org.freedesktop.systemd1.Manager", // Interface
+                            "Version",                     // Property
+                            &error,                        // Error handling
+                            &reply,
+                            "s");                           // Reply message
+    if (r < 0) {
+        fprintf(stderr, "Failed to get systemd version: %s\n", error.message);
+        sd_bus_error_free(&error);
+        sd_bus_unref(bus);
+        return -1;
+    }
+
+    // Read the version as string
+    r = sd_bus_message_read(reply, "s", version);
+    if (r < 0) {
+        fprintf(stderr, "Failed to read version response: %s\n", strerror(-r));
+        sd_bus_message_unref(reply);
+        sd_bus_unref(bus);
+        return -1;
+    }
+
+    // Clean up
+    sd_bus_message_unref(reply);
+    sd_bus_unref(bus);
+    return 0;
+}
+
+
+/* get how many units systemd aware of 
+ * on success return exact number of units and on failure return 0
+*/
+
+int get_systemd_units() {
+    sd_bus *bus = NULL;
+    sd_bus_error error = SD_BUS_ERROR_NULL;
+    sd_bus_message *reply = NULL;
+    int count = 0;
+
+    // Connect to the system bus
+    int r = sd_bus_default_system(&bus);
+    if (r < 0) {
+        fprintf(stderr, "Failed to connect to system bus: %s\n", strerror(-r));
+        return count;
+    }
+
+    // Call ListUnits on systemd D-Bus API
+    r = sd_bus_call_method(bus,
+                           "org.freedesktop.systemd1",           // Service
+                           "/org/freedesktop/systemd1",         // Object path
+                           "org.freedesktop.systemd1.Manager",  // Interface
+                           "ListUnits",                         // Method
+                           &error,
+                           &reply,
+                           "");
+    if (r < 0) {
+        fprintf(stderr, "Failed to call ListUnits: %s\n", error.message);
+        sd_bus_error_free(&error);
+        sd_bus_unref(bus);
+        return count;
+    }
+
+    // Read array of structures from the reply
+    r = sd_bus_message_enter_container(reply, 'a', "(ssssssouso)");
+    if (r < 0) {
+        fprintf(stderr, "Failed to parse response\n");
+        sd_bus_message_unref(reply);
+        sd_bus_unref(bus);
+        return count;
+    }
+
+    // Count units
+    count = 0;
+    while ((r = sd_bus_message_skip(reply, "(ssssssouso)")) > 0) {
+        count++;
+    }
+
+    sd_bus_message_unref(reply);
+    sd_bus_unref(bus);
+    return count;
+}
+#endif

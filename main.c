@@ -70,27 +70,17 @@ static void print_firmware_info() {
 }
 
 static void print_systemd_info() {
-    char output[20];
-    FILE *init = popen("systemctl --version", "r");
-    if (init) {
-        if (fgets(output, sizeof(output)-1, init) != NULL) {
-            printf(DEFAULT_COLOR "\nInit: \t\t" ANSI_COLOR_RESET "%s)", output);
-        }
-        pclose(init);
+    char *version= NULL;
+    int units;
+    
+    // first check if init is systemd
+    if (is_init_systemd()) {
+        #ifdef SYSTEMD
+        if (get_systemd_version(&version) == -1) return;
+        units = get_systemd_units();
+        #endif
+        printf(DEFAULT_COLOR"Init:\t\t"ANSI_COLOR_RESET "systemd %s units=%d\n",version,units);
     }
-
-    int count_units = 0;
-    DIR *units = opendir("/usr/lib/systemd/system");
-    struct dirent *unit_entry;
-    if (units) {
-        while ((unit_entry = readdir(units)) != NULL) {
-            if (strcmp(unit_entry->d_name, ".") != 0 && strcmp(unit_entry->d_name, "..") != 0) {
-                count_units++;
-            }
-        }
-        closedir(units);
-    }
-    printf(" %d units installed\n", count_units);
 }
 
 static void print_cpu_info() {
@@ -199,7 +189,7 @@ static void print_desktop_environment() {
                 while (getline(&contents,&len,deVersion) != -1) {
                     snprintf(version,sizeof(version),"%.6s",contents + 16);  
                 }
-                printf("%s\n",version);
+                printf("%s",version);
                 fclose(deVersion);
                 free(contents);
             } else {
@@ -327,6 +317,7 @@ void systeminfo() {
     print_memory_and_uptime();
     print_load_average();
     print_desktop_environment();
+    package_manager();
     print_battery_info();
     print_process_and_thread_count();
     print_user_and_group_info();

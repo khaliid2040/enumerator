@@ -1,4 +1,5 @@
 #include "../main.h"
+#include <sys/stat.h>
 
 // Gentoo package manager
 static int gentoo_pkgmgr() {
@@ -48,24 +49,17 @@ static int gentoo_pkgmgr() {
 }
 
 // Debian package manager
-static int debian_pkgmgr() {
-    int counter = 0;
-    FILE *pkgmgr;
-    char buffer[256];
-
-    pkgmgr = fopen("/var/lib/dpkg/status", "r");
-    if (!pkgmgr) {
-        perror("Unable to open /var/lib/dpkg/status");
-        return -1;
+static int count_dpkg_packages() {
+    FILE *fp;
+    char content[64];
+    unsigned int count=0;
+    fp = fopen("/var/lib/dpkg/status","r");
+    if (!fp) return 0;
+    while (fgets(content,sizeof(content),fp) != NULL) {
+        if (!strncmp(content,"Package:",8)) count++;
     }
-
-    while (fgets(buffer, sizeof(buffer), pkgmgr)) {
-        if (strncmp(buffer, "Package:", 8) == 0) {
-            counter++;
-        }
-    }
-    fclose(pkgmgr);
-    return counter;
+    fclose(fp);
+    return count;
 }
 
 // Red Hat package manager
@@ -88,39 +82,50 @@ static int redhat_pkgmgr() {
     return counter;
 }
 // arch-based distros package manager
-static int arch_pkgmgr() {
-    char buffer[64];
-    FILE *pkgmgr= popen("pacman -Qq","r");
-    int count_packages=0;
-    //need handle errors
-    while (fgets(buffer,sizeof(buffer),pkgmgr) != NULL) {
-        count_packages++;
-    }
-    pclose(pkgmgr);
-    return count_packages;
-}
-// Flatpak package manager
- static int count_flatpak_packages() {
-    char buffer[128];
-    int count = 0;
-    FILE *fp = popen("flatpak list | wc -l", "r");
-    if (fp == NULL) {
-        perror("popen failed");
-        return -1;
+static int count_pacman_packages() {
+    DIR *dir;
+    struct dirent *entry;
+    struct stat st;
+    char path[512];
+    unsigned int count = 0;
+
+    dir = opendir("/var/lib/pacman/local");
+    if (!dir) return 0;
+
+    while ((entry = readdir(dir)) != NULL) {
+        if (!strcmp(entry->d_name, ".") || !strcmp(entry->d_name, "..")) continue;
+
+        // Construct full path and check if it's a directory
+        snprintf(path, sizeof(path), "/var/lib/pacman/local/%s", entry->d_name);
+        if (stat(path, &st) == 0 && S_ISDIR(st.st_mode)) {
+            count++;
+        }
     }
 
-    if (fgets(buffer, sizeof(buffer) - 1, fp) != NULL) {
-        count = atoi(buffer);
-    }
-
-    pclose(fp);
+    closedir(dir);
     return count;
 }
+// Flatpak package manager
+static int count_flatpak_packages() {
+    DIR *dir;
+    struct dirent *entry;
+    unsigned int count=0;
+
+    dir = opendir("/var/lib/flatpak/runtime/");
+    if (!dir) return 0;
+    while ((entry = readdir(dir)) != NULL) {
+        if (!strcmp(entry->d_name,".") || !strcmp(entry->d_name,"..")) continue;
+        count++;
+    }
+    closedir(dir);
+    return count;
+}
+
 
 void package_manager() {
     // Print package counts for defined distros
     #if defined(FLATPAK) || defined(GENTOO) || defined(DEBIAN) || defined(REDHAT)
-    printf(DEFAULT_COLOR "Packages\t"ANSI_COLOR_RESET);
+    printf(DEFAULT_COLOR "Packages:\t"ANSI_COLOR_RESET);
     #endif
 
     int packages = 0;
@@ -131,7 +136,7 @@ void package_manager() {
     #endif
 
     #ifdef DEBIAN
-    packages = debian_pkgmgr();
+    packages = count_dpkg_packages();
     printf("%d (apt) %d (flatpak)\n", packages, flatpak);
     #elif GENTOO
     packages = gentoo_pkgmgr();
@@ -140,7 +145,7 @@ void package_manager() {
     packages = redhat_pkgmgr();
     printf("%d (rpm) %d (flatpak)\n", packages, flatpak);
     #elif ARCH
-    packages= arch_pkgmgr();
+    packages= count_pacman_packages();
     printf("%d (pacman) %d (flatpak)\n",packages,flatpak);
     #else
     printf("No supported package manager defined.\n");

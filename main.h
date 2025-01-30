@@ -97,8 +97,10 @@ void arp(void);
 //extra/package.c
 void package_manager();
 
-void pager_output();
-
+#ifdef LIBPCI
+void gpu_info(char *model,char *vendor,size_t len);
+void get_pci_info(void);
+#endif
 // calculate size dynamically 
 //caller must set unit to KiB and supply units as KiB
 static inline double convert_size_unit(double size, char* unit, size_t len) {

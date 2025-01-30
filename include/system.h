@@ -1,7 +1,10 @@
 #ifndef SYSTEM_H
 #define SYSTEM_H
 #include "../main.h"
-
+#ifdef SYSTEMD
+#include <systemd/sd-bus.h>
+#include <systemd/sd-daemon.h>
+#endif
 //used by extra/system.c
 typedef struct {
     char bios_vendor[SIZE];
@@ -36,4 +39,11 @@ void system_enum(void);
 void acpi_info(void);
 
 void trim_whitespace(char *str);
+
+// systemd related stuff
+bool is_init_systemd();
+#ifdef SYSTEMD
+int get_systemd_version(char **version);
+int get_systemd_units();
+#endif
 #endif // SYSTEM_H

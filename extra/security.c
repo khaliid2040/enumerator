@@ -143,9 +143,9 @@ int GetSecureBootStatus() {
         return -1;
     }
     if (state == 0x0) {
-        printf(ANSI_COLOR_RED"secureboot disabled"ANSI_COLOR_RESET);
+        printf(ANSI_COLOR_RED"secureboot disabled\n"ANSI_COLOR_RESET);
     } else if (state == 0x1) {
-        printf(ANSI_COLOR_GREEN "secureboot enabled"ANSI_COLOR_RESET);
+        printf(ANSI_COLOR_GREEN "secureboot enabled\n"ANSI_COLOR_RESET);
     }
     close(fd);
     return 0;

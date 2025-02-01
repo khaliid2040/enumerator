@@ -5,6 +5,7 @@
 #include <systemd/sd-bus.h>
 #include <systemd/sd-daemon.h>
 #endif
+#define HWMON_PATH "/sys/class/hwmon/"
 //used by extra/system.c
 typedef struct {
     char bios_vendor[SIZE];
@@ -46,4 +47,6 @@ bool is_init_systemd();
 int get_systemd_version(char **version);
 int get_systemd_units();
 #endif
+
+void detect_sensors();
 #endif // SYSTEM_H

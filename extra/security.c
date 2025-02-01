@@ -1,27 +1,66 @@
 #include "../main.h"
 
-static bool is_apparmor_enabled() {
-    FILE *fp;
-    char content[5];
+static bool is_apparmor_enabled(bool *loaded) {
+    bool (*aa_is_enabled)(void);
+    bool enabled;
 
-    
-    fp = fopen("/sys/module/apparmor/parameters/enabled","r");
-    if (!fp) return false;
-    if (fgets(content,sizeof(content),fp) == NULL) {fclose(fp); return false;}
+    if(loaded) *loaded = true;
+    if (access("/sys/kernel/security/apparmor",F_OK) == -1) {
+        if (loaded) *loaded = false;
+        return false;
+    }
 
-    if (!strcmp(content,"Y"))
-        return true;
-    if (!access("/sys/kernel/security/apparmor",F_OK)) return true;
+    void* handle = load_library("libapparmor.so", "aa_is_enabled", (void**)&aa_is_enabled);
+    if (!handle) {
+        handle = load_library("libapparmor.so.1", "aa_is_enabled", (void**)&aa_is_enabled);
+        if (!handle) return false;
+    }
+    enabled = aa_is_enabled();
+    dlclose(handle);
+    return enabled;
+}
+
+static bool is_selinux_enabled(bool *loaded) {
+    void* handle;
+    bool enabled;
+    bool (*_is_selinux_enabled)(void);
+    if (loaded) *loaded = true;
+    if (access("/sys/fs/selinux",F_OK) == -1){
+        if (loaded) *loaded = false;
+        return false;
+    }
+    handle = load_library("libselinux.so","is_selinux_enabled",(void**)&_is_selinux_enabled);
+    if (!handle) {
+        // one more attempt
+        handle = load_library("libselinux.so.1","is_selinux_enabled",(void**)&_is_selinux_enabled);
+        if (!handle) return false;
+    }
+    enabled = _is_selinux_enabled();
+    dlclose(handle);
+    return enabled;
+}
+
+static bool is_selinux_mls_enabled() {
+    void* handle;
+    bool enabled;
+    bool (*_is_selinux_mls_enabled) (void);
+
+    handle = load_library("libselinux.so","is_selinux_mls_enabled",(void**)&_is_selinux_mls_enabled);
+    if (!handle) {
+        //one more attempt
+        handle = load_library("libselinux.so.1","is_selinux_mls_enabled",(void**)&_is_selinux_mls_enabled);
+        if (!handle) return false;
+    }
+    enabled = _is_selinux_mls_enabled();
+    dlclose(handle);
+    return enabled;
 }
 
 static void selinux(void) {
-    /**  we don't need to verify if selinux is enabled and loaded 
-      * because it is already handled in config.sh script so we just to see the state if it is enforcing to permissive
-      * if selinux disabled then this function shouldn't be executed. However if selinux is enabled then there could be 
-      * in two state either disabled or enbled.*/
     FILE *state_file, *mls_file;
     char buffer[1024];
 
+    if (!is_selinux_enabled(NULL) && !is_selinux_mls_enabled()) return;
     // Check SELinux enforce status
     state_file = fopen("/sys/fs/selinux/enforce", "r");
     if (state_file == NULL) {
@@ -62,18 +101,19 @@ static void selinux(void) {
 }
 
 static void apparmor(void) {
-    char *buffer;
+    char *buffer=NULL;
     unsigned int count,estate,cstate;
     char profile[SIZE],state[SIZE];
     size_t size;
-    
-    if (is_apparmor_enabled()) {
+    bool is_loaded;
+    bool enabled = is_apparmor_enabled(&is_loaded);
+
+    if (is_apparmor_enabled(NULL)) { // this time loaded and enabled
         printf("Apparmor:\t"ANSI_COLOR_GREEN "enabled\n"ANSI_COLOR_RESET);
-    } else{
-        printf("Apparmor:\t"ANSI_COLOR_RED "disabled\n"ANSI_COLOR_RESET);
-        return; // it is disabled nothing to do
+    } else {
+        return;
     }
-    
+
     FILE *fp= fopen("/sys/kernel/security/apparmor/profiles","r");
     if (fp == NULL) {
         fprintf(stderr,ANSI_COLOR_RED "couldn't open /sys/kernel/security/apparmor %s\n" ANSI_COLOR_RESET ,strerror(errno));
@@ -98,11 +138,8 @@ static void apparmor(void) {
 
 //for   checking the Linux security Modules
 void LinuxSecurityModule(void) {
-    #ifdef SELINUX_H
     selinux();
-    #elif defined(APPARMOR_H)
     apparmor();
-    #endif
     //also check for others
     char buf[64];
     FILE *fp = fopen("/sys/kernel/security/lsm","r");

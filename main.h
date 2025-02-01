@@ -15,15 +15,15 @@
 
 //let the user decide which color to print for user preference
 #ifdef RED
-#define DEFAULT_COLOR    "\x1b[31m" // Red
+#define DEFAULT_COLOR    "\33[m\33[1m\33[31m" // Red
 #elif defined(YELLOW)
 #define DEFAULT_COLOR    "\x1b[33m" // Yellow
 #elif defined(GREEN)
-#define DEFAULT_COLOR    "\x1b[32m" // Green
+#define DEFAULT_COLOR    "\33[m\33[1m\33[32m" // Green
 #elif defined(MAGENTA)
-#define DEFAULT_COLOR     "\x1b[35m" // Magenta
+#define DEFAULT_COLOR     "\33[m\33[1m\33[35m" // Magenta
 #else 
-#define DEFAULT_COLOR    "\x1b[36m" // Cyan
+#define DEFAULT_COLOR    "\33[m\33[1m\33[36m" // Cyan
 #endif  
 
 #define MAX_PATH 96
@@ -42,8 +42,8 @@
 #include <sys/sysinfo.h>
 #include <stdbool.h>
 #include <ctype.h>
+#include <dlfcn.h>
 #include <errno.h>
-#include <sys/wait.h>
 #ifdef APPARMOR 
 #include <sys/apparmor.h>
 #endif
@@ -77,6 +77,7 @@ bool get_sensors_information();
 #include "include/cpuinfo.h"
 #include "include/process.h"
 #include "include/system.h"
+#include "include/utils.h"
 
 int GetSecureBootStatus(void);
 void LinuxSecurityModule();
@@ -97,10 +98,6 @@ void arp(void);
 //extra/package.c
 void package_manager();
 
-#ifdef LIBPCI
-void gpu_info(char *model,char *vendor,size_t len);
-void get_pci_info(void);
-#endif
 // calculate size dynamically 
 //caller must set unit to KiB and supply units as KiB
 static inline double convert_size_unit(double size, char* unit, size_t len) {

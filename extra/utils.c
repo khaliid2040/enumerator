@@ -33,6 +33,42 @@ int is_pid_directory(const char *name) {
     return 1;
 }
 
+void* load_library(const char *library, const char* symbol, void **function) {
+    void* handle = dlopen(library, RTLD_LAZY);
+    if (!handle) {
+        return NULL;
+    }
+    
+    *function = dlsym(handle, symbol);
+    if (!*function) {
+        fprintf(stderr, "Error: %s\n", dlerror());
+        dlclose(handle);
+        return NULL;
+    }
+    return handle;
+}
+
+bool is_directory_empty(const char *path) {
+    struct dirent *entry;
+    DIR *dir = opendir(path);
+
+    if (!dir) {
+        perror("opendir");
+        return false; // Assume it's not empty if it can't be opened
+    }
+
+    while ((entry = readdir(dir)) != NULL) {
+        if (entry->d_name[0] == '.' && 
+            (entry->d_name[1] == '\0' || (entry->d_name[1] == '.' && entry->d_name[2] == '\0'))) {
+            continue; // Skip "." and ".."
+        }
+        closedir(dir);
+        return false; // Directory is not empty
+    }
+
+    closedir(dir);
+    return true; // Directory is empty
+}
 
 #ifdef LIBPCI
 void gpu_info(char *model,char *vendor,size_t len) {

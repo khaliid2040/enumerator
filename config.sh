@@ -34,7 +34,7 @@ esac
 fi
 
 # Libraries to check
-LIBS=("libudev" "libsensors" "libsystemd")
+LIBS=("libudev" "libsystemd")
 LIBPCI="libpci"
 
 # Check for the standard libraries
@@ -42,10 +42,6 @@ for LIB in "${LIBS[@]}"; do
     if [ "$LIB" == "libudev" ] && [ -f /usr/include/libudev.h ]; then
         CFLAGS+=" -DLIBUDEV"
         LDFLAGS+=" -ludev"
-        echo -e "checking ${LIB}: ${GREEN}OK${NC}"
-    elif [ "$LIB" == "libsensors" ] && [ -f /usr/include/sensors/sensors.h ]; then
-        CFLAGS+=" -DLIBSENSORS"
-        LDFLAGS+=" -lsensors"
         echo -e "checking ${LIB}: ${GREEN}OK${NC}"
     elif [ "$LIB" == "libsystemd" ] && [ -d /usr/include/systemd ]; then
         CFLAGS+=" -DSYSTEMD"

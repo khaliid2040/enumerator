@@ -387,6 +387,7 @@ int main(int argc, char *argv[])
         #ifdef LIBSENSORS
         get_sensors_information();
         #endif
+        detect_sensors();
         } else if(N_flag) {
             printf(ANSI_COLOR_YELLOW "Getting network information\n" ANSI_COLOR_RESET);
             network();

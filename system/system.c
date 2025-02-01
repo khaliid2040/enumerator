@@ -186,76 +186,6 @@ void acpi_info() {
     }     
 }
 
-#ifdef LIBSENSORS
-bool get_sensors_information() {
-    const sensors_chip_name *chip, *chip_names = NULL;
-    const sensors_feature *features;
-    const sensors_subfeature *subfeature;
-    const char *chip_name;
-    char *label;
-    int nr = 0, feature_nr = 0;
-    double temp;
-
-    // Initialize the sensors library
-    if (sensors_init(NULL) != 0) {
-        fprintf(stderr, "Failed to initialize sensors library\n");
-        return false;
-    }
-
-    printf("Detected Sensors:\n");
-    printf("=================\n");
-
-    // Iterate through all detected sensor chips
-    while ((chip = sensors_get_detected_chips(chip_names, &nr)) != NULL) {
-        chip_name = sensors_get_adapter_name(&chip->bus);
-        if (!chip_name) {
-            fprintf(stderr, "Failed to retrieve chip adapter name\n");
-            continue;
-        }
-        printf("Adapter: %s\n", chip_name);
-
-        // Iterate through all features of the chip
-        feature_nr = 0;
-        while ((features = sensors_get_features(chip, &feature_nr)) != NULL) {
-            // Check if the feature is related to temperature
-            if (features->type != SENSORS_FEATURE_TEMP)
-                continue;
-
-            label = sensors_get_label(chip, features);
-
-            // Replace temp[n] with "Temperature" unless it's a core label
-            char formatted_label[256];
-            if (strncmp(label, "temp", 4) == 0) {
-                snprintf(formatted_label, sizeof(formatted_label), "Temperature");
-            } else {
-                snprintf(formatted_label, sizeof(formatted_label), "%s", label);
-            }
-
-            // Get the subfeature (e.g., input temperature)
-            subfeature = sensors_get_subfeature(chip, features, SENSORS_SUBFEATURE_TEMP_INPUT);
-            if (!subfeature) {
-                fprintf(stderr, "Failed to retrieve subfeature for %s\n", features->name);
-                continue;
-            }
-
-            // Retrieve the sensor value
-            if (sensors_get_value(chip, subfeature->number, &temp) < 0) {
-                fprintf(stderr, "Failed to get value for %s\n", features->name);
-                continue;
-            }
-            free(label);
-            // Print formatted label and temperature
-            printf("\t%s:\t+%.1f°C\n", formatted_label, temp);
-        }
-
-        printf("\n");
-    }
-
-    // Cleanup and release resources
-    sensors_cleanup();
-    return true;
-}
-#endif
 
 bool is_init_systemd() {
     FILE *fp;
@@ -374,3 +304,80 @@ int get_systemd_units() {
     return count;
 }
 #endif
+
+static int read_first_line(const char *path, char *buf, size_t size) {
+    FILE *file = fopen(path, "r");
+    if (!file) return 0;
+    if (fgets(buf, size, file)) {
+        buf[strcspn(buf, "\n")] = '\0'; // Remove newline
+        fclose(file);
+        return 1;
+    }
+    fclose(file);
+    return 0;
+}
+
+void detect_sensors() {
+    struct dirent *entry;
+    DIR *dp; 
+    
+    printf("Detected Sensors:\n=================\n");
+    //we must check if the directory is empty; if it is empty then there is no sensors
+    if (is_directory_empty(HWMON_PATH)) {
+        printf(ANSI_COLOR_RED "No sensors detected, make sure driver are loaded\n"ANSI_COLOR_RESET);
+        return;
+    }
+    dp = opendir(HWMON_PATH);
+    if (!dp) {
+        perror("opendir");
+        return;
+    }
+
+    while ((entry = readdir(dp)) != NULL) {
+        if (entry->d_name[0] == '.') continue; // Skip hidden entries
+
+        char name_path[256], label_path[256], input_path[256];
+        char sensor_name[64];
+        
+        snprintf(name_path, sizeof(name_path), "%s%s/name", HWMON_PATH, entry->d_name);
+        if (!read_first_line(name_path, sensor_name, sizeof(sensor_name)))
+            continue;
+
+        // Print adapter based on sensor name
+        if (strcmp(sensor_name, "coretemp") == 0)
+            printf("Adapter: ISA adapter\n");
+        else if (strcmp(sensor_name, "acpitz") == 0)
+            printf("Adapter: ACPI interface\n");
+        else if (strncmp(sensor_name, "nvme", 4) == 0)
+            printf("Adapter: PCI adapter\n");
+        else
+            printf("Adapter: Virtual device\n");
+
+        for (int i = 1; i <= 10; i++) { // Scan up to 10 possible temperature sensors
+            snprintf(label_path, sizeof(label_path), "%s%s/temp%d_label", HWMON_PATH, entry->d_name, i);
+            snprintf(input_path, sizeof(input_path), "%s%s/temp%d_input", HWMON_PATH, entry->d_name, i);
+
+            char label[64];
+            int temp;
+
+            FILE *label_file = fopen(label_path, "r");
+            FILE *input_file = fopen(input_path, "r");
+
+            if (input_file && (fscanf(input_file, "%d", &temp) == 1)) {
+                if (label_file && fgets(label, sizeof(label), label_file)) {
+                    label[strcspn(label, "\n")] = '\0'; // Remove newline
+                    printf("        %s:\t%.1f°C\n", label, temp / 1000.0);
+                } else {
+                    printf("        Temperature:\t%.1f°C\n", temp / 1000.0);
+                }
+            }
+
+            if (label_file) fclose(label_file);
+            if (input_file) fclose(input_file);
+        }
+
+        printf("\n"); // Separate sensor groups
+    }
+
+    closedir(dp);
+}

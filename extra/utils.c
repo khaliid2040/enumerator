@@ -70,6 +70,69 @@ bool is_directory_empty(const char *path) {
     return true; // Directory is empty
 }
 
+//caller should free memory
+char* find_device_name(const char *vendor_id, const char *device_id) {
+    FILE *fp = NULL;
+    char *device = NULL;
+    static const char *pci_ids_paths[] = {
+        "/usr/share/hwdata/pci.ids",
+        "/usr/share/misc/pci.ids",
+        "/var/lib/pciutils/pci.ids",
+        NULL  // Sentinel value
+    };
+
+    // Remove "0x" prefix if present
+    if (vendor_id[0] == '0' && vendor_id[1] == 'x') vendor_id += 2;
+    if (device_id[0] == '0' && device_id[1] == 'x') device_id += 2;
+
+    // Try opening pci.ids from known locations
+    for (int i = 0; pci_ids_paths[i] != NULL; i++) {
+        fp = fopen(pci_ids_paths[i], "r");
+        if (fp) break;
+    }
+    if (!fp) return NULL;  // No valid pci.ids file found
+
+    char line[256];
+    int vendor_found = 0;
+
+    while (fgets(line, sizeof(line), fp)) {
+        // Ignore comments
+        if (line[0] == '#') continue;
+
+        // Strip newline
+        line[strcspn(line, "\n")] = 0;
+
+        // If the line is not indented, check if it's a vendor
+        if (line[0] != '\t') {
+            if (strncmp(line, vendor_id, strlen(vendor_id)) == 0 && line[strlen(vendor_id)] == ' ') {
+                vendor_found = 1;  // Start looking for device IDs under this vendor
+            } else {
+                vendor_found = 0;  // Reset if a new vendor appears
+            }
+        } 
+        // If vendor is found, check device ID
+        else if (vendor_found && line[0] == '\t') {
+            if (strncmp(line + 1, device_id, strlen(device_id)) == 0 && line[strlen(device_id) + 1] == ' ') {
+                // Allocate memory for device name
+                device = malloc(strlen(line + strlen(device_id) + 2) + 1);
+                if (!device) {
+                    fprintf(stderr, ANSI_COLOR_RED "Error: Failed to allocate memory: %s\n" ANSI_COLOR_RESET, strerror(errno));
+                    fclose(fp);
+                    return NULL;
+                }
+                // Copy the device name (skipping ID and space)
+                strcpy(device, line + strlen(device_id) + 2);
+                fclose(fp);
+                return device;
+            }
+        }
+    }
+
+    fclose(fp);
+    return NULL;  // No matching device found
+}
+
+
 #ifdef LIBPCI
 void gpu_info(char *model,char *vendor,size_t len) {
     struct pci_access *pac= pci_alloc();

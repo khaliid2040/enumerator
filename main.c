@@ -80,6 +80,7 @@ static void print_systemd_info() {
         units = get_systemd_units();
         #endif
         printf(DEFAULT_COLOR"Init:\t\t"ANSI_COLOR_RESET "systemd %s units=%d\n",version,units);
+        free(version);
     }
 }
 
@@ -102,14 +103,67 @@ static void print_cpu_info() {
     #endif
 }
 
-static void print_gpu_info() {
+/*static void print_gpu_info() {
     #ifdef LIBPCI
     char model[32], vendor[32];
     gpu_info(model, vendor,32);
     printf(DEFAULT_COLOR "GPU:\t\t" ANSI_COLOR_RESET "%s %s\n", vendor, model);
     #endif
-}
+}*/
+static void print_gpu_info() {
+    FILE *fp;
+    DIR *dir;
+    char *device = NULL;
+    char vendor_str[7], device_id_str[7], path[MAX_PATH];
+    struct dirent *entry;
+    long vendor_id, device_id;
 
+    dir = opendir("/sys/class/drm");
+    if (!dir) return;
+
+    while ((entry = readdir(dir)) != NULL) {
+        if (entry->d_name[0] == '.') continue;
+
+        // Currently, we limit to only one card
+        if (!strcmp(entry->d_name, "card1")) {
+            // Read vendor ID
+            snprintf(path, sizeof(path), "/sys/class/drm/%s/device/vendor", entry->d_name);
+            fp = fopen(path, "r");
+            if (!fp) continue;
+            if (!fgets(vendor_str, sizeof(vendor_str), fp)) {
+                fclose(fp);
+                continue;
+            }
+            fclose(fp);
+            vendor_id = strtol(vendor_str, NULL, 16); // Convert to integer
+
+            // Read device ID
+            snprintf(path, sizeof(path), "/sys/class/drm/%s/device/device", entry->d_name);
+            fp = fopen(path, "r");
+            if (!fp) continue;
+            if (!fgets(device_id_str, sizeof(device_id_str), fp)) {
+                fclose(fp);
+                continue;
+            }
+            fclose(fp);
+            device_id = strtol(device_id_str, NULL, 16); // Convert to integer
+
+            // Find device name
+            device = find_device_name(vendor_str, device_id_str);
+            if (!device) continue;
+
+            printf(DEFAULT_COLOR "GPU:\t\t" ANSI_COLOR_RESET "%s %s\n",
+                   vendor_id == 0x8086 ? "Intel" :
+                   vendor_id == 0x10de ? "NVIDIA" :
+                   vendor_id == 0x1002 ? "AMD" : "Unknown", device);
+
+            free(device); // Free memory allocated by find_device_name()
+            break; // Only process one GPU
+        }
+    }
+
+    closedir(dir);
+}
 static void print_memory_and_uptime() {
     struct sysinfo system_info;
     char unit[4];

@@ -211,6 +211,7 @@ int get_systemd_version(char **version) {
     sd_bus_error error = SD_BUS_ERROR_NULL;
     sd_bus_message *reply = NULL;
     int r;
+    const char *temp_version;  // Temporary pointer
 
     // Connect to the system bus
     r = sd_bus_default_system(&bus);
@@ -221,13 +222,13 @@ int get_systemd_version(char **version) {
 
     // Get systemd version property
     r = sd_bus_get_property(bus,
-                            "org.freedesktop.systemd1",    // Service
-                            "/org/freedesktop/systemd1",   // Object path
-                            "org.freedesktop.systemd1.Manager", // Interface
-                            "Version",                     // Property
-                            &error,                        // Error handling
+                            "org.freedesktop.systemd1",
+                            "/org/freedesktop/systemd1",
+                            "org.freedesktop.systemd1.Manager",
+                            "Version",
+                            &error,
                             &reply,
-                            "s");                           // Reply message
+                            "s");
     if (r < 0) {
         fprintf(stderr, "Failed to get systemd version: %s\n", error.message);
         sd_bus_error_free(&error);
@@ -236,9 +237,18 @@ int get_systemd_version(char **version) {
     }
 
     // Read the version as string
-    r = sd_bus_message_read(reply, "s", version);
+    r = sd_bus_message_read(reply, "s", &temp_version);
     if (r < 0) {
         fprintf(stderr, "Failed to read version response: %s\n", strerror(-r));
+        sd_bus_message_unref(reply);
+        sd_bus_unref(bus);
+        return -1;
+    }
+
+    // Allocate memory for the version string and copy it
+    *version = strdup(temp_version);
+    if (!*version) {
+        fprintf(stderr, "Failed to allocate memory for version string\n");
         sd_bus_message_unref(reply);
         sd_bus_unref(bus);
         return -1;
@@ -247,6 +257,7 @@ int get_systemd_version(char **version) {
     // Clean up
     sd_bus_message_unref(reply);
     sd_bus_unref(bus);
+
     return 0;
 }
 

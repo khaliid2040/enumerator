@@ -133,38 +133,7 @@ char* find_device_name(const char *vendor_id, const char *device_id) {
 }
 
 
-#ifdef LIBPCI
-void gpu_info(char *model,char *vendor,size_t len) {
-    struct pci_access *pac= pci_alloc();
-    pci_init(pac);
-    pci_scan_bus(pac);
-    struct pci_dev *dev;
-    for (dev=pac->devices; dev != NULL; dev=dev->next) {
-        pci_fill_info(dev,PCI_FILL_BASES | PCI_FILL_IDENT | PCI_FILL_CLASS);
-        if (dev->device_class== PCI_CLASS_DISPLAY_VGA ) {
-             pci_lookup_name(pac,model,len,PCI_LOOKUP_DEVICE,dev->vendor_id,dev->device_id);
-            //manually interpreting vendor id since libpci will give us long info
-            switch (dev->vendor_id) {
-                case 0x8086: //intel
-                    strcpy(vendor,"Intel");
-                    break;
-                case 0x10DE: //Invidia
-                    strcpy(vendor,"INVIDIA");
-                    break;
-                case 0x1002:
-                    strcpy(vendor,"AMD");
-                    break;
-                case 0x102B:
-                    strcpy(vendor,"METROX");
-                    break;
-                default:
-                    strcpy(vendor,"Unknown");
-                    break;  
-            }
-        } 
-    }
-    pci_cleanup(pac);
-}   
+#ifdef LIBPCI 
 void get_pci_info(void) {
     struct pci_access *pac= pci_alloc();
     if (pac == NULL) {

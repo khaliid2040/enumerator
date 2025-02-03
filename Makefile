@@ -21,9 +21,13 @@ OBJ_FILES = $(OBJ_DIR)/main.o $(OBJ_DIR)/utils.o $(OBJ_DIR)/storage.o \
             $(OBJ_DIR)/system.o $(OBJ_DIR)/security.o $(OBJ_DIR)/packages.o \
 			$(OBJ_DIR)/virt.o
 
+# Toggle verbosity (default is 0 for cleaner output)
+V ?= 0
+
 # Main target
 $(EXECUTABLE): $(OBJ_FILES)
-	$(CC) -o $@ $(OBJ_FILES) $(LDFLAGS) $(LIBS)
+	@if [ $(V) -eq 1 ]; then echo "gcc -o $@ $(OBJ_FILES) $(LDFLAGS) $(LIBS)"; else echo "LD   $@"; fi
+	@$(CC) -o $@ $(OBJ_FILES) $(LDFLAGS) $(LIBS)
 
 # Ensure object directory exists
 $(OBJ_DIR):
@@ -31,19 +35,23 @@ $(OBJ_DIR):
 
 # Compile object files from the root directory
 $(OBJ_DIR)/main.o: main.c main.h | $(OBJ_DIR)
-	$(CC) -c -o $@ main.c $(CFLAGS)
+	@if [ $(V) -eq 1 ]; then echo "gcc -c -o $@ main.c $(CFLAGS)"; else echo "CC   $@"; fi
+	@$(CC) -c -o $@ main.c $(CFLAGS)
 
 # Compile object files from the extra directory
 $(OBJ_DIR)/%.o: $(SRC_DIR_EXTRA)/%.c main.h | $(OBJ_DIR)
-	$(CC) -c -o $@ $< $(CFLAGS)
+	@if [ $(V) -eq 1 ]; then echo "gcc -c -o $@ $< $(CFLAGS)"; else echo "CC   $@"; fi
+	@$(CC) -c -o $@ $< $(CFLAGS)
 
 # Compile object files from the system directory
 $(OBJ_DIR)/%.o: $(SRC_DIR_SYSTEM)/%.c main.h | $(OBJ_DIR)
-	$(CC) -c -o $@ $< $(CFLAGS)
+	@if [ $(V) -eq 1 ]; then echo "gcc -c -o $@ $< $(CFLAGS)"; else echo "CC   $@"; fi
+	@$(CC) -c -o $@ $< $(CFLAGS)
 
 # Compile object files from the net directory
 $(OBJ_DIR)/%.o: $(SRC_DIR_NET)/%.c main.h | $(OBJ_DIR)
-	$(CC) -c -o $@ $< $(CFLAGS)
+	@if [ $(V) -eq 1 ]; then echo "gcc -c -o $@ $< $(CFLAGS)"; else echo "CC   $@"; fi
+	@$(CC) -c -o $@ $< $(CFLAGS)
 
 # Phony targets
 .PHONY: all install checkdep clean

@@ -125,7 +125,7 @@ static void print_gpu_info() {
         if (entry->d_name[0] == '.') continue;
 
         // Currently, we limit to only one card
-        if (!strcmp(entry->d_name, "card1")) {
+        if (!strcmp(entry->d_name, "card1") || !strcmp(entry->d_name,"card0")) {
             // Read vendor ID
             snprintf(path, sizeof(path), "/sys/class/drm/%s/device/vendor", entry->d_name);
             fp = fopen(path, "r");

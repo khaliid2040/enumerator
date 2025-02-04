@@ -6,6 +6,7 @@
 #include <systemd/sd-daemon.h>
 #endif
 #define HWMON_PATH "/sys/class/hwmon/"
+#define BATTERY_PATH "/sys/class/power_supply"
 //used by extra/system.c
 typedef struct {
     char bios_vendor[SIZE];
@@ -49,4 +50,6 @@ int get_systemd_units();
 #endif
 
 void detect_sensors();
+
+void print_battery_information();
 #endif // SYSTEM_H

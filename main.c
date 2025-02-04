@@ -359,7 +359,10 @@ static void print_user_and_group_info() {
     endgrent();
 }
 
-void systeminfo() {
+static void get_extended_info() {
+    print_battery_information();
+}
+static void systeminfo() {
     distro_name();
     print_hostname_and_kernel();
     print_loaded_modules();
@@ -382,7 +385,7 @@ void systeminfo() {
 int main(int argc, char *argv[])
 {
         printf(ANSI_COLOR_GREEN "system enumeration\n" ANSI_COLOR_RESET);
-        int opt,p_value = 0,H_flag = 0,N_flag= 0,P_flag=0;
+        int opt,p_value = 0,H_flag = 0,N_flag= 0,P_flag=0,E_flag=0;
         // Parse command line options
         while ((opt = getopt(argc, argv, "p:Hnh")) != -1) {
             switch (opt) {
@@ -392,6 +395,10 @@ int main(int argc, char *argv[])
                     break;
                 case 'H':
                     H_flag= 1;
+                    if (optind < argc && argv[optind][0] == '-' && argv[optind][1] == 'e' && argv[optind][2] == '\0') {
+                    E_flag = 1; // Enable `-e`
+                    optind++;    // Manually consume `-e`
+                    }
                     break;
                   case 'n':
                     N_flag= 1;
@@ -409,6 +416,7 @@ int main(int argc, char *argv[])
                     printf("-p      get supplied process id information\n");
                     printf("-H      get hardware information\n");
                     printf("-n      get network information\n");
+                    printf("-e      extended hardware information\n");
                     return 0;
                 default:
                     abort();
@@ -425,7 +433,6 @@ int main(int argc, char *argv[])
         } 
         // If only -H is specified
         else if (H_flag) {
-        
         printf(ANSI_COLOR_YELLOW "Getting basic information...\n" ANSI_COLOR_RESET);
         system_enum();
         cpuinfo();
@@ -438,10 +445,11 @@ int main(int argc, char *argv[])
         get_pci_info();
         #endif
         printf(ANSI_COLOR_YELLOW "Getting sensor information..\n"ANSI_COLOR_RESET);
-        #ifdef LIBSENSORS
-        get_sensors_information();
-        #endif
         detect_sensors();
+        if (E_flag) {
+            get_extended_info();
+        }
+        //there should be no code here since we don't need to run after pager
         } else if(N_flag) {
             printf(ANSI_COLOR_YELLOW "Getting network information\n" ANSI_COLOR_RESET);
             network();

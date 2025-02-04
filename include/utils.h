@@ -1,6 +1,9 @@
 #ifndef UTILS_H
 #define UTILS_H
 #include "../main.h"
+#include <sys/wait.h>
+#include <wait.h>
+
 #define LENGTH 1024 //used by get_pci_info
 /*
     functions implemented on extra/utils.c

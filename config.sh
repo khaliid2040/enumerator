@@ -1,7 +1,7 @@
 #!/bin/bash
 
 LDFLAGS=""
-CFLAGS="-march=native -O2 -pipe -I."
+CFLAGS="-march=native -pipe -I."
 GREEN='\033[0;32m'
 RED='\033[0;31m'
 YELLOW='\033[33m'
@@ -32,7 +32,16 @@ case $2 in
         echo -e "${YELLOW}Warning: color defaulting green light${NC}"
 esac
 fi
-
+# enable debugging by tunning compiler debugging optimization
+# and debugging symbols
+#otherwise just enable compiler 
+if [ "$1" == "--debug" ]; then 
+    echo -e "Debugging: ${GREEN}ON${NC}"
+    CFLAGS+="-Og -g"
+else 
+    CFLAGS+=" -O2"
+    LDFLAGS+=" -flto" # link time optimization
+fi
 # Libraries to check
 LIBS=("libudev" "libsystemd")
 LIBPCI="libpci"

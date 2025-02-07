@@ -103,13 +103,6 @@ static void print_cpu_info() {
     #endif
 }
 
-/*static void print_gpu_info() {
-    #ifdef LIBPCI
-    char model[32], vendor[32];
-    gpu_info(model, vendor,32);
-    printf(DEFAULT_COLOR "GPU:\t\t" ANSI_COLOR_RESET "%s %s\n", vendor, model);
-    #endif
-}*/
 static void print_gpu_info() {
     FILE *fp;
     DIR *dir;
@@ -440,16 +433,12 @@ int main(int argc, char *argv[])
         memory_info();
         printf(ANSI_COLOR_YELLOW "\nGetting disk layout...\n" ANSI_COLOR_RESET);
         storage();
-        #ifdef LIBPCI
-        printf(ANSI_COLOR_YELLOW "Getting PCI information..\n" ANSI_COLOR_RESET);
-        get_pci_info();
-        #endif
-        printf(ANSI_COLOR_YELLOW "Getting sensor information..\n"ANSI_COLOR_RESET);
-        detect_sensors();
         if (E_flag) {
+            list_pci_devices();
+            printf(ANSI_COLOR_YELLOW "Getting sensor information..\n"ANSI_COLOR_RESET);
+            detect_sensors();
             get_extended_info();
         }
-        //there should be no code here since we don't need to run after pager
         } else if(N_flag) {
             printf(ANSI_COLOR_YELLOW "Getting network information\n" ANSI_COLOR_RESET);
             network();

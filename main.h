@@ -69,6 +69,7 @@ typedef unsigned long page_t;
 #include "include/process.h"
 #include "include/system.h"
 #include "include/utils.h"
+#include "include/pci.h"
 
 int GetSecureBootStatus(void);
 void LinuxSecurityModule();

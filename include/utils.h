@@ -27,7 +27,4 @@ void gpu_info(char *model,char *vendor,size_t len);
 void get_pci_info(void);
 #endif
 
-//find the specified vendor and device and return the string corresponding to that id
-//parsed from pci.ids caller should free the memory
-char* find_device_name(const char *vendor_id, const char *device_id);
 #endif //UTILS_H

@@ -119,9 +119,35 @@ static int readProcessStats(int pid, ProcessInfo *info) {
     if (!file) return -1;  // File could not be opened
 
     // Read the process stats. Make sure the format matches the actual format of /proc/[pid]/stat.
-    int fields_read = fscanf(file, "%*d %*s %c %d %*d %*d %*d %*d %*u %u %*u %u %lu %lu %lu %lu %*lu %*lu %*lu %*lu %*lu %lu",
-                             &info->state, &info->ppid, &info->minflt, &info->majrflt,&info->utime, &info->stime, 
-                             &info->cutime, &info->cstime,&info->starttime);
+int fields_read = fscanf(file, 
+    "%*d "   /*  1  - PID (skip) */ 
+    "%*s "   /*  2  - Comm (process name, skip safely) */ 
+    "%c "    /*  3  - State */
+    "%d "    /*  4  - PPID (Parent Process ID) */
+    "%*d "   /*  5  - Process Group ID (skip) */
+    "%*d "   /*  6  - Session ID (skip) */
+    "%*d "   /*  7  - TTY (skip) */
+    "%*d "   /*  8  - TPGID (skip) */
+    "%*u "   /*  9  - Flags (skip) */
+    "%lu "   /* 10  - minflt (Minor Page Faults) */
+    "%*u "   /* 11  - cminflt (skip) */
+    "%lu "   /* 12  - majflt (Major Page Faults) */
+    "%*u "   /* 13  - cmajflt (skip) */
+    "%lu "   /* 14  - utime (User Mode CPU Time) */
+    "%lu "   /* 15  - stime (Kernel Mode CPU Time) */
+    "%lu "   /* 16  - cutime (Children's User Mode Time) */
+    "%lu "   /* 17  - cstime (Children's Kernel Mode Time) */
+    "%*ld "  /* 18  - Priority (skip) */
+    "%*ld "  /* 19  - Nice Value (skip) */
+    "%*ld "  /* 20  - Number of Threads (skip) */
+    "%*ld "  /* 21  - ItRealValue (skip, always 0) */
+    "%lu ",  /* 22  - starttime (Process start time in clock ticks) */
+    &info->state, &info->ppid, 
+    &info->minflt, &info->majrflt, 
+    &info->utime, &info->stime, 
+    &info->cutime, &info->cstime, 
+    &info->starttime);
+    
     info->priority = process_getpriority(PRIO_PROCESS,pid);
     fclose(file);
     if (!get_comm_processes(pid,info))
@@ -222,30 +248,41 @@ static void get_uid_gid(ProcessInfo *info,int pid) {
 		}
     }
 }
+
 static void calculateCPUInfo(ProcessInfo *info, double uptime) {
+    double (*round)(double x);
+    void *handle = load_library(LIBM_SO,"round",(void**)&round);
+    if (!handle) {
+        fprintf(stderr,ANSI_COLOR_RED"Fatal: failed to load libm.so %s\n",dlerror());
+        return;
+    }
     long hertz = sysconf(_SC_CLK_TCK);
+    if (hertz <= 0) hertz = 100;  // Fallback to common value
 
-    // Calculate total CPU time in seconds
-    info->total_cpu_time = (info->utime + info->stime) / (double) hertz;
+    // Total CPU time (user + system)
+    info->total_cpu_time = (info->utime + info->stime) / (double)hertz;
 
-    // Calculate process wall-clock runtime
-    double process_runtime = uptime - (info->starttime / (double) hertz);
+    // Process lifetime in seconds
+    double process_runtime = uptime - (info->starttime / (double)hertz);
 
-    // Avoid division by zero
-    if (process_runtime > 0) {
+    // CPU time percentage (rounded to 2 decimals)
+    if (process_runtime > 1e-9) {
         info->cpu_time_percent = (info->total_cpu_time / process_runtime) * 100;
+        info->cpu_time_percent = round(info->cpu_time_percent * 100) / 100;  // Fixes truncation
     } else {
         info->cpu_time_percent = 0;
     }
 
-    // Avoid division by zero for total CPU time
-    if (info->total_cpu_time > 0) {
-        info->user_mode_percent = (info->utime / (double) hertz) / info->total_cpu_time * 100;
-        info->system_mode_percent = (info->stime / (double) hertz) / info->total_cpu_time * 100;
+    // User/system mode split (no division by HZ needed)
+    long total_ticks = info->utime + info->stime;
+    if (total_ticks > 0) {
+        info->user_mode_percent = (info->utime / (double)total_ticks) * 100;
+        info->system_mode_percent = (info->stime / (double)total_ticks) * 100;
     } else {
         info->user_mode_percent = 0;
         info->system_mode_percent = 0;
     }
+    dlclose(handle);
 }
 
 
@@ -276,9 +313,9 @@ static void printProcessInfo(const ProcessInfo *info,int pid) {
     printf(DEFAULT_COLOR "Cgroup slice:\t\t\t\t" ANSI_COLOR_RESET "%s", info->cgroup);
     printf(DEFAULT_COLOR "Uid/euid/uid\t\t\t\t"ANSI_COLOR_RESET "%u\t%u\t%u\t\n",info->uid,info->euid,info->ruid);
     printf(DEFAULT_COLOR "Gid/egid/rgid\t\t\t\t" ANSI_COLOR_RESET "%u\t%u\t%u\t\n" ,info->gid,info->egid,info->rgid);
-    printf(DEFAULT_COLOR "Total CPU Time:\t\t\t\t" ANSI_COLOR_RESET "%.2f seconds\n", info->total_cpu_time);
     printf(DEFAULT_COLOR "major/minor page faults:\t\t"ANSI_COLOR_RESET "%d/%d\n",info->majrflt,info->minflt);
     printf(DEFAULT_COLOR "Context switches:\t\t\t"ANSI_COLOR_RESET "voluntary=%d nonvoluntary=%d\n",info->voluntary_ctxt_switches,info->nonvoluntary_ctxt_switches);
+    printf(DEFAULT_COLOR "Total CPU Time:\t\t\t\t" ANSI_COLOR_RESET "%.2f seconds\n", info->total_cpu_time);
     printf(DEFAULT_COLOR "CPU Time Percentage:\t\t\t" ANSI_COLOR_RESET "%.2f %%\n", info->cpu_time_percent);
     printf(DEFAULT_COLOR "User Mode CPU Time Percentage:\t\t" ANSI_COLOR_RESET "%.2f %%\n", info->user_mode_percent);
     printf(DEFAULT_COLOR "System Mode CPU Time Percentage:\t" ANSI_COLOR_RESET "%.2f %%\n", info->system_mode_percent);

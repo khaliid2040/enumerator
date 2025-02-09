@@ -107,6 +107,11 @@ void print_battery_information() {
     DIR *dir;
     struct dirent *entry;
     printf(ANSI_COLOR_YELLOW "checking for power devices\n"ANSI_COLOR_RESET);
+    //first we need to make sure if the dirrectory is empty or not so we don't waste time if it already empty
+    if (is_directory_empty(BATTERY_PATH)) {
+        fprintf(stderr,ANSI_COLOR_RED "No power devices detected\n",ANSI_COLOR_RESET);
+        return;
+    }
     dir = opendir(BATTERY_PATH);
     if (!dir) {
         fprintf(stderr,ANSI_COLOR_RED "Error: could get battery information %s\n"ANSI_COLOR_RESET,strerror(errno));

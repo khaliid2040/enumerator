@@ -434,6 +434,7 @@ int main(int argc, char *argv[])
         printf(ANSI_COLOR_YELLOW "\nGetting disk layout...\n" ANSI_COLOR_RESET);
         storage();
         if (E_flag) {
+            printf(ANSI_COLOR_YELLOW "Getting pci devices\n"ANSI_COLOR_RESET);
             list_pci_devices();
             printf(ANSI_COLOR_YELLOW "Getting sensor information..\n"ANSI_COLOR_RESET);
             detect_sensors();

@@ -43,6 +43,7 @@
 #include <stdbool.h>
 #include <ctype.h>
 #include <dlfcn.h>
+#include <gnu/lib-names.h>
 #include <errno.h>
 #ifdef APPARMOR 
 #include <sys/apparmor.h>

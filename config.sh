@@ -86,10 +86,16 @@ if [ -f /usr/bin/apt ]; then
     CFLAGS+=" -DDEBIAN"
     libpci_path "/usr/include/x86_64-linux-gnu"
     echo -e "Detected Debian-based distribution: ${GREEN}OK${NC}"
-elif [ -f /usr/bin/dnf ]; then
-    CFLAGS+=" -DREADHAT"
+elif [ -f /usr/bin/rpm ]; then
+    # differentaite b/w opensuse and redhat based distro
     libpci_path "/usr/include"
-    echo -e "Detected Redhat-based distribution: ${GREEN}OK${NC}"
+    if [ -f /usr/bin/dnf ]; then
+        CFLAGS+=" -DREDHAT"
+        echo -e "Detected Redhat-based distribution: ${GREEN}OK${NC}"
+    elif [ -f /usr/bin/zypper ]; then
+        CFLAGS+=" -DOPENSUSE"
+        echo -e "-Detected Opensuse distribution: ${GREEN}OK${NC}"
+    fi   
 elif [ -f /usr/bin/pacman ]; then
     CFLAGS+=" -DARCH"
     libpci_path "/usr/include"

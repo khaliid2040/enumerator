@@ -102,7 +102,7 @@ static void selinux(void) {
 
 static void apparmor(void) {
     char *buffer=NULL;
-    unsigned int count,estate,cstate;
+    unsigned int count=0,estate=0,cstate=0;
     char profile[SIZE],state[SIZE];
     size_t size;
     bool is_loaded;
@@ -124,7 +124,7 @@ static void apparmor(void) {
         if (sscanf(buffer, "%[^ ] (%[^)])", profile, state) == 2) {
             if (!strcmp(state,"enforce")) {
                 estate++;
-            } else if (!strcmp(state,"complaint")) {
+            } else if (!strcmp(state,"complain")) {
                 cstate++;
             }
         }

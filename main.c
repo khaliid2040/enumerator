@@ -63,7 +63,9 @@ static void print_firmware_info() {
     printf(DEFAULT_COLOR "Firmware:\t" ANSI_COLOR_RESET);
     if (access("/sys/firmware/efi", F_OK) != -1) {
         printf("UEFI  ");
-        GetSecureBootStatus();
+        if (GetSecureBootStatus() == -1) {
+            printf(ANSI_COLOR_RED "secureboot Unsupported\n");
+        }
     } else {
         printf("BIOS\n");
     }
@@ -159,15 +161,18 @@ static void print_gpu_info() {
 }
 static void print_memory_and_uptime() {
     struct sysinfo system_info;
-    char unit[4];
+    char unit[4] = {0};
     if (sysinfo(&system_info) == 0) {
         printf(DEFAULT_COLOR "Memory:\t\t" ANSI_COLOR_RESET "%.1f %s\n", (float)convert_size_unit(system_info.totalram / UNIT_SIZE,unit,4),unit);
+        printf(DEFAULT_COLOR "Uptime:\t\t"ANSI_COLOR_RESET);
         long uptime_sec = system_info.uptime;
         long hours = uptime_sec / 3600;
         long minutes = (uptime_sec % 3600) / 60;
-        printf(DEFAULT_COLOR "Uptime:\t\t" ANSI_COLOR_RESET "%ld hour%s and %ld minute%s\n",
-               hours, (hours != 1) ? "s" : "",
-               minutes, (minutes != 1) ? "s" : "");
+        long days = 0;
+        while (hours >= 24) { days++; hours -= 24;}  // convert hours to days if hours is greater than 24 hour
+        if (days) printf("%ld days ",days); //print days if only days is non zero
+        if (hours) printf("%ld hour%s ",hours, (hours != 1) ? "s" : ""); // print hours only if it is non zero
+        printf("%ld minute%s\n",minutes, (minutes != 1) ? "s": ""); //always print minutes even if it is zero so the field don't become empty
     }
 }
 

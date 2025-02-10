@@ -124,7 +124,7 @@ static int count_flatpak_packages() {
 
 void package_manager() {
     // Print package counts for defined distros
-    #if defined(FLATPAK) || defined(GENTOO) || defined(DEBIAN) || defined(REDHAT)
+    #if defined(FLATPAK) || defined(GENTOO) || defined(DEBIAN) || defined(REDHAT) || defined(OPENSUSE)
     printf(DEFAULT_COLOR "Packages:\t"ANSI_COLOR_RESET);
     #endif
 
@@ -137,17 +137,21 @@ void package_manager() {
 
     #ifdef DEBIAN
     packages = count_dpkg_packages();
-    printf("%d (apt) %d (flatpak)\n", packages, flatpak);
+    printf("%d (apt) ", packages);
     #elif GENTOO
     packages = gentoo_pkgmgr();
-    printf("%d (emerge) %d (flatpak)\n", packages, flatpak);
-    #elif REDHAT
+    printf("%d (emerge) ", packages);
+    #elif REDHAT || OPENSUSE
     packages = redhat_pkgmgr();
-    printf("%d (rpm) %d (flatpak)\n", packages, flatpak);
+    printf("%d (rpm) ", packages);
     #elif ARCH
     packages= count_pacman_packages();
-    printf("%d (pacman) %d (flatpak)\n",packages,flatpak);
-    #else
-    printf("No supported package manager defined.\n");
+    printf("%d (pacman) ",packages);
     #endif
+    #ifdef FLATPAK
+    printf("%d (flatpak)\n",flatpak);
+    #else
+    printf("\n");//make sure to always end newline
+    #endif
+    
 }

@@ -357,9 +357,6 @@ static void print_user_and_group_info() {
     endgrent();
 }
 
-static void get_extended_info() {
-    print_battery_information();
-}
 static void systeminfo() {
     distro_name();
     print_hostname_and_kernel();
@@ -379,6 +376,16 @@ static void systeminfo() {
     // LinuxSecurityModule() should be called here if defined elsewhere
     printf(ANSI_COLOR_YELLOW "Getting security modules...\n" ANSI_COLOR_RESET);
     LinuxSecurityModule();
+}
+
+static void help() {
+    printf("-h      print this message and exit\n");
+    printf("-p      get supplied process id information\n");
+    printf(" -i     specify interval to monitor process (optional)\n\n");
+    printf("-H      get hardware information\n");
+    printf(" -e     get extended hardware information\n\n");
+    printf("-n      get network information\n\n");
+    printf("Usage: ./systeminfo [p|H|n] [e|i]\n");
 }
 int main(int argc, char *argv[])
 {
@@ -419,10 +426,7 @@ int main(int argc, char *argv[])
                     return 1;
                     break;
                 case 'h':
-                    printf("-p      get supplied process id information\n");
-                    printf("-H      get hardware information\n");
-                    printf("-n      get network information\n");
-                    printf("-e      extended hardware information\n");
+                    help();
                     return 0;
                 default:
                     abort();
@@ -452,7 +456,7 @@ int main(int argc, char *argv[])
             list_pci_devices();
             printf(ANSI_COLOR_YELLOW "Getting sensor information..\n"ANSI_COLOR_RESET);
             detect_sensors();
-            get_extended_info();
+            print_battery_information();
         }
         } else if(N_flag) {
             printf(ANSI_COLOR_YELLOW "Getting network information\n" ANSI_COLOR_RESET);

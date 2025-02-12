@@ -2,61 +2,56 @@
 #include <fcntl.h>
 #include <sys/resource.h>
 
-static void Total_cpu_time(void) {
-    FILE *fp;
+static void read_global_stat(struct cpu_times *times) {
     char line[MAX_LINE_LENGTH];
+    FILE *fp = fopen("/proc/stat","r");
+    if (!fp) return;
 
-    // Open /proc/stat file
-    fp = fopen("/proc/stat", "r");
-    if (fp == NULL) {
-        perror("Error opening /proc/stat");
-        return;
+    while (fgets(line,sizeof(line),fp) != NULL) {
+        if (strncmp(line,"cpu ",4)) {
+            sscanf(line + 5, "%llu %llu %llu %llu %llu %llu %llu %llu %llu %llu",&times->user_ticks,
+                                                                                &times->nice_ticks,
+                                                                                &times->system_ticks,
+                                                                                &times->idle_ticks,
+                                                                                &times->iowait_ticks,
+                                                                                &times->irq_ticks,
+                                                                                &times->softirq_ticks,
+                                                                                &times->steal_ticks,
+                                                                                &times->guest_ticks,
+                                                                                &times->guest_nice_ticks);
+        break; //first entry only                                                                        
+        }
     }
+    fclose(fp);
+    times->total_ticks = times->user_ticks + times->system_ticks + 
+                                 times->nice_ticks + times->iowait_ticks +
+                                 times->irq_ticks + times->idle_ticks +
+                                 times->steal_ticks + times->guest_nice_ticks + 
+                                 times->guest_ticks + times->softirq_ticks;
+    
+}
+static void Total_cpu_time(void) {
+    struct cpu_times times = {0};
 
-    // Variables to store CPU times
-    unsigned long long user_ticks, nice_ticks, system_ticks, idle_ticks;
-    unsigned long long iowait_ticks, irq_ticks, softirq_ticks, steal_ticks;
-    unsigned long long guest_ticks, guest_nice_ticks;
+   read_global_stat(&times);
+    double user_percent = (double)times.user_ticks / times.total_ticks * 100.0;
+    double system_percent = (double)times.system_ticks / times.total_ticks * 100.0;
+    double nice_percent = (double)times.nice_ticks / times.total_ticks * 100.0;
+    double idle_percent = (double)times.idle_ticks / times.total_ticks * 100.0;
+    double iowait_percent = (double)times.iowait_ticks / times.total_ticks * 100.0;
+    double irq_percent = (double)times.irq_ticks / times.total_ticks * 100.0;
+    double softirq_percent = (double)times.softirq_ticks / times.total_ticks * 100.0;
+    double steal_percent = (double)times.steal_ticks / times.total_ticks * 100.0;
+    double guest_percent = (double)times.guest_ticks / times.total_ticks * 100.0;
+    double guest_nice_percent = (double)times.guest_nice_ticks / times.total_ticks * 100.0;
 
-    // Read each line and extract CPU times
-    while (fgets(line, sizeof(line), fp) != NULL) {
-        if (strncmp(line, "cpu ", 4) == 0) {
-            sscanf(line + 5, "%llu %llu %llu %llu %llu %llu %llu %llu %llu %llu",
-                   &user_ticks, &nice_ticks, &system_ticks, &idle_ticks,
-                   &iowait_ticks, &irq_ticks, &softirq_ticks, &steal_ticks,
-                   &guest_ticks, &guest_nice_ticks);
-
-            // Calculate total CPU ticks
-            unsigned long long total_ticks = user_ticks + nice_ticks + system_ticks +
-                                             idle_ticks + iowait_ticks + irq_ticks +
-                                             softirq_ticks + steal_ticks +
-                                             guest_ticks + guest_nice_ticks;
-
-            // Calculate CPU usage percentages
-            double user_percent = (double)user_ticks / total_ticks * 100.0;
-            double nice_percent = (double)nice_ticks / total_ticks * 100.0;
-            double system_percent = (double)system_ticks / total_ticks * 100.0;
-            double idle_percent = (double)idle_ticks / total_ticks * 100.0;
-            double iowait_percent = (double)iowait_ticks / total_ticks * 100.0;
-            double irq_percent = (double)irq_ticks / total_ticks * 100.0;
-            double softirq_percent = (double)softirq_ticks / total_ticks * 100.0;
-            double steal_percent = (double)steal_ticks / total_ticks * 100.0;
-            double guest_percent = (double)guest_ticks / total_ticks * 100.0;
-            double guest_nice_percent = (double)guest_nice_ticks / total_ticks * 100.0;
-
-            // Print CPU usage percentages in the desired format
-            printf(" %6.2f   %5.2f   %6.2f   %6.2f   %6.2f   %6.2f   %6.2f   %6.2f\n",
+    printf(" %6.2f   %5.2f   %6.2f   %6.2f   %6.2f   %6.2f   %6.2f   %6.2f\n",
                    user_percent, nice_percent, system_percent,
                    iowait_percent, steal_percent, idle_percent,
                    irq_percent, softirq_percent);
 
-            break; // Break after processing the first "cpu" line
-        }
-    }
-
-    // Close file
-    fclose(fp);
 }
+
 void process_cpu_time(void) {
     printf(ANSI_COLOR_YELLOW "System utilization\n" ANSI_COLOR_RESET);
     printf(ANSI_COLOR_BLUE "%6s   %5s   %6s   %6s   %6s   %6s   %6s   %6s\n",
@@ -135,8 +130,8 @@ int fields_read = fscanf(file,
     "%*u "   /* 13  - cmajflt (skip) */
     "%lu "   /* 14  - utime (User Mode CPU Time) */
     "%lu "   /* 15  - stime (Kernel Mode CPU Time) */
-    "%lu "   /* 16  - cutime (Children's User Mode Time) */
-    "%lu "   /* 17  - cstime (Children's Kernel Mode Time) */
+    "%*lu "   /* 16  - cutime (Children's User Mode Time) */
+    "%*lu "   /* 17  - cstime (Children's Kernel Mode Time) */
     "%*ld "  /* 18  - Priority (skip) */
     "%*ld "  /* 19  - Nice Value (skip) */
     "%*ld "  /* 20  - Number of Threads (skip) */
@@ -144,8 +139,7 @@ int fields_read = fscanf(file,
     "%lu ",  /* 22  - starttime (Process start time in clock ticks) */
     &info->state, &info->ppid, 
     &info->minflt, &info->majrflt, 
-    &info->utime, &info->stime, 
-    &info->cutime, &info->cstime, 
+    &info->utime, &info->stime,  
     &info->starttime);
     
     info->priority = process_getpriority(PRIO_PROCESS,pid);
@@ -153,7 +147,7 @@ int fields_read = fscanf(file,
     if (!get_comm_processes(pid,info))
         return 1;
     // Check if all expected fields were successfully read.
-    return (fields_read == 9) ? 0 : -1;
+    return (fields_read == 7) ? 0 : -1;
 }  
 static int readMemoryInfo(int pid, ProcessInfo *info) {
     char path[256];
@@ -187,12 +181,12 @@ static int countThreads(int pid) {
     free(content);
     return Threads;
 }
-static int readCgroup(int pid, char *cgroup) {
+static int readCgroup(int pid, ProcessInfo *info) {
     char path[256];
     snprintf(path, sizeof(path), "/proc/%d/cgroup", pid);
     FILE *file = fopen(path, "r");
     if (!file) return -1;
-    if (fgets(cgroup, 64, file) == NULL) {
+    if (fgets(info->cgroup, sizeof(info->cgroup), file) == NULL) {
         fclose(file);
         return -1;
     }
@@ -248,27 +242,38 @@ static void get_uid_gid(ProcessInfo *info,int pid) {
 		}
     }
 }
-
-static void calculateCPUInfo(ProcessInfo *info, double uptime) {
+//either uptime or cpu_times structure should be supplied
+//if both of them supplied then cpu_times will take the priority so if you want calculation to be based on
+//uptime then cpu_times structure should be NULL
+static void calculateCPUInfo(ProcessInfo *info, double uptime, struct cpu_times *times) {
     double (*round)(double x);
-    void *handle = load_library(LIBM_SO,"round",(void**)&round);
+    void *handle = load_library(LIBM_SO, "round", (void**)&round);
     if (!handle) {
-        fprintf(stderr,ANSI_COLOR_RED"Fatal: failed to load libm.so %s\n",dlerror());
+        fprintf(stderr, ANSI_COLOR_RED "Fatal: failed to load libm.so %s\n", dlerror());
         return;
     }
+
     long hertz = sysconf(_SC_CLK_TCK);
     if (hertz <= 0) hertz = 100;  // Fallback to common value
 
     // Total CPU time (user + system)
     info->total_cpu_time = (info->utime + info->stime) / (double)hertz;
 
-    // Process lifetime in seconds
-    double process_runtime = uptime - (info->starttime / (double)hertz);
+    double process_runtime;
+    
+    // Case 1: No interval, use uptime (absolute time since process start)
+    if (!times) {
+        process_runtime = uptime - (info->starttime / (double)hertz);
+    } 
+    // Case 2: Interval provided, use total_ticks as precomputed CPU runtime
+    else {
+        process_runtime = times->total_ticks / (double)hertz;
+    }
 
-    // CPU time percentage (rounded to 2 decimals)
+    // Calculate CPU time percentage (rounded to 2 decimals)
     if (process_runtime > 1e-9) {
         info->cpu_time_percent = (info->total_cpu_time / process_runtime) * 100;
-        info->cpu_time_percent = round(info->cpu_time_percent * 100) / 100;  // Fixes truncation
+        info->cpu_time_percent = round(info->cpu_time_percent * 100) / 100;  // Fix rounding issues
     } else {
         info->cpu_time_percent = 0;
     }
@@ -282,9 +287,9 @@ static void calculateCPUInfo(ProcessInfo *info, double uptime) {
         info->user_mode_percent = 0;
         info->system_mode_percent = 0;
     }
+
     dlclose(handle);
 }
-
 
 static void printProcessInfo(const ProcessInfo *info,int pid) {
     long page_size = sysconf(_SC_PAGE_SIZE) / 1024; // Page size in KiB
@@ -325,24 +330,65 @@ static void printProcessInfo(const ProcessInfo *info,int pid) {
 
 
 }
-void getProcessInfo(int pid) {
+static inline int interval_sleep(time_t seconds) {
+    struct timespec time;
+    time.tv_sec = seconds;
+    time.tv_nsec = 0;
+    if (nanosleep(&time,NULL) == -1) {
+        fprintf(stderr,ANSI_COLOR_RED "Error: failed to pause at specified interval, %s\n"ANSI_COLOR_RESET,strerror(errno));
+        return -1;
+    }
+    return 0;
+}
+
+static int processinfo_interval(int pid, time_t seconds, ProcessInfo *info,struct cpu_times *times) 
+{
+    ProcessInfo before = {0},after = {0}; // before and after sleep 
+    struct cpu_times t_before = {0}, t_after = {0};
+    //first take snapshot
+    if (readProcessStats(pid,&before) == -1) return -1;
+    read_global_stat(&t_before);
+    //then pause for specified duration
+    if (interval_sleep(seconds) == -1) return -1;
+    //after sleep read 
+    if (readProcessStats(pid,&after) == -1) return -1;
+    read_global_stat(&t_after);
+    //okay we are ready calculate the difference by substracting after from before
+    info->utime = after.utime - before.utime;
+    info->stime = after.stime - before.stime;
+    times->total_ticks = t_after.total_ticks - t_before.total_ticks;
+    //do not forget to copy other fields
+    info->state = after.state;
+    info->ppid = after.ppid;
+    info->majrflt = after.majrflt;
+    info->minflt = after.minflt;
+    info->starttime = after.starttime;
+    info->priority = process_getpriority(PRIO_PROCESS,pid);
+    strncpy(info->comm,after.comm,sizeof(info->comm));
+    strncpy(info->pcomm,after.pcomm,sizeof(info->pcomm));
+    return 0;
+}
+void getProcessInfo(int pid,unsigned int interval) {
     printf(ANSI_COLOR_YELLOW "Getting process info...\n" ANSI_COLOR_RESET);
 
     ProcessInfo info = {0};
+    struct cpu_times times = {0};
     double uptime, idletime;
-
-    if (readUptime(&uptime, &idletime) != 0) {
+    //only call those functions if interval is zero
+    if (!interval) {
+        if (readUptime(&uptime, &idletime) != 0) {
         perror("Error opening /proc/uptime");
         return;
+        }
+        int stat = readProcessStats(pid,&info);
+        if (stat == -1) {
+            fprintf(stderr,ANSI_COLOR_RED "process %d not found\n"ANSI_COLOR_RESET,pid);
+            return;
+        } else if (stat == 1) {
+            fprintf(stderr,"failed to get parent process command\n");
+        }
+        calculateCPUInfo(&info,uptime,NULL);
     }
-    int stat = readProcessStats(pid,&info);
-    if (stat == -1) {
-        fprintf(stderr,ANSI_COLOR_RED "process %d not found\n"ANSI_COLOR_RESET,pid);
-        return;
-    } else if (stat == 1) {
-        fprintf(stderr,"failed to get parent process command\n");
-    }
-
     if (readMemoryInfo(pid, &info) != 0) {
         perror("Error reading /proc/<pid>/statm");
         return;
@@ -354,7 +400,7 @@ void getProcessInfo(int pid) {
         return;
     }
 
-    if (readCgroup(pid, info.cgroup) != 0) {
+    if (readCgroup(pid, &info) != 0) {
         perror("Error reading cgroup");
         return;
     }
@@ -363,6 +409,15 @@ void getProcessInfo(int pid) {
         return;
     }
     get_uid_gid(&info,pid);
-    calculateCPUInfo(&info, uptime);
+    if (interval) {
+        int stat = processinfo_interval(pid,(long)interval,&info,&times);
+        if (stat == -1) {
+            fprintf(stderr,ANSI_COLOR_RED "Error: couldn't read process at interval %u\n"ANSI_COLOR_RESET,interval);
+            return;
+        } else if (stat == 1) {
+            fprintf(stderr,ANSI_COLOR_YELLOW "Warning: couldn't get parent process command\n"ANSI_COLOR_RESET);
+        }
+        calculateCPUInfo(&info, uptime,&times);
+    }
     printProcessInfo(&info,pid);
 }

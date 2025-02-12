@@ -1,7 +1,7 @@
 #ifndef PROCESS_H 
 #define PROCESS_H
 #include "../main.h"
-
+#include <time.h>
 
 //structure filled with data specific to process id
 // Function to get and print process info
@@ -9,8 +9,6 @@ typedef struct {
     unsigned long utime;
     unsigned long stime;
     unsigned long starttime;
-    unsigned long cutime;
-    unsigned long cstime;
     unsigned long minflt; //minor page fault
     unsigned long majrflt; // major page fault
     unsigned int ppid;
@@ -25,7 +23,7 @@ typedef struct {
     unsigned long shared_mem;
     unsigned long dirty_mem;
     int thread_count;
-    char cgroup[64];
+    char cgroup[120];
     double total_cpu_time;
     double cpu_time_percent;
     double user_mode_percent;
@@ -34,8 +32,21 @@ typedef struct {
     int gid,egid,rgid;
 } ProcessInfo;
 
+struct cpu_times {
+    unsigned long long user_ticks;
+    unsigned long long nice_ticks;
+    unsigned long long system_ticks;
+    unsigned long long idle_ticks;
+    unsigned long long iowait_ticks;
+    unsigned long long irq_ticks;
+    unsigned long long softirq_ticks;
+    unsigned long long steal_ticks;
+    unsigned long long guest_ticks;
+    unsigned long long guest_nice_ticks;
+    unsigned long total_ticks;
+};
 int process_file(char *path,char *filename);
-void getProcessInfo(pid_t pid);
+void getProcessInfo(int pid,unsigned int interval);
 
 int is_pid_directory(const char *name);
 

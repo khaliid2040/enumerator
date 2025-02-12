@@ -383,13 +383,21 @@ static void systeminfo() {
 int main(int argc, char *argv[])
 {
         printf(ANSI_COLOR_GREEN "system enumeration\n" ANSI_COLOR_RESET);
-        int opt,p_value = 0,H_flag = 0,N_flag= 0,P_flag=0,E_flag=0;
+        int opt,H_flag = 0,N_flag= 0,P_flag=0,E_flag=0,interv_flag=0;
+        int p_value=0,interval=0;
         // Parse command line options
-        while ((opt = getopt(argc, argv, "p:Hnh")) != -1) {
+        while ((opt = getopt(argc, argv, "p:i:Hnh")) != -1) {
             switch (opt) {
                 case 'p':
                     P_flag=1;
                     p_value = atoi(optarg);
+                    break;
+                case 'i':
+                    if (!P_flag) {
+                        interval = atoi(optarg);
+                    }
+                    interv_flag = 1;
+                    interval = atoi(optarg);
                     break;
                 case 'H':
                     H_flag= 1;
@@ -427,7 +435,8 @@ int main(int argc, char *argv[])
             if (!p_value) {
                 p_value = getpid();
             }
-            getProcessInfo(p_value);
+            if (!interv_flag) interval = 0;
+            getProcessInfo(p_value,interval);
         } 
         // If only -H is specified
         else if (H_flag) {

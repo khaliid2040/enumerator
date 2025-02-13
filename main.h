@@ -33,6 +33,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <pwd.h>
 #include <unistd.h>
 #include <syscall.h>
 #include <math.h>
@@ -71,6 +72,7 @@ typedef unsigned long page_t;
 #include "include/system.h"
 #include "include/utils.h"
 #include "include/pci.h"
+#include "include/desktop.h"
 
 int GetSecureBootStatus(void);
 void LinuxSecurityModule();

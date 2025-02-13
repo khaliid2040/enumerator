@@ -25,6 +25,7 @@ typedef struct {
     int thread_count;
     char cgroup[120];
     double total_cpu_time;
+    char time_unit[10]; //either holds milliseconds or seconds depending on cpu being higher than 1.0 or lower respectively
     double cpu_time_percent;
     double user_mode_percent;
     double system_mode_percent;

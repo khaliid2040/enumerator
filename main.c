@@ -1,4 +1,3 @@
-#include <pwd.h>
 #include <sys/utsname.h>
 #include <sys/types.h>
 #include <ctype.h>
@@ -220,52 +219,27 @@ static void print_load_average() {
 }
 
 static void print_desktop_environment() {
-        char *env, *de;
+    char *env, *de;
     if ((env = getenv("XDG_SESSION_TYPE"))) {
         printf(DEFAULT_COLOR "Session Type:\t" ANSI_COLOR_RESET "%s\n",env);
     }   
-    //used for determining user home directory
-    __uid_t uid= getuid();
-    struct passwd *pwd=getpwuid(uid);
-    char version[7];
-    if ((de = getenv("XDG_CURRENT_DESKTOP"))) {
-        printf(DEFAULT_COLOR "Desktop:\t" ANSI_COLOR_RESET "%s ",de);
-        
-        if (!strcmp(de,"KDE")) {
-            char path[40],*contents=NULL    ;
-            snprintf(path,sizeof(path),"/home/%s/.config/plasma-welcomerc",pwd->pw_name);
-            FILE *deVersion= fopen(path,"r");
-            if (deVersion !=NULL) {
-            
-                size_t len= sizeof(contents);
-                while (getline(&contents,&len,deVersion) != -1) {
-                    snprintf(version,sizeof(version),"%.6s",contents + 16);  
-                }
-                printf("%s",version);
-                fclose(deVersion);
-                free(contents);
-            } else {
-                //if the file doesn't exit print new line character
-                printf("\n");
-            }
-        } else if(!strcmp(de,"GNOME")) {
-            char version[5],*contents=NULL;
-            FILE *gnome= popen("gnome-shell --version","r");
-            if (gnome !=NULL) {
-                size_t len= 0;
-                if (getline(&contents,&len,gnome) != -1) {
-                    sscanf(contents + 12, "%s",version);
-                }
-                printf("%s\n",version);
-                pclose(gnome);
-                free(contents);
-            } else {
-                //if the file doesn't exit print new line character
-                printf("\n");
-            }
-        } else {
-            printf(ANSI_COLOR_RED "Unsupported\n"ANSI_COLOR_RESET); 
-        }
+    char version[VERSION_LEN];
+    Desktop desktop = Detect_desktop(version);
+
+    switch (desktop) {
+        case GNOME:
+            printf(DEFAULT_COLOR"Desktop:\t"ANSI_COLOR_RESET "Gnome %s\n",version);
+            break;
+        case KDE:
+            printf(DEFAULT_COLOR"Desktop:\t"ANSI_COLOR_RESET "KDE %s",version);
+            break;
+        case XFCE:
+            printf(DEFAULT_COLOR"Desktop:\t"ANSI_COLOR_RESET "XFCE %s\n",version);
+            break;
+        case MATE:
+            printf(DEFAULT_COLOR"Desktop:\t"ANSI_COLOR_RESET "Mate %s",version);
+            break;
+        case NONE:
     }
 }
 

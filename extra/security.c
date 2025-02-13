@@ -131,7 +131,7 @@ static void apparmor(void) {
     }
     printf("\t\tprofiles:\t %d\n",count);
     printf("\t\tenforce:\t %d\n",estate);
-    printf("\t\tcomplaint:\t %d\n\n",cstate);
+    printf("\t\tcomplain:\t %d\n\n",cstate);
     free(buffer);
     fclose(fp);
 }

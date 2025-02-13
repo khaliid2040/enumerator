@@ -287,7 +287,16 @@ static void calculateCPUInfo(ProcessInfo *info, double uptime, struct cpu_times 
         info->user_mode_percent = 0;
         info->system_mode_percent = 0;
     }
-
+    //finally if cpu time is more than second use seconds, which is fine since it is already is.
+    // But if it is less than seconds then use ms. Chnage info->time_unit respectively.
+    if (info->total_cpu_time < 1.0) {
+        info->total_cpu_time *= 1000.0;
+        strncpy(info->time_unit,"ms",3);
+    } else if (info->total_cpu_time == 1.0) {
+        strncpy(info->time_unit,"second",7);
+    } else {
+        strncpy(info->time_unit,"seconds",8);
+    }
     dlclose(handle);
 }
 
@@ -320,7 +329,7 @@ static void printProcessInfo(const ProcessInfo *info,int pid) {
     printf(DEFAULT_COLOR "Gid/egid/rgid\t\t\t\t" ANSI_COLOR_RESET "%u\t%u\t%u\t\n" ,info->gid,info->egid,info->rgid);
     printf(DEFAULT_COLOR "major/minor page faults:\t\t"ANSI_COLOR_RESET "%d/%d\n",info->majrflt,info->minflt);
     printf(DEFAULT_COLOR "Context switches:\t\t\t"ANSI_COLOR_RESET "voluntary=%d nonvoluntary=%d\n",info->voluntary_ctxt_switches,info->nonvoluntary_ctxt_switches);
-    printf(DEFAULT_COLOR "Total CPU Time:\t\t\t\t" ANSI_COLOR_RESET "%.2f seconds\n", info->total_cpu_time);
+    printf(DEFAULT_COLOR "Total CPU Time:\t\t\t\t" ANSI_COLOR_RESET "%.2f %s\n", info->total_cpu_time,info->time_unit);
     printf(DEFAULT_COLOR "CPU Time Percentage:\t\t\t" ANSI_COLOR_RESET "%.2f %%\n", info->cpu_time_percent);
     printf(DEFAULT_COLOR "User Mode CPU Time Percentage:\t\t" ANSI_COLOR_RESET "%.2f %%\n", info->user_mode_percent);
     printf(DEFAULT_COLOR "System Mode CPU Time Percentage:\t" ANSI_COLOR_RESET "%.2f %%\n", info->system_mode_percent);

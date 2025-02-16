@@ -101,7 +101,7 @@ static inline double convert_size_unit(double size, char* unit, size_t len) {
     memset(unit, 0, len);
 
     for (int i = 0; i < 4; i++) {
-        if (converted_size <= UNIT_SIZE) {
+        if (converted_size < UNIT_SIZE) {
             strncpy(unit, units[i], len - 1);
             break;
         }

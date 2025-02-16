@@ -116,23 +116,17 @@ static int cpu_vulnerabilities(void) {
     }
     closedir(path);
 }
-static struct freq *frequency(void) {
-    struct freq *frq = malloc(sizeof(struct freq));
-    if (frq == NULL) {
-        perror("malloc");
-        return NULL;
-    }
-
+static struct freq frequency(void) {
+    struct freq frq = {0};
     // Initialize frequency values to some default or invalid value
-    frq->max_freq = 0;
-    frq->min_freq = 0;
-    frq->base_freq = 0;
+    frq.max_freq = 0;
+    frq.min_freq = 0;
+    frq.base_freq = 0;
 
     DIR *policies = opendir("/sys/devices/system/cpu/cpufreq");
     if (policies == NULL) {
         perror("opendir");
-        free(frq);
-        return NULL;
+        return frq;
     }
 
     char path[256], contents[20];
@@ -148,7 +142,7 @@ static struct freq *frequency(void) {
         FILE *maxfp = fopen(path, "r");
         if (maxfp != NULL) {
             if (fgets(contents, sizeof(contents), maxfp) != NULL) {
-                frq->max_freq = strtoul(contents, NULL, 0);
+                frq.max_freq = strtoul(contents, NULL, 0);
             }
             fclose(maxfp);
         }
@@ -157,7 +151,7 @@ static struct freq *frequency(void) {
         FILE *minfp = fopen(path, "r");
         if (minfp != NULL) {
             if (fgets(contents, sizeof(contents), minfp) != NULL) {
-                frq->min_freq = strtoul(contents, NULL, 0);
+                frq.min_freq = strtoul(contents, NULL, 0);
             }
             fclose(minfp);
         }
@@ -166,7 +160,7 @@ static struct freq *frequency(void) {
         FILE *basefp = fopen(path, "r");
         if (basefp != NULL) {
             if (fgets(contents, sizeof(contents), basefp) != NULL) {
-                frq->base_freq = strtoul(contents, NULL, 0);
+                frq.base_freq = strtoul(contents, NULL, 0);
             }
             fclose(basefp);
         }
@@ -326,16 +320,11 @@ int cpuinfo() {
    
     printf(DEFAULT_COLOR"Sockets:\t\t"ANSI_COLOR_RESET "%d\n",sockets);
     //frequency got via sysfs as 
-    struct freq *frq= frequency();
-    if (frq == NULL) {
-        perror("malloc");
-        return -1;
-    }
-    float max= frq->max_freq / 1e6; // 1e6 = 1000000.0
-    float min = frq->min_freq / 1e3; // 1e3= 1000   
-    float base = frq->base_freq / 1e6; // 1e6 = 1000000.0
+    struct freq frq= frequency();
+    float max= frq.max_freq / 1e6; // 1e6 = 1000000.0
+    float min = frq.min_freq / 1e3; // 1e3= 1000   
+    float base = frq.base_freq / 1e6; // 1e6 = 1000000.0
     printf(DEFAULT_COLOR "Frequency:\t\t"ANSI_COLOR_RESET "max: %.1f GHz  min: %.1f MHz  base: %.1f GHz\n\n", max,min,base);
-    free(frq);
     //temperature
     #ifdef supported    
     // now getting the vendor 
@@ -401,7 +390,7 @@ int cpuinfo() {
         cache_size = ways * partitions * line_size * sets;
         cache_size /= 1024; // convert size to KiB because convert_unit_size expects size in KiB
         cache_sharing = ((eax >> 14) & 0xfff);
-        associativity = (ebx >> 22) & 0x3FF; // Extract bits 31:22
+        //associativity = ((ebx >> 22) & 0x3FF) +1; // Extract bits 31:22
         if (cache_sharing == 0) cache_sharing = cores; //if it is zero then they are not sharing
         if (cache_sharing == 0) cache_sharing = 1; // finally if still zero because cores are zero the last resort is assume 1
         unsigned int instance = cores / cache_sharing;
@@ -413,7 +402,7 @@ int cpuinfo() {
                 cache_type == 1 ? "Data cache" :
                 cache_type == 2 ? "Instruction cache" :
                 cache_type == 3 ? "Unified cache" : "Unknown",
-                converted_size, unit, instance, associativity);
+                converted_size, unit,instance, ways);
 
         cache_count++; // Move to the next cache
     }

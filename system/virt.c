@@ -44,10 +44,8 @@ static int detect_container() {
 Virtualization detect_hypervisor() {
     unsigned int eax,ebx,ecx,edx;
     Virtualization virt = none;
-    //first check hypervisor presence
-    __get_cpuid(1,&eax,&ebx,&ecx,&edx);
 
-    if (ecx & (1 << 31)) {
+    if (is_hypervisor_present()) {
         printf(DEFAULT_COLOR "\nHypervisor detected:\t"ANSI_COLOR_RESET);
 
         __cpuid(0x40000000U,eax,ebx,ecx,edx);

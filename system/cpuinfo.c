@@ -1,8 +1,8 @@
 #include "../main.h"
 #include <dirent.h>
 
-unsigned int eax,ebx,ecx,edx;
-char vendor[13];
+static unsigned int eax,ebx,ecx,edx;
+static char vendor[13];
 #ifdef supported
 
 static void cpuid() {
@@ -324,7 +324,7 @@ int cpuinfo() {
     float max= frq.max_freq / 1e6; // 1e6 = 1000000.0
     float min = frq.min_freq / 1e3; // 1e3= 1000   
     float base = frq.base_freq / 1e6; // 1e6 = 1000000.0
-    printf(DEFAULT_COLOR "Frequency:\t\t"ANSI_COLOR_RESET "max: %.1f GHz  min: %.1f MHz  base: %.1f GHz\n\n", max,min,base);
+    printf(DEFAULT_COLOR "Frequency:\t\t"ANSI_COLOR_RESET "max: %.1f GHz  min: %.1f MHz  base: %.1f GHz\n", max,min,base);
     //temperature
     #ifdef supported    
     // now getting the vendor 

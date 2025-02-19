@@ -19,7 +19,7 @@ static void get_kde_version(char* version,const char* username) {
 
 static void get_gnome_version(char* version) {
     char *contents=NULL;
-    FILE *gnome= popen("gnome-shell --version","r");
+    FILE *gnome= popen("gnome-shell --version 2>&1","r");
     if (gnome !=NULL) {
         size_t len= 0;
         if (getline(&contents,&len,gnome) != -1) {
@@ -36,7 +36,7 @@ static void get_gnome_version(char* version) {
 static void get_xfce_version(char* version) {
     char *content = NULL;
     size_t len =0;
-    FILE *pp = popen("xfce4-session --version","r");
+    FILE *pp = popen("xfce4-session --version 2>&1","r");
     if (!pp) return;
     if (getline(&content,&len,pp)) {
         sscanf(content,"xfce4-session  %s",version);
@@ -48,7 +48,7 @@ static void get_xfce_version(char* version) {
 static void get_mate_version(char* version) {
     char* content = NULL;
     size_t len =0;
-    FILE *pp = popen("mate-session --version","r");
+    FILE *pp = popen("mate-session --version 2>&1","r");
     if (!pp) return;
     if (getline(&content,&len,pp)) {
         sscanf(content,"mate-session %s",version);
@@ -63,7 +63,7 @@ Desktop Detect_desktop(char* version) {
         if (!strcmp(de,"KDE")) {
             get_kde_version(version,pwd->pw_name);
             return KDE;
-        } else if (!strcmp(de,"GNOME")) {
+        } else if (!strcmp(de,"GNOME") || strstr(de,"GNOME")) {
             get_gnome_version(version);
             return GNOME;
         } else if (!strcmp(de,"XFCE")) {

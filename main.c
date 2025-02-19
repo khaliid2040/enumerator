@@ -243,6 +243,27 @@ static void print_desktop_environment() {
     }
 }
 
+
+static void print_locales_info() {
+    char timezone[20],buffer[80],*env;
+    struct tm *tm;
+    time_t t;
+
+    FILE *fp = fopen("/etc/timezone","r");
+    env = getenv("LANG");
+    if (!fp || !env) return;
+    if (!fgets(timezone,sizeof(timezone),fp)) return;
+    fclose(fp);
+    // Get current time
+    time(&t);
+    tm = localtime(&t);
+    // Format the time in 12-hour format with AM/PM
+    strftime(buffer, sizeof(buffer), "%I:%M:%S %p", tm);
+
+    printf(DEFAULT_COLOR"Locale:\t\t"ANSI_COLOR_RESET "LANG=%s  TZ=%s",env,timezone);
+    printf(DEFAULT_COLOR"Time:\t\t"ANSI_COLOR_RESET "%s\n",buffer);
+}
+
 static void print_battery_info() {
     char capacity[5];
     FILE *fp = fopen("/sys/class/power_supply/BAT0/capacity", "r");
@@ -259,9 +280,9 @@ static void print_battery_info() {
                 }
                 printf(DEFAULT_COLOR "Battery:\t" ANSI_COLOR_RESET "%s%%", capacity);
                 if (strcmp(status, "Discharging") == 0) {
-                    printf(ANSI_COLOR_YELLOW " %s" ANSI_COLOR_RESET, status);
+                    printf(ANSI_COLOR_YELLOW " %s\n" ANSI_COLOR_RESET, status);
                 } else if (strcmp(status, "Charging") == 0) {
-                    printf(ANSI_COLOR_GREEN " %s" ANSI_COLOR_RESET, status);
+                    printf(ANSI_COLOR_GREEN " %s\n" ANSI_COLOR_RESET, status);
                 } else {
                     printf(" %s\n", status);
                 }
@@ -295,7 +316,7 @@ static void print_process_and_thread_count() {
         closedir(proc_dir);
         if (sysinfo(&info) == -1)
             return;
-        printf(DEFAULT_COLOR "\nprocesses: " ANSI_COLOR_RESET "%d\t" DEFAULT_COLOR "threads: " ANSI_COLOR_RESET "%d\n", info.procs, num_threads);
+        printf(DEFAULT_COLOR "processes: " ANSI_COLOR_RESET "%d\t" DEFAULT_COLOR "threads: " ANSI_COLOR_RESET "%d\n", info.procs, num_threads);
     } else {
         perror("opendir");
     }
@@ -339,15 +360,15 @@ static void systeminfo() {
     print_systemd_info();
     print_cpu_info();
     print_gpu_info();
-    print_disk_info();
+    if (!is_hypervisor_present()) print_disk_info();  // disk cannot be detected on vms it will fail
     print_memory_and_uptime();
     print_load_average();
+    if (!is_hypervisor_present()) print_battery_info(); // also virtual machines don't have a battery
     print_desktop_environment();
     package_manager();
-    print_battery_info();
+    print_locales_info();
     print_process_and_thread_count();
     print_user_and_group_info();
-    // LinuxSecurityModule() should be called here if defined elsewhere
     printf(ANSI_COLOR_YELLOW "Getting security modules...\n" ANSI_COLOR_RESET);
     LinuxSecurityModule();
 }
@@ -359,7 +380,7 @@ static void help() {
     printf("-H      get hardware information\n");
     printf(" -e     get extended hardware information\n\n");
     printf("-n      get network information\n\n");
-    printf("Usage: ./systeminfo [p|H|n] [e|i]\n");
+    printf("Usage: ./systeminfo -[p|H|n] -[e|i]\n");
 }
 int main(int argc, char *argv[])
 {

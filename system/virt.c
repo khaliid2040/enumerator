@@ -35,9 +35,9 @@ static int detect_container() {
     fp = fopen("/run/systemd/container","r");
     if (!fp) return 0; 
 
-    if (!fgets(content,sizeof(content),fp)) return 0;
+    if (!fgets(content,sizeof(content),fp)) {fclose(fp); return 0;}
 
-    if (!strcmp(content,"docker")) return 1; // this is the most reliable way so without question return true
+    if (!strcmp(content,"docker")) {fclose(fp); return 1;} // this is the most reliable way so without question return true
     fclose(fp);
     return 0; 
 }

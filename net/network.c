@@ -31,7 +31,7 @@ void printNetworkConnections() {
         }
 
         while (fgets(line, sizeof(line), fp) != NULL) {
-            int numFields = sscanf(line, "%s %*d %*d %s %s %s", state, localAddr, remoteAddr);
+            int numFields = sscanf(line, "%s %*d %*d %s %s ", state, localAddr, remoteAddr);
 
             // Check if parsing was successful
             if (numFields < 2) {

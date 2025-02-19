@@ -12,7 +12,7 @@ long long get_disk_size(const char* device) {
     snprintf(path,MAX_PATH,"/sys/block/%s/size",device);
     fp = fopen(path,"r");
     if (!fp) return 0;
-    if (fgets(content,sizeof(content),fp) == NULL) return 0;
+    if (fgets(content,sizeof(content),fp) == NULL) {fclose(fp); return 0;}
     fclose(fp);
     size = strtoull(content,NULL,0);
     return size * 512;

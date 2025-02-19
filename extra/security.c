@@ -167,6 +167,7 @@ void LinuxSecurityModule(void) {
             printf("Yama\t\t" ANSI_COLOR_GREEN "enabled\n"ANSI_COLOR_RESET);
         }
     }
+    fclose(fp);
 }
 
 int GetSecureBootStatus() {

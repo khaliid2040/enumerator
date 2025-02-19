@@ -224,9 +224,8 @@ static void get_uid_gid(ProcessInfo *info,int pid) {
     char path[64],contents[64];
     snprintf(path,sizeof(path),"/proc/%d/status",pid);
     FILE *fp = fopen(path,"r");
-    if (!fp) {
-        return;
-    }
+    if (!fp) return;
+
     while (fgets(contents,sizeof(contents),fp) != NULL) {
         if (!strncmp(contents, "Uid:", 4)) {
             // Parse Uid: line, which might have tabs or spaces
@@ -241,6 +240,7 @@ static void get_uid_gid(ProcessInfo *info,int pid) {
 			break;
 		}
     }
+    fclose(fp);
 }
 //either uptime or cpu_times structure should be supplied
 //if both of them supplied then cpu_times will take the priority so if you want calculation to be based on

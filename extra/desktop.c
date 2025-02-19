@@ -22,7 +22,7 @@ static void get_gnome_version(char* version) {
     FILE *gnome= popen("gnome-shell --version 2>&1","r");
     if (gnome !=NULL) {
         size_t len= 0;
-        if (getline(&contents,&len,gnome) != -1) {
+        while (getline(&contents,&len,gnome) != -1) {
             sscanf(contents + 12, "%s",version);
         }
         pclose(gnome);

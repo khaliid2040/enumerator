@@ -86,10 +86,9 @@ void trim_whitespace(char *str) {
 bool is_init_systemd() {
     FILE *fp;
     char content[15];
-
     fp = fopen("/proc/1/comm","r");
     if (!fp) return false;
-    if (fgets(content,sizeof(content),fp) == NULL) return false;
+    if (fgets(content,sizeof(content),fp) == NULL) {fclose(fp); return false;}
     if (!strcmp(content,"systemd\n")) {
         fclose(fp);
         return true;

@@ -250,17 +250,17 @@ static void print_locales_info() {
     time_t t;
 
     FILE *fp = fopen("/etc/timezone","r");
-    env = getenv("LANG");
-    if (!fp || !env) return;
-    if (!fgets(timezone,sizeof(timezone),fp)) return;
+    if (!fp) return;
+    if (!fgets(timezone,sizeof(timezone),fp)) {fclose(fp); return;}
     fclose(fp);
+    env = getenv("LANG");
+    printf(DEFAULT_COLOR"Locale:\t\t"ANSI_COLOR_RESET "LANG=%s  TZ=%s",env,timezone);
+    
     // Get current time
     time(&t);
     tm = localtime(&t);
     // Format the time in 12-hour format with AM/PM
     strftime(buffer, sizeof(buffer), "%I:%M:%S %p", tm);
-
-    printf(DEFAULT_COLOR"Locale:\t\t"ANSI_COLOR_RESET "LANG=%s  TZ=%s",env,timezone);
     printf(DEFAULT_COLOR"Time:\t\t"ANSI_COLOR_RESET "%s\n",buffer);
 }
 

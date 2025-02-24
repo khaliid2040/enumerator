@@ -23,7 +23,6 @@ static System_t *dmi_read() {
         FILE *sys= fopen(path,"r");
         if (sys == NULL) {
             perror("failed");
-            //return NULL;
             continue;
         }
           

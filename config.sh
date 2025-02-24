@@ -37,7 +37,7 @@ fi
 #otherwise just enable compiler 
 if [ "$1" == "--debug" ]; then 
     echo -e "Debugging: ${GREEN}ON${NC}"
-    CFLAGS+="-Og -g"
+    CFLAGS+="-Og -g -DDEBUG"
 else 
     CFLAGS+=" -O2"
     LDFLAGS+=" -flto" # link time optimization

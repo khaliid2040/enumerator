@@ -294,32 +294,28 @@ static void print_battery_info() {
 }
 
 static void print_process_and_thread_count() {
-    int num_threads = 0;
+    int thread_count = 0,process_count =0;
     struct dirent *entry,*task_entry;
-    struct sysinfo info;
-    DIR *proc_dir = opendir("/proc");
-    if (proc_dir) {
-        rewinddir(proc_dir);
-        while ((entry = readdir(proc_dir)) != NULL) {
-            if (is_pid_directory(entry->d_name)) {
-                char task_path[MAX_PATH];
-                snprintf(task_path, sizeof(task_path), "/proc/%s/task", entry->d_name);
-                DIR *task_dir = opendir(task_path);
-                if (task_dir) {
-                    while ((task_entry = readdir(task_dir)) != NULL) {
-                        num_threads++;
-                    }
-                    closedir(task_dir);
-                }
-            }
+    DIR *dir,*tdir;
+    char path[MAX_PATH];
+
+    dir = opendir("/proc");
+    if (!dir) return;
+    while ((entry = readdir(dir)) != NULL) {
+        if (!is_pid_directory(entry->d_name)) continue;
+        process_count++;
+        snprintf(path,sizeof(path),"/proc/%s/task",entry->d_name);
+        tdir = opendir(path);
+        if (!dir) continue;
+        while ((task_entry =readdir(tdir)) != NULL) {
+            if (!is_pid_directory(entry->d_name)) continue;
+            thread_count++;
         }
-        closedir(proc_dir);
-        if (sysinfo(&info) == -1)
-            return;
-        printf(DEFAULT_COLOR "processes: " ANSI_COLOR_RESET "%d\t" DEFAULT_COLOR "threads: " ANSI_COLOR_RESET "%d\n", info.procs, num_threads);
-    } else {
-        perror("opendir");
     }
+    closedir(dir);
+    closedir(tdir);
+    printf(DEFAULT_COLOR "Processes:  "ANSI_COLOR_RESET "%d\t"
+           DEFAULT_COLOR "Threads:  "ANSI_COLOR_RESET "%d\n",process_count,thread_count);
 }
 
 static void print_user_and_group_info() {
@@ -387,7 +383,7 @@ int main(int argc, char *argv[])
         printf(ANSI_COLOR_GREEN "system enumeration\n" ANSI_COLOR_RESET);
         int opt,H_flag = 0,N_flag= 0,P_flag=0,E_flag=0,interv_flag=0;
         int p_value=0,interval=0;
-        // Parse command line options
+	// Parse command line options
         while ((opt = getopt(argc, argv, "p:i:Hnh")) != -1) {
             switch (opt) {
                 case 'p':
@@ -427,6 +423,7 @@ int main(int argc, char *argv[])
                     abort();
             }
         }
+	
         // If -p is specified
         if (P_flag) {
             process_cpu_time();

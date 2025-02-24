@@ -215,6 +215,7 @@ void storage(void) {
 #ifdef LIBUDEV
     process_udev();
 #endif
+printf(ANSI_COLOR_BLUE "Disk partitions:\n"ANSI_COLOR_RESET);
     // Open the mount points file
     FILE *mtab = setmntent("/etc/mtab", "r");
     if (mtab != NULL) {

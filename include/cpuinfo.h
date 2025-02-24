@@ -19,9 +19,8 @@ struct freq {
     unsigned long base_freq;
 };
 
-//function for memory calculation implemented in extra_func.c
-//for cpu defined in system/cpuinfo.c
-int cpuinfo(void);  
+
+void cpuinfo(void);  
 
 // system/cpuinfo.c and system/virt.c sharing same header
 

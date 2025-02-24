@@ -300,7 +300,7 @@ static int get_cpu_sockets() {
     sockets = atoi(buffer);
     return sockets +1;
 }
-int cpuinfo() {
+void cpuinfo() {
         printf(ANSI_COLOR_YELLOW "getting processor information\n" ANSI_COLOR_RESET);
     
     /*
@@ -317,7 +317,7 @@ int cpuinfo() {
         printf(DEFAULT_COLOR "cores:\t\t\t"ANSI_COLOR_RESET "%d\n",cores);
         printf(DEFAULT_COLOR "processor:\t\t" ANSI_COLOR_RESET "%d\n",processors);
     }
-   
+    
     printf(DEFAULT_COLOR"Sockets:\t\t"ANSI_COLOR_RESET "%d\n",sockets);
     //frequency got via sysfs as 
     struct freq frq= frequency();
@@ -406,7 +406,6 @@ int cpuinfo() {
 
         cache_count++; // Move to the next cache
     }
-    printf(ANSI_COLOR_YELLOW "Getting cpu vurnuabilities\n" ANSI_COLOR_RESET);
+    printf(ANSI_COLOR_BLUE "CPU Vurnuabilities:\n" ANSI_COLOR_RESET);
     cpu_vulnerabilities();
-    return 0;
 }

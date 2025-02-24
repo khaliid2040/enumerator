@@ -8,7 +8,7 @@
 #define ANSI_COLOR_GREEN   "\x1b[32m"//green
 #define ANSI_COLOR_LIGHT_GREEN "\x1b[36m"    
 #define ANSI_COLOR_YELLOW  "\x1b[33m"//yellow
-#define ANSI_COLOR_BLUE    "\x1b[34m"//blue
+#define ANSI_COLOR_BLUE    "\33[m\33[1m\33[34m"//blue
 #define ANSI_COLOR_MAGENTA "\x1b[35m"//magenta
 #define ANSI_COLOR_CYAN    "\x1b[36m"//cyan
 #define ANSI_COLOR_RESET   "\x1b[0m"//reset the colors

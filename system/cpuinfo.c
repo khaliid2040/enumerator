@@ -320,11 +320,13 @@ void cpuinfo() {
     
     printf(DEFAULT_COLOR"Sockets:\t\t"ANSI_COLOR_RESET "%d\n",sockets);
     //frequency got via sysfs as 
-    struct freq frq= frequency();
-    float max= frq.max_freq / 1e6; // 1e6 = 1000000.0
-    float min = frq.min_freq / 1e3; // 1e3= 1000   
-    float base = frq.base_freq / 1e6; // 1e6 = 1000000.0
-    printf(DEFAULT_COLOR "Frequency:\t\t"ANSI_COLOR_RESET "max: %.1f GHz  min: %.1f MHz  base: %.1f GHz\n", max,min,base);
+    if (!is_hypervisor_present()) {
+        struct freq frq= frequency();
+        float max= frq.max_freq / 1e6; // 1e6 = 1000000.0
+        float min = frq.min_freq / 1e3; // 1e3= 1000   
+        float base = frq.base_freq / 1e6; // 1e6 = 1000000.0
+        printf(DEFAULT_COLOR "Frequency:\t\t"ANSI_COLOR_RESET "max: %.1f GHz  min: %.1f MHz  base: %.1f GHz\n", max,min,base);
+    }
     //temperature
     #ifdef supported    
     // now getting the vendor 

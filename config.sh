@@ -35,9 +35,16 @@ fi
 # enable debugging by tunning compiler debugging optimization
 # and debugging symbols
 #otherwise just enable compiler 
-if [ "$1" == "--debug" ]; then 
+if [ "$1" == "--debug" ] || [ "$1" == "-d" ]; then 
     echo -e "Debugging: ${GREEN}ON${NC}"
     CFLAGS+="-Og -g -DDEBUG"
+    if [ "$2" == "--sanitize" ] || [ "$2" == "-s" ]; then
+        CFLAGS+=" -fsanitize=address"
+        LDFLAGS+="-fsanitize=address"
+        echo -e "Sanitizer: ${GREEN}ON${NC}"
+    else 
+        echo -e "Sanitizer: ${RED}OFF${NC}"
+    fi
 else 
     CFLAGS+=" -O2"
     LDFLAGS+=" -flto" # link time optimization

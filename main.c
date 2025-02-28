@@ -317,9 +317,9 @@ static void print_process_and_thread_count() {
             if (!is_pid_directory(entry->d_name)) continue;
             thread_count++;
         }
+        closedir(tdir);
     }
     closedir(dir);
-    closedir(tdir);
     printf(DEFAULT_COLOR "Processes:  "ANSI_COLOR_RESET "%d\t"
            DEFAULT_COLOR "Threads:  "ANSI_COLOR_RESET "%d\n",process_count,thread_count);
 }

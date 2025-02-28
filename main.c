@@ -223,6 +223,12 @@ static void print_desktop_environment() {
     if ((env = getenv("XDG_SESSION_TYPE"))) {
         printf(DEFAULT_COLOR "Session Type:\t" ANSI_COLOR_RESET "%s\n",env);
     }   
+    #ifdef LIBWAYLAND
+    if (!strcmp(env,"wayland")) {
+        get_display_model(WAYLAND);
+        printf(DEFAULT_COLOR"Display:\t"ANSI_COLOR_RESET "%s %dx%d %d\n",out_info.make,out_info.width,out_info.height,out_info.refresh_rate);
+    }
+    #endif
     char version[VERSION_LEN];
     Desktop desktop = Detect_desktop(version);
 

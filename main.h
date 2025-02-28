@@ -1,5 +1,6 @@
 #ifndef MAIN_H
 #define MAIN_H
+#define _GNU_SOURCE
 #define SIZE 256 // size often used for file buffers
 #define MAX_LINE_LENGTH 1024 //needs update in the project to be combined SIZE and MAX_LINE_LENGTH
 //for ansi escape codes to get colors

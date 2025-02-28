@@ -43,7 +43,7 @@ else
     LDFLAGS+=" -flto" # link time optimization
 fi
 # Libraries to check
-LIBS=("libudev" "libsystemd")
+LIBS=("libudev" "libsystemd" "libwayland")
 LIBPCI="libpci"
 
 # Check for the standard libraries
@@ -55,6 +55,10 @@ for LIB in "${LIBS[@]}"; do
     elif [ "$LIB" == "libsystemd" ] && [ -d /usr/include/systemd ]; then
         CFLAGS+=" -DSYSTEMD"
         LDFLAGS+=" -lsystemd"
+        echo -e "checking ${LIB}: ${GREEN}OK${NC}"
+    elif [ "$LIB" == "libwayland" ] && [ -f /usr/include/wayland-client.h ]; then
+        CFLAGS+=" -DLIBWAYLAND"
+        LDFLAGS+=" -lwayland-client"
         echo -e "checking ${LIB}: ${GREEN}OK${NC}"
     else
         echo -e "checking ${LIB}: ${RED}NO${NC}"

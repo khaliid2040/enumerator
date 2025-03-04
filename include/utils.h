@@ -11,6 +11,8 @@
 */
 int process_file(char *path,char *filename);
 
+//check if debugger is present
+bool is_debugger_present();
 //used by main.c:Systeminfo
 int is_pid_directory(const char *name);
 

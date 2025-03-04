@@ -19,7 +19,6 @@ int process_file(char *path,char *filename) {
 
 }
 
-//used by main.c:Systeminfo
 int is_pid_directory(const char *name) {
     if (name == NULL || *name == '\0') {
         return 0;
@@ -68,6 +67,30 @@ bool is_directory_empty(const char *path) {
 
     closedir(dir);
     return true; // Directory is empty
+}
+
+bool is_debugger_present() {
+    FILE *fp;
+    char *content = NULL;
+    size_t len = 0;
+    unsigned int tpid = 0; 
+    char path[64];
+
+    snprintf(path, sizeof(path), "/proc/%d/status", getpid());
+    fp = fopen(path, "r");
+    if (!fp) return false;
+
+    while (getline(&content, &len, fp) != -1) {
+        if (strncmp(content, "TracerPid:", 10) == 0) {
+            sscanf(content + 10, "%u", &tpid);
+            break;
+        }    
+    }
+
+    fclose(fp);
+    free(content);
+
+    return (tpid != 0);
 }
 
 #ifdef LIBPCI 

@@ -152,7 +152,7 @@ static void print_gpu_info() {
                    vendor_id == 0x1002 ? "AMD" : "Unknown", device);
 
             free(device); // Free memory allocated by find_device_name()
-            break; // Only process one GPU
+            //break; // Only process one GPU
         }
     }
 
@@ -219,25 +219,37 @@ static void print_load_average() {
 }
 
 static void print_desktop_environment() {
-    char *env, *de;
+    char *env,shell_info[VERSION_LEN];
+    char version[VERSION_LEN];
+    Desktop desktop;
+    enum Shell sh;
+
     if ((env = getenv("XDG_SESSION_TYPE"))) {
         printf(DEFAULT_COLOR "Session Type:\t" ANSI_COLOR_RESET "%s\n",env);
     }   
+    if (env && !strcmp(env,"tty")) { 
+        get_shell_version(shell_info,&sh);
+        printf(DEFAULT_COLOR "Shell:\t\t"ANSI_COLOR_RESET "%s %s\n",(sh == Bash ? "Bash":
+                                                                 sh == Zsh ? "Zsh":
+                                                                 sh == Csh ? "Csh":
+                                                                 sh == Fish ? "Fish": "Unknown"),shell_info);
+        
+        return; // there is no much to be done so just return
+    } 
     #ifdef LIBWAYLAND
-    if (!strcmp(env,"wayland")) {
+    if (env && !strcmp(env,"wayland")) {
         get_display_model(WAYLAND);
-        printf(DEFAULT_COLOR"Display:\t"ANSI_COLOR_RESET "%s %dx%d %d\n",out_info.make,out_info.width,out_info.height,out_info.refresh_rate);
+        printf(DEFAULT_COLOR"Display:\t"ANSI_COLOR_RESET "%s %dx%d %d Hz\n",out_info.make,out_info.width,out_info.height,out_info.refresh_rate/ 1000);
     }
-    #endif
-    char version[VERSION_LEN];
-    Desktop desktop = Detect_desktop(version);
+    #endif 
 
+     desktop = Detect_desktop(version);
     switch (desktop) {
         case GNOME:
             printf(DEFAULT_COLOR"Desktop:\t"ANSI_COLOR_RESET "Gnome %s\n",version);
             break;
         case KDE:
-            printf(DEFAULT_COLOR"Desktop:\t"ANSI_COLOR_RESET "KDE %s",version);
+            printf(DEFAULT_COLOR"Desktop:\t"ANSI_COLOR_RESET "KDE %s\n",version);
             break;
         case XFCE:
             printf(DEFAULT_COLOR"Desktop:\t"ANSI_COLOR_RESET "XFCE %s\n",version);

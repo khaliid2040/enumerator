@@ -178,6 +178,7 @@ static int countThreads(int pid) {
             }
         }
     }
+    fclose(fp);
     free(content);
     return Threads;
 }

@@ -107,6 +107,7 @@ static int Detect_display_wayland() {
         } else {
             fprintf(stderr, "No output device found\n");
         }
+        wl_registry_destroy(registry);
         wl_display_disconnect(display);
         return 0;
 }

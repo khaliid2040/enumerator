@@ -50,6 +50,7 @@ static void get_kde_version(char* version) {
             }
         } 
     } 
+    pclose(kde);
 }
 
 static void get_gnome_version(char* version) {

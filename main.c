@@ -251,6 +251,7 @@ static void print_desktop_environment() {
         printf(DEFAULT_COLOR "Display:\t" ANSI_COLOR_RESET "%s %dx%d %d Hz\n", out_info.make, out_info.width, out_info.height, out_info.refresh_rate / 1000);
         free(out_info.make); // allocated by get_display_model using strdup  
         free(out_info.model); // allocated by get_display_model using strdup
+        free(out_info.discription); // allocated by get_display_model using strdup
     }
     #endif
 

@@ -300,39 +300,28 @@ static int get_cpu_sockets() {
     sockets = atoi(buffer);
     return sockets +1;
 }
+static void print_cache_info(int cores);
 void cpuinfo() {
-        printf(ANSI_COLOR_YELLOW "getting processor information\n" ANSI_COLOR_RESET);
-    
-    /*
-        cpuinfo_buffer holds the buffer of the cpuinfo file
-        buffer_size is the size of the buffer
-        processors and cores are strings searched in  the file
-        
-    */     
+    printf(ANSI_COLOR_YELLOW "getting processor information\n" ANSI_COLOR_RESET);
+
     unsigned int sockets = get_cpu_sockets(); 
-    int cores=0,processors=0,level=4; //assumption: 4 cache levels
-    char spath[60],tpath[60];
-    char size_cont[20],type_cont[30];
-    if (count_processor(&cores,&processors)) {
-        printf(DEFAULT_COLOR "cores:\t\t\t"ANSI_COLOR_RESET "%d\n",cores);
-        printf(DEFAULT_COLOR "processor:\t\t" ANSI_COLOR_RESET "%d\n",processors);
+    int cores = 0, processors = 0;
+    if (count_processor(&cores, &processors)) {
+        printf(DEFAULT_COLOR "cores:\t\t\t" ANSI_COLOR_RESET "%d\n", cores);
+        printf(DEFAULT_COLOR "processor:\t\t" ANSI_COLOR_RESET "%d\n", processors);
     }
-    
-    printf(DEFAULT_COLOR"Sockets:\t\t"ANSI_COLOR_RESET "%d\n",sockets);
-    //frequency got via sysfs as 
+    printf(DEFAULT_COLOR "Sockets:\t\t" ANSI_COLOR_RESET "%d\n", sockets);
+
     if (!is_hypervisor_present()) {
-        struct freq frq= frequency();
-        float max= frq.max_freq / 1e6; // 1e6 = 1000000.0
-        float min = frq.min_freq / 1e3; // 1e3= 1000   
+        struct freq frq = frequency();
+        float max = frq.max_freq / 1e6; // 1e6 = 1000000.0
+        float min = frq.min_freq / 1e3; // 1e3 = 1000   
         float base = frq.base_freq / 1e6; // 1e6 = 1000000.0
-        printf(DEFAULT_COLOR "Frequency:\t\t"ANSI_COLOR_RESET "max: %.1f GHz  min: %.1f MHz  base: %.1f GHz\n", max,min,base);
+        printf(DEFAULT_COLOR "Frequency:\t\t" ANSI_COLOR_RESET "max: %.1f GHz  min: %.1f MHz  base: %.1f GHz\n", max, min, base);
     }
-    //temperature
+
     #ifdef supported    
-    // now getting the vendor 
     cpuid();
-    //now we are going to print the brand using cpuid instruction
-    
     char brand[50];
     for (int i = 0; i < 3; ++i) {
         __get_cpuid(0x80000002 + i, &eax, &ebx, &ecx, &edx);
@@ -342,46 +331,51 @@ void cpuinfo() {
         memcpy(brand + i * 16 + 12, &edx, 4);
     }
     brand[48] = '\0';
-    printf(DEFAULT_COLOR "\nBrand:\t\t\t"ANSI_COLOR_RESET  "%s\n", brand);
-    // cpu family stepping and model
+    printf(DEFAULT_COLOR "\nBrand:\t\t\t" ANSI_COLOR_RESET "%s\n", brand);
+
     __get_cpuid(1, &eax, &ebx, &ecx, &edx);
-    
     unsigned int family = ((eax >> 8) & 0x0F) + ((eax >> 20) & 0xFF);
     unsigned int model = ((eax >> 4) & 0x0F) + ((eax >> 12) & 0xF0);
     unsigned int stepping = eax & 0x0F;
-    printf(DEFAULT_COLOR"Family\t\t\t"ANSI_COLOR_RESET "%u\n",family);
-    printf(DEFAULT_COLOR"Model\t\t\t"ANSI_COLOR_RESET "%u\n",model);
-    printf(DEFAULT_COLOR"Stepping\t\t"ANSI_COLOR_RESET "%u\n",stepping);
+    printf(DEFAULT_COLOR "Family\t\t\t" ANSI_COLOR_RESET "%u\n", family);
+    printf(DEFAULT_COLOR "Model\t\t\t" ANSI_COLOR_RESET "%u\n", model);
+    printf(DEFAULT_COLOR "Stepping\t\t" ANSI_COLOR_RESET "%u\n", stepping);
     #else
-        struct Cpuinfo cpu;
-        generic_cpuinfo(&cpu);
-        printf(DEFAULT_COLOR "\nVendor:\t\t\t"ANSI_COLOR_RESET  "%s", cpu.vendor);
-        printf(DEFAULT_COLOR "\nBrand:\t\t\t"ANSI_COLOR_RESET  "%s\n", cpu.model_name);
-        printf(DEFAULT_COLOR"Family\t\t\t"ANSI_COLOR_RESET "%u\n",cpu.family);
-        printf(DEFAULT_COLOR"Model\t\t\t"ANSI_COLOR_RESET "%u\n",cpu.model);
-        printf(DEFAULT_COLOR"Stepping\t\t"ANSI_COLOR_RESET "%u\n",cpu.stepping);
+    struct Cpuinfo cpu;
+    generic_cpuinfo(&cpu);
+    printf(DEFAULT_COLOR "\nVendor:\t\t\t" ANSI_COLOR_RESET "%s", cpu.vendor);
+    printf(DEFAULT_COLOR "\nBrand:\t\t\t" ANSI_COLOR_RESET "%s\n", cpu.model_name);
+    printf(DEFAULT_COLOR "Family\t\t\t" ANSI_COLOR_RESET "%u\n", cpu.family);
+    printf(DEFAULT_COLOR "Model\t\t\t" ANSI_COLOR_RESET "%u\n", cpu.model);
+    printf(DEFAULT_COLOR "Stepping\t\t" ANSI_COLOR_RESET "%u\n", cpu.stepping);
     #endif
-    char arch[10],endianess[10];
-    if (get_arch_and_endianess(arch,endianess,10)) {
-        printf(DEFAULT_COLOR "Architecture:\t\t"ANSI_COLOR_RESET "%s-bit\n",arch);
-        printf(DEFAULT_COLOR "Endianess:\t\t" ANSI_COLOR_RESET "%s",endianess);
+
+    char arch[10], endianess[10];
+    if (get_arch_and_endianess(arch, endianess, 10)) {
+        printf(DEFAULT_COLOR "Architecture:\t\t" ANSI_COLOR_RESET "%s-bit\n", arch);
+        printf(DEFAULT_COLOR "Endianess:\t\t" ANSI_COLOR_RESET "%s", endianess);
     }
+
     hwmon();
+    print_cache_info(cores);
+    printf(ANSI_COLOR_BLUE "CPU Vulnerabilities:\n" ANSI_COLOR_RESET);
+    cpu_vulnerabilities();
+}
+
+static void print_cache_info(int cores) {
     unsigned int eax, ebx, ecx, edx;
     unsigned int cache_count = 0;
     unsigned int cache_type, cache_level, cache_size;
     unsigned int ways, partitions, line_size, sets;
-    unsigned int cache_sharing,associativity;
+    unsigned int cache_sharing;
     char unit[4];
 
-
     while (1) {
-        #if defined(__x86_64) || defined(__i386__) // at least do not do anything on other architectures
+        #if defined(__x86_64) || defined(__i386__)
         __cpuid_count(0x4, cache_count, eax, ebx, ecx, edx);
         #endif
-        cache_type = eax & 0x1F; // Bits 0-4: Cache type
+        cache_type = eax & 0x1F;
         if (cache_type == 0) {
-            // Cache type 0 means no more caches
             break;
         }
         cache_level = (eax >> 5) & 0x7;       // Bits 5-7: Cache level (L1, L2, L3, etc.)
@@ -390,24 +384,21 @@ void cpuinfo() {
         line_size = (ebx & 0xFFF) + 1;
         sets = ecx + 1;
         cache_size = ways * partitions * line_size * sets;
-        cache_size /= 1024; // convert size to KiB because convert_unit_size expects size in KiB
+        cache_size /= 1024;
         cache_sharing = ((eax >> 14) & 0xfff);
-        //associativity = ((ebx >> 22) & 0x3FF) +1; // Extract bits 31:22
-        if (cache_sharing == 0) cache_sharing = cores; //if it is zero then they are not sharing
-        if (cache_sharing == 0) cache_sharing = 1; // finally if still zero because cores are zero the last resort is assume 1
+        if (cache_sharing == 0) cache_sharing = cores;
+        if (cache_sharing == 0) cache_sharing = 1;
         unsigned int instance = cores / cache_sharing;
-        if (instance == 0) instance = 1; // If instance is zero, then there is only one instance
+        if (instance == 0) instance = 1;
 
         double converted_size = convert_size_unit((double)cache_size * instance, unit, sizeof(unit));
 
-        printf(DEFAULT_COLOR"\nCache L%d:\t\t"ANSI_COLOR_RESET "type: %s\n\t\t\tsize: %.1f %s\n\t\t\tinstances: %d\n\t\t\tAssociativity: %d-ways\n", cache_level,
+        printf(DEFAULT_COLOR "\nCache L%d:\t\t" ANSI_COLOR_RESET "type: %s\n\t\t\tsize: %.1f %s\n\t\t\tinstances: %d\n\t\t\tAssociativity: %d-ways\n", cache_level,
                 cache_type == 1 ? "Data cache" :
                 cache_type == 2 ? "Instruction cache" :
                 cache_type == 3 ? "Unified cache" : "Unknown",
-                converted_size, unit,instance, ways);
+                converted_size, unit, instance, ways);
 
-        cache_count++; // Move to the next cache
+        cache_count++;
     }
-    printf(ANSI_COLOR_BLUE "CPU Vurnuabilities:\n" ANSI_COLOR_RESET);
-    cpu_vulnerabilities();
 }

@@ -16,6 +16,7 @@ static bool is_hypervisor_virtualbox() {
         fclose(fp);
         return true; // finally we got something expected :)
     }
+
     fclose(fp);
     return false; // we shouldn't reach here
 }
@@ -25,21 +26,23 @@ static int detect_container() {
     FILE *fp;
     char content[64];
 
-    //fallback methods 
+    //fallback methods
     if (!access("/.dockerenv",F_OK)) return 1; //also this is unquestionable just return without further doing nothing
 
     // on podman /run/.containerenv is enough
     if (!access("/run/.containerenv",F_OK)) return 2;
 
-    //first check on /run/systemd/container
-    fp = fopen("/run/systemd/container","r");
-    if (!fp) return 0; 
+    // Check /run/systemd/container
+    fp = fopen("/run/systemd/container", "r");
+    if (!fp) return 0;
 
-    if (!fgets(content,sizeof(content),fp)) {fclose(fp); return 0;}
+    if (fgets(content, sizeof(content), fp) == NULL) {
+        fclose(fp);
+        return 0;
+    }
 
-    if (!strcmp(content,"docker")) {fclose(fp); return 1;} // this is the most reliable way so without question return true
     fclose(fp);
-    return 0; 
+    return strcmp(content, "docker") == 0 ? 1 : 0;
 }
 Virtualization detect_hypervisor() {
     unsigned int eax,ebx,ecx,edx;

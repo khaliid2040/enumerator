@@ -377,27 +377,28 @@ static int processinfo_interval(int pid, time_t seconds, ProcessInfo *info,struc
     strncpy(info->pcomm,after.pcomm,sizeof(info->pcomm));
     return 0;
 }
-void getProcessInfo(int pid,unsigned int interval) {
+void getProcessInfo(int pid, unsigned int interval) {
     printf(ANSI_COLOR_YELLOW "Getting process info...\n" ANSI_COLOR_RESET);
 
     ProcessInfo info = {0};
     struct cpu_times times = {0};
     double uptime, idletime;
-    //only call those functions if interval is zero
+
     if (!interval) {
         if (readUptime(&uptime, &idletime) != 0) {
-        perror("Error opening /proc/uptime");
-        return;
+            perror("Error opening /proc/uptime");
+            return;
         }
-        int stat = readProcessStats(pid,&info);
+        int stat = readProcessStats(pid, &info);
         if (stat == -1) {
-            fprintf(stderr,ANSI_COLOR_RED "process %d not found\n"ANSI_COLOR_RESET,pid);
+            fprintf(stderr, ANSI_COLOR_RED "Process %d not found\n" ANSI_COLOR_RESET, pid);
             return;
         } else if (stat == 1) {
-            fprintf(stderr,"failed to get parent process command\n");
+            fprintf(stderr, "Failed to get parent process command\n");
         }
-        calculateCPUInfo(&info,uptime,NULL);
+        calculateCPUInfo(&info, uptime, NULL);
     }
+
     if (readMemoryInfo(pid, &info) != 0) {
         perror("Error reading /proc/<pid>/statm");
         return;
@@ -413,20 +414,24 @@ void getProcessInfo(int pid,unsigned int interval) {
         perror("Error reading cgroup");
         return;
     }
-    if (get_ctxt_switches(&info,pid)) {
-        fprintf(stderr,"error reading /proc/%d/status",pid);
+
+    if (get_ctxt_switches(&info, pid)) {
+        fprintf(stderr, "Error reading /proc/%d/status", pid);
         return;
     }
-    get_uid_gid(&info,pid);
+
+    get_uid_gid(&info, pid);
+
     if (interval) {
-        int stat = processinfo_interval(pid,(long)interval,&info,&times);
+        int stat = processinfo_interval(pid, (long)interval, &info, &times);
         if (stat == -1) {
-            fprintf(stderr,ANSI_COLOR_RED "Error: couldn't read process at interval %u\n"ANSI_COLOR_RESET,interval);
+            fprintf(stderr, ANSI_COLOR_RED "Error: couldn't read process at interval %u\n" ANSI_COLOR_RESET, interval);
             return;
         } else if (stat == 1) {
-            fprintf(stderr,ANSI_COLOR_YELLOW "Warning: couldn't get parent process command\n"ANSI_COLOR_RESET);
+            fprintf(stderr, ANSI_COLOR_YELLOW "Warning: couldn't get parent process command\n" ANSI_COLOR_RESET);
         }
-        calculateCPUInfo(&info, uptime,&times);
+        calculateCPUInfo(&info, uptime, &times);
     }
-    printProcessInfo(&info,pid);
+
+    printProcessInfo(&info, pid);
 }

@@ -11,13 +11,22 @@ typedef enum {
     MATE,
     NONE
 } Desktop;
+Desktop Detect_desktop(char* version);
 
 enum Protocol {
     WAYLAND,
     X11
 };
-Desktop Detect_desktop(char* version);
-
+enum Compositors {
+    KWIN,
+    MUTTER,
+    WESTON,
+    SWAY,
+};
+extern enum Compositors compositor;
+#ifdef LIBWAYLAND
+void detect_compositor();
+#endif
 
 struct output_info {
     int x, y;

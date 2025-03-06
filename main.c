@@ -219,48 +219,59 @@ static void print_load_average() {
 }
 
 static void print_desktop_environment() {
-    char *env,shell_info[VERSION_LEN];
+    char *env, shell_info[VERSION_LEN];
     char version[VERSION_LEN];
     Desktop desktop;
     enum Shell sh;
 
-    if ((env = getenv("XDG_SESSION_TYPE"))) {
-        printf(DEFAULT_COLOR "Session Type:\t" ANSI_COLOR_RESET "%s\n",env);
-    }   
-    if (env && !strcmp(env,"tty")) { 
-        get_shell_version(shell_info,&sh);
-        printf(DEFAULT_COLOR "Shell:\t\t"ANSI_COLOR_RESET "%s %s\n",(sh == Bash ? "Bash":
-                                                                 sh == Zsh ? "Zsh":
-                                                                 sh == Csh ? "Csh":
-                                                                 sh == Fish ? "Fish": "Unknown"),shell_info);
-        
-        return; // there is no much to be done so just return
-    } 
-    #ifdef LIBWAYLAND
-    if (env && !strcmp(env,"wayland")) {
-        get_display_model(WAYLAND);
-        printf(DEFAULT_COLOR"Display:\t"ANSI_COLOR_RESET "%s %dx%d %d Hz\n",out_info.make,out_info.width,out_info.height,out_info.refresh_rate/ 1000);
+    env = getenv("XDG_SESSION_TYPE");
+    if (env) {
+        printf(DEFAULT_COLOR "Session Type:\t" ANSI_COLOR_RESET "%s ", env);
+        if (!strcmp(env, "wayland")) {
+            #ifdef LIBWAYLAND
+            detect_compositor();
+            #endif
+            printf("(%s)\n", (compositor == SWAY ? "Sway" :
+                             compositor == KWIN ? "Kwin" :
+                             compositor == MUTTER ? "Mutter" :
+                             compositor == WESTON ? "Weston" : ""));
+        } else {
+            printf("\n");
+        }
     }
-    #endif 
 
-     desktop = Detect_desktop(version);
+    get_shell_version(shell_info, &sh);
+    printf(DEFAULT_COLOR "Shell:\t\t" ANSI_COLOR_RESET "%s %s\n", (sh == Bash ? "Bash":
+                                                                   sh == Zsh ? "Zsh" :
+                                                                   sh == Fish ? "Fish" :
+                                                                   sh == Csh ? "Csh" : ""), shell_info);
+    #ifdef LIBWAYLAND
+    if (env && !strcmp(env, "wayland")) {
+        get_display_model(WAYLAND);
+        printf(DEFAULT_COLOR "Display:\t" ANSI_COLOR_RESET "%s %dx%d %d Hz\n", out_info.make, out_info.width, out_info.height, out_info.refresh_rate / 1000);
+        free(out_info.make); // allocated by get_display_model using strdup  
+        free(out_info.model); // allocated by get_display_model using strdup
+    }
+    #endif
+
+    desktop = Detect_desktop(version);
     switch (desktop) {
         case GNOME:
-            printf(DEFAULT_COLOR"Desktop:\t"ANSI_COLOR_RESET "Gnome %s\n",version);
+            printf(DEFAULT_COLOR "Desktop:\t" ANSI_COLOR_RESET "Gnome %s\n", version);
             break;
         case KDE:
-            printf(DEFAULT_COLOR"Desktop:\t"ANSI_COLOR_RESET "KDE %s\n",version);
+            printf(DEFAULT_COLOR "Desktop:\t" ANSI_COLOR_RESET "KDE %s\n", version);
             break;
         case XFCE:
-            printf(DEFAULT_COLOR"Desktop:\t"ANSI_COLOR_RESET "XFCE %s\n",version);
+            printf(DEFAULT_COLOR "Desktop:\t" ANSI_COLOR_RESET "XFCE %s\n", version);
             break;
         case MATE:
-            printf(DEFAULT_COLOR"Desktop:\t"ANSI_COLOR_RESET "Mate %s",version);
+            printf(DEFAULT_COLOR "Desktop:\t" ANSI_COLOR_RESET "Mate %s", version);
             break;
         case NONE:
+            break;
     }
 }
-
 
 static void print_locales_info() {
     char timezone[20],buffer[80],*env;

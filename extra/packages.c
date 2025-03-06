@@ -147,11 +147,14 @@ void package_manager() {
     #elif ARCH
     packages= count_pacman_packages();
     printf("%d (pacman) ",packages);
+    #else
+    return;
     #endif
+
     #ifdef FLATPAK
     printf("%d (flatpak)\n",flatpak);
     #else
-    printf("\n");//make sure to always end newline
+    printf("\n");   
     #endif
     
 }

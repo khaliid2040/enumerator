@@ -1,22 +1,20 @@
 #include "../main.h"
 
 #define LENGTH 1024 //used by get_pci_info
-int process_file(char *path,char *filename) {
-    printf(DEFAULT_COLOR "%-20s: " ANSI_COLOR_RESET ,filename );
-    FILE *file= fopen(path,"r");
+int process_file(const char *path, const char *filename) {
+    printf(DEFAULT_COLOR "%-20s: " ANSI_COLOR_RESET, filename);
+    FILE *file = fopen(path, "r");
     char file_buff[MAX_LINE_LENGTH];
-    if (file == NULL) {
-        fprintf(stderr,"couldn't open the file");
+    if (!file) {
+        fprintf(stderr, "Couldn't open the file: %s\n", path);
         return 1;
     }
-    while (fgets(file_buff,sizeof(file_buff),file) != NULL) {
+    while (fgets(file_buff, sizeof(file_buff), file) != NULL) {
         file_buff[strcspn(file_buff, "\n")] = '\0';
-        //printf("%-500s\n",file_buff);
         printf("%s\n", file_buff); 
     }
     fclose(file);
     return 0;
-
 }
 
 int is_pid_directory(const char *name) {
@@ -78,7 +76,10 @@ bool is_debugger_present() {
 
     snprintf(path, sizeof(path), "/proc/%d/status", getpid());
     fp = fopen(path, "r");
-    if (!fp) return false;
+    if (!fp) {
+        perror("Error opening /proc/<pid>/status");
+        return false;
+    }
 
     while (getline(&content, &len, fp) != -1) {
         if (strncmp(content, "TracerPid:", 10) == 0) {

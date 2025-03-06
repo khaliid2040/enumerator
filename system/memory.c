@@ -1,60 +1,38 @@
 #include "../main.h"
 
-// Get available memory from /proc/meminfo
-static double get_available_memory(char *unit, size_t len) {
+// Get memory information from /proc/meminfo
+static double get_memory_info(const char *key, char *unit, size_t len) {
     FILE *fp;
     char *line = NULL;
     size_t size = 0;
-    double mem_available = 0.0;
+    double value = 0.0;
 
     fp = fopen("/proc/meminfo", "r");
     if (!fp)
         return 0.0;
 
     while (getline(&line, &size, fp) != -1) {
-        if (strncmp("MemAvailable:", line, 13) == 0) {
-            sscanf(line, "MemAvailable: %lf", &mem_available);
+        if (strncmp(key, line, strlen(key)) == 0) {
+            sscanf(line + strlen(key), "%lf", &value);
             break;
         }
     }
     free(line); // Free the buffer allocated by getline
     fclose(fp);
 
-    return convert_size_unit(mem_available, unit, len);
+    return convert_size_unit(value, unit, len);
+}
+
+static double get_available_memory(char *unit, size_t len) {
+    return get_memory_info("MemAvailable:", unit, len);
 }
 
 static double get_used_memory(char *unit, size_t len) {
-    unsigned long total_mem,available;
-    FILE *fp;
-    char *content;
-    size_t size =0;
-    int fields;
-    fp = fopen("/proc/meminfo","r");
-    if (!fp)
-        return 0;
-    while (getline(&content,&size,fp) != -1) {
-        if (!strncmp(content,"MemTotal:",9)) {
-            fields = sscanf(content,"MemTotal: %lu kB",&total_mem);
-            if (fields <1) {
-                fclose(fp);
-                free(content);
-                return 0;
-            }
-        }
-
-        if (!strncmp("MemAvailable:",content,13)) {
-            fields = sscanf(content,"MemAvailable: %lu kB",&available);
-            if (fields < 1) {
-                fclose(fp);
-                free(content);
-                return 0;
-            }
-        }
-    }
-    fclose(fp);
-    free(content);
-    return convert_size_unit((double)total_mem - available,unit,len);
+    double total_mem = get_memory_info("MemTotal:", unit, len);
+    double available_mem = get_memory_info("MemAvailable:", unit, len);
+    return total_mem - available_mem;
 }
+
 int memory_info() {
     struct sysinfo mem;
     char unit[7][4]; // Separate units for each value

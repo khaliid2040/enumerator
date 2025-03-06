@@ -46,7 +46,7 @@ struct cpu_times {
     unsigned long long guest_nice_ticks;
     unsigned long total_ticks;
 };
-int process_file(char *path,char *filename);
+
 void getProcessInfo(int pid,unsigned int interval);
 
 int is_pid_directory(const char *name);

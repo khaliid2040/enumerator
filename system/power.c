@@ -6,11 +6,11 @@ static char* get_value(const char* device, const char* file) {
     char path[MAX_PATH];
     char *content = malloc(32);
     if (!content) return NULL;
-
+    
     snprintf(path, sizeof(path), "%s/%s/%s", BATTERY_PATH, device, file);
     fp = fopen(path, "r");
     if (!fp) {
-        fprintf(stderr, "Error: Couldn't open %s\n", path);
+        fprintf(stderr, "Error: Couldn't open %s: %s\n", path, strerror(errno));
         free(content);
         return NULL;
     }
@@ -34,7 +34,7 @@ static int get_value_number(const char* device, const char* file) {
     snprintf(path, sizeof(path), "%s/%s/%s", BATTERY_PATH, device, file);
     fp = fopen(path, "r");
     if (!fp) {
-        fprintf(stderr, "Error: Couldn't open %s\n", path);
+        fprintf(stderr, "Error: Couldn't open %s: %s\n", path, strerror(errno));
         return -1;
     }
 
@@ -57,7 +57,7 @@ static void get_battery(const char* battery) {
     printf(DEFAULT_COLOR "Vendor:\t\t\t" ANSI_COLOR_RESET "%s\n", vendor ? vendor : "Unknown");
 
     // Model
-    model = get_value(battery, "model_name");  // Fixed: model_name is correct
+    model = get_value(battery, "model_name");
     printf(DEFAULT_COLOR "Model:\t\t\t" ANSI_COLOR_RESET "%s\n", model ? model : "Unknown");
 
     // Technology
@@ -92,35 +92,40 @@ static void get_battery(const char* battery) {
     free(serial);
     free(status);
 }
+
 static void get_ac_info(const char* ac) {
     char *type;
     int online;
-    printf(DEFAULT_COLOR"\nDevice:\t\t\t"ANSI_COLOR_RESET "%s\n",ac);
-    type = get_value(ac,"type");
-    printf(DEFAULT_COLOR "type:\t\t\t"ANSI_COLOR_RESET "%s\n",type);
-    online = get_value_number(ac,"online");
-    printf(DEFAULT_COLOR "Online:\t\t\t"ANSI_COLOR_RESET "%s\n",online == 1 ? "yes":
-                                                              online == 0 ? "no": "unknown");
+    printf(DEFAULT_COLOR "\nDevice:\t\t\t" ANSI_COLOR_RESET "%s\n", ac);
+    type = get_value(ac, "type");
+    printf(DEFAULT_COLOR "Type:\t\t\t" ANSI_COLOR_RESET "%s\n", type ? type : "Unknown");
+    online = get_value_number(ac, "online");
+    printf(DEFAULT_COLOR "Online:\t\t\t" ANSI_COLOR_RESET "%s\n",
+           online == 1 ? "Yes" : online == 0 ? "No" : "Unknown");
     free(type);
 }
+
 void print_battery_information() {
     DIR *dir;
     struct dirent *entry;
-    printf(ANSI_COLOR_YELLOW "checking for power devices\n"ANSI_COLOR_RESET);
-    //first we need to make sure if the dirrectory is empty or not so we don't waste time if it already empty
+    printf(ANSI_COLOR_YELLOW "Checking for power devices\n" ANSI_COLOR_RESET);
+
+    // Check if the directory is empty
     if (is_directory_empty(BATTERY_PATH)) {
-        fprintf(stderr,ANSI_COLOR_RED "No power devices detected\n",ANSI_COLOR_RESET);
+        fprintf(stderr, ANSI_COLOR_RED "No power devices detected\n" ANSI_COLOR_RESET);
         return;
     }
+
     dir = opendir(BATTERY_PATH);
     if (!dir) {
-        fprintf(stderr,ANSI_COLOR_RED "Error: could get battery information %s\n"ANSI_COLOR_RESET,strerror(errno));
+        fprintf(stderr, ANSI_COLOR_RED "Error: Couldn't get battery information: %s\n" ANSI_COLOR_RESET, strerror(errno));
         return;
     }
+
     while ((entry = readdir(dir)) != NULL) {
-        if (!strncmp(entry->d_name,"BAT",3)) 
+        if (!strncmp(entry->d_name, "BAT", 3))
             get_battery(entry->d_name);
-        if (!strncmp(entry->d_name,"AC",2))
+        if (!strncmp(entry->d_name, "AC", 2))
             get_ac_info(entry->d_name);
     }
     closedir(dir);

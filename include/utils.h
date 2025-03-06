@@ -9,9 +9,12 @@
     functions implemented on extra/utils.c
 
 */
-int process_file(char *path,char *filename);
+int process_file(const char *path, const char *filename);
 
-//check if debugger is present
+/**
+ * @brief Checks if the current process is being debugged.
+ * @return true if the process is being debugged, false otherwise.
+ */
 bool is_debugger_present();
 //used by main.c:Systeminfo
 int is_pid_directory(const char *name);

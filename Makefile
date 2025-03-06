@@ -17,7 +17,8 @@ EXECUTABLE = systeminfo
 
 # Object files
 OBJ_FILES = main.o \
-			$(OBJ_DIR_EXTRA)/process.o $(OBJ_DIR_EXTRA)/utils.o $(OBJ_DIR_EXTRA)/desktop.o $(OBJ_DIR_EXTRA)/security.o $(OBJ_DIR_EXTRA)/packages.o\
+			$(OBJ_DIR_EXTRA)/process.o $(OBJ_DIR_EXTRA)/utils.o $(OBJ_DIR_EXTRA)/desktop.o \
+			$(OBJ_DIR_EXTRA)/security.o $(OBJ_DIR_EXTRA)/packages.o $(OBJ_DIR_EXTRA)/shell.o \
 			$(OBJ_DIR_NET)/network.o $(OBJ_DIR_NET)/arp.o $(OBJ_DIR_NET)/route.o \
 			$(OBJ_DIR_SYSTEM)/cpuinfo.o $(OBJ_DIR_SYSTEM)/memory.o $(OBJ_DIR_SYSTEM)/storage.o $(OBJ_DIR_SYSTEM)/display.o \
 			$(OBJ_DIR_SYSTEM)/pci.o $(OBJ_DIR_SYSTEM)/power.o $(OBJ_DIR_SYSTEM)/system.o $(OBJ_DIR_SYSTEM)/virt.o

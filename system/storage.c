@@ -67,31 +67,23 @@ static void get_disk(const char* device) {
 
     printf(DEFAULT_COLOR "Model\t\t\t" ANSI_COLOR_RESET);
 
-    if(!strcmp("nvme0n1",device)) {
-        fp = fopen(paths[0],"r");
-        
-        if (fp) {
-            if (fgets(model,sizeof(model),fp) == NULL)
-                strncpy(model,"unknown",sizeof(model));
-            fclose(fp);
-        } else {
-            strncpy(model,"unknown",sizeof(model));
-        }
-
-    } else if (!strcmp("sda",device)) {
-        fp = fopen(paths[1],"r");
-        if (fp) {
-            if (fgets(model,sizeof(model),fp) == NULL)
-                strncpy(model,"unknown",sizeof(model));
-            fclose(fp);
-        } else {
-            strncpy(model,"unknown",sizeof(model));
+    for (int i = 0; i < sizeof(paths) / sizeof(paths[0]); i++) {
+        if (strcmp(device, paths[i] + 11) == 0) { // +11 to skip "/sys/block/"
+            fp = fopen(paths[i], "r");
+            if (fp) {
+                if (fgets(model, sizeof(model), fp) == NULL)
+                    strncpy(model, "unknown", sizeof(model));
+                fclose(fp);
+            } else {
+                strncpy(model, "unknown", sizeof(model));
+            }
+            break;
         }
     }
     model[strlen(model)] = '\n';
-    printf("%s",model);
-
+    printf("%s", model);
 }
+
 static int get_device_uuid(const char *device,char* uuid, size_t size) {
     DIR *dir;
     struct dirent *entry;
@@ -211,16 +203,17 @@ static void process_udev() {
 #endif
 
 void storage(void) {
-        // Additional processing if LIBUDEV is enabled
-#ifdef LIBUDEV
+    // Additional processing if LIBUDEV is enabled
+    #ifdef LIBUDEV
     process_udev();
-#endif
-printf(ANSI_COLOR_BLUE "Disk partitions:\n"ANSI_COLOR_RESET);
+    #endif
+
+    printf(ANSI_COLOR_BLUE "Disk partitions:\n" ANSI_COLOR_RESET);
     // Open the mount points file
     FILE *mtab = setmntent("/etc/mtab", "r");
     if (mtab != NULL) {
         // Print table header
-        printf("%-16s%-16s%-16s% -16s%-16s%-16s%-1s\n",
+        printf("%-16s%-16s%-16s%-16s%-16s%-16s%-1s\n",
                "Device", "Filesystem", "Mountpoint", "Size",
                "Free", "Used", "UUID");
 
@@ -255,16 +248,15 @@ printf(ANSI_COLOR_BLUE "Disk partitions:\n"ANSI_COLOR_RESET);
 
                 // Retrieve UUID if BLKID is enabled
                 char uuid[96];
-                get_device_uuid(entry->mnt_fsname,uuid,sizeof(uuid));
+                get_device_uuid(entry->mnt_fsname, uuid, sizeof(uuid));
                 // Print only if needed
                 if (needed) {
-                    printf("%-15.15s% -15.12s%-15.12s%10.2f %-4s %10.2f %-4s %10.2f %-4s %s\n",
-                            entry->mnt_fsname, entry->mnt_type, entry->mnt_dir,
-                            total_size, unit_total,
-                            free_blocks, unit_free,
-                            used_blocks, unit_used,
-                            uuid ? uuid : "N/A");
-
+                    printf("%-15.15s%-15.12s%-15.12s%10.2f %-4s %10.2f %-4s %10.2f %-4s %s\n",
+                           entry->mnt_fsname, entry->mnt_type, entry->mnt_dir,
+                           total_size, unit_total,
+                           free_blocks, unit_free,
+                           used_blocks, unit_used,
+                           uuid ? uuid : "N/A");
                 }
             }
         }

@@ -76,7 +76,7 @@ static void selinux(void) {
             printf("SELinux:\t" ANSI_COLOR_YELLOW "permissive\n" ANSI_COLOR_RESET);
         }
     } else {
-        perror("fgets /sys/fs/selinux/enforce");
+        perror("Error reading /sys/fs/selinux/enforce");
     }
     fclose(state_file);
 
@@ -101,12 +101,10 @@ static void selinux(void) {
 }
 
 static void apparmor(void) {
-    char *buffer=NULL;
-    unsigned int count=0,estate=0,cstate=0;
-    char profile[SIZE],state[SIZE];
+    char *buffer = NULL;
+    unsigned int count = 0, estate = 0, cstate = 0;
+    char profile[SIZE], state[SIZE];
     size_t size;
-    bool is_loaded;
-    bool enabled = is_apparmor_enabled(&is_loaded);
 
     if (is_apparmor_enabled(NULL)) { // this time loaded and enabled
         printf("Apparmor:\t"ANSI_COLOR_GREEN "enabled\n"ANSI_COLOR_RESET);
@@ -114,24 +112,24 @@ static void apparmor(void) {
         return;
     }
 
-    FILE *fp= fopen("/sys/kernel/security/apparmor/profiles","r");
+    FILE *fp = fopen("/sys/kernel/security/apparmor/profiles", "r");
     if (fp == NULL) {
-        fprintf(stderr,ANSI_COLOR_RED "couldn't open /sys/kernel/security/apparmor %s\n" ANSI_COLOR_RESET ,strerror(errno));
+        fprintf(stderr, ANSI_COLOR_RED "couldn't open /sys/kernel/security/apparmor %s\n" ANSI_COLOR_RESET, strerror(errno));
         return;
     }
-    while (getline(&buffer,&size,fp) != -1) {
+    while (getline(&buffer, &size, fp) != -1) {
         count++;
         if (sscanf(buffer, "%[^ ] (%[^)])", profile, state) == 2) {
-            if (!strcmp(state,"enforce")) {
+            if (!strcmp(state, "enforce")) {
                 estate++;
-            } else if (!strcmp(state,"complain")) {
+            } else if (!strcmp(state, "complain")) {
                 cstate++;
             }
         }
     }
-    printf("\t\tprofiles:\t %d\n",count);
-    printf("\t\tenforce:\t %d\n",estate);
-    printf("\t\tcomplain:\t %d\n\n",cstate);
+    printf("\t\tprofiles:\t %d\n", count);
+    printf("\t\tenforce:\t %d\n", estate);
+    printf("\t\tcomplain:\t %d\n\n", cstate);
     free(buffer);
     fclose(fp);
 }
@@ -142,28 +140,28 @@ void LinuxSecurityModule(void) {
     apparmor();
     //also check for others
     char buf[64];
-    FILE *fp = fopen("/sys/kernel/security/lsm","r");
+    FILE *fp = fopen("/sys/kernel/security/lsm", "r");
     if (!fp) {
-        fprintf(stderr,ANSI_COLOR_RED "failed to open /sys/kernel/security/lsm\n"ANSI_COLOR_RESET);
+        fprintf(stderr, ANSI_COLOR_RED "failed to open /sys/kernel/security/lsm\n" ANSI_COLOR_RESET);
         return;
     }
-    if (fgets(buf,sizeof(buf),fp) != NULL) {
+    if (fgets(buf, sizeof(buf), fp) != NULL) {
         if (strstr(buf, "landlock")) {
             printf("Landlock\t" ANSI_COLOR_GREEN "enabled\n" ANSI_COLOR_RESET);
         } else 
-        if (strstr(buf, "bpf")) {
+if (strstr(buf, "bpf")) {
             printf("BPF\t\t" ANSI_COLOR_GREEN "enabled\n"ANSI_COLOR_RESET);
         }
-        if (strstr(buf, "tomoyo")) {
+if (strstr(buf, "tomoyo")) {
             printf("Tomoyo\t\t" ANSI_COLOR_GREEN "enabled\n"ANSI_COLOR_RESET);
         }
-        if (strstr(buf, "capability")) {
+if (strstr(buf, "capability")) {
             printf("Capability\t" ANSI_COLOR_GREEN "enabled\n"ANSI_COLOR_RESET);
         }
-        if (strstr(buf, "lockdown")) {
+if (strstr(buf, "lockdown")) {
             printf("Lockdown\t" ANSI_COLOR_GREEN "enabled\n"ANSI_COLOR_RESET);
         }
-        if (strstr(buf, "yama")) {
+if (strstr(buf, "yama")) {
             printf("Yama\t\t" ANSI_COLOR_GREEN "enabled\n"ANSI_COLOR_RESET);
         }
     }
@@ -187,4 +185,4 @@ int GetSecureBootStatus() {
     }
     close(fd);
     return 0;
-} 
+}

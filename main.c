@@ -410,89 +410,89 @@ static void help() {
 }
 int main(int argc, char *argv[])
 {
-        printf(ANSI_COLOR_GREEN "system enumeration\n" ANSI_COLOR_RESET);
-        int opt,H_flag = 0,N_flag= 0,P_flag=0,E_flag=0,interv_flag=0;
-        int p_value=0,interval=0;
-	// Parse command line options
-        while ((opt = getopt(argc, argv, "p:i:Hnh")) != -1) {
-            switch (opt) {
-                case 'p':
-                    P_flag=1;
-                    p_value = atoi(optarg);
-                    break;
-                case 'i':
-                    if (!P_flag) {
-                        interval = atoi(optarg);
-                    }
-                    interv_flag = 1;
+    printf(ANSI_COLOR_GREEN "system enumeration\n" ANSI_COLOR_RESET);
+    int opt,H_flag = 0,N_flag= 0,P_flag=0,E_flag=0,interv_flag=0;
+    int p_value=0,interval=0;
+	//Parse command line options
+    while ((opt = getopt(argc, argv, "p:i:Hnh")) != -1) {
+        switch (opt) {
+            case 'p':
+                P_flag=1;
+                p_value = atoi(optarg);
+                break;
+            case 'i':
+                if (!P_flag) {
                     interval = atoi(optarg);
-                    break;
-                case 'H':
-                    H_flag= 1;
-                    if (optind < argc && argv[optind][0] == '-' && argv[optind][1] == 'e' && argv[optind][2] == '\0') {
-                    E_flag = 1; // Enable `-e`
-                    optind++;    // Manually consume `-e`
-                    }
-                    break;
-                  case 'n':
-                    N_flag= 1;
-                    break;
-                case '?': // Handle unknown options
-                    if (optopt == 'p')
-                        printf(ANSI_COLOR_RED "Option -%c requires an argument.\n" ANSI_COLOR_RESET, optopt);
-                    else if (isprint(optopt))
-                        fprintf(stderr, ANSI_COLOR_RED "Unknown option `-%c'.\n" ANSI_COLOR_RESET, optopt);
-                    else
-                        fprintf(stderr, "Unknown option character `\\x%x'.\n", optopt);
-                    return 1;
-                    break;
-                case 'h':
-                    help();
-                    return 0;
-                default:
-                    abort();
-            }
+                }
+                interv_flag = 1;
+                interval = atoi(optarg);
+                break;
+            case 'H':
+                H_flag= 1;
+                if (optind < argc && argv[optind][0] == '-' && argv[optind][1] == 'e' && argv[optind][2] == '\0') {
+                E_flag = 1; // Enable `-e`
+                optind++;    // Manually consume `-e`
+                }
+                break;
+              case 'n':
+                N_flag= 1;
+                break;
+            case '?': // Handle unknown options
+                if (optopt == 'p')
+                    printf(ANSI_COLOR_RED "Option -%c requires an argument.\n" ANSI_COLOR_RESET, optopt);
+                else if (isprint(optopt))
+                    fprintf(stderr, ANSI_COLOR_RED "Unknown option `-%c'.\n" ANSI_COLOR_RESET, optopt);
+                else
+                    fprintf(stderr, "Unknown option character `\\x%x'.\n", optopt);
+                return 1;
+                break;
+            case 'h':
+                help();
+                return 0;
+            default:
+                abort();
         }
+    }
 	
-        // If -p is specified
-        if (P_flag) {
-            process_cpu_time();
-            //get this process information if specified 0 for debugging purposes
-            if (!p_value) {
-                p_value = getpid();
-            }
-            if (!interv_flag) interval = 0;
-            getProcessInfo(p_value,interval);
-        } 
-        // If only -H is specified
-        else if (H_flag) {
-        printf(ANSI_COLOR_YELLOW "Getting basic information...\n" ANSI_COLOR_RESET);
-        system_enum();
-        cpuinfo();
-        printf(ANSI_COLOR_YELLOW "Getting memory information\n" ANSI_COLOR_RESET);
-        memory_info();
-        printf(ANSI_COLOR_YELLOW "\nGetting disk layout...\n" ANSI_COLOR_RESET);
-        storage();
-        if (E_flag) {
-            printf(ANSI_COLOR_YELLOW "Getting pci devices\n"ANSI_COLOR_RESET);
-            list_pci_devices();
-            printf(ANSI_COLOR_YELLOW "Getting sensor information..\n"ANSI_COLOR_RESET);
-            detect_sensors();
-            print_battery_information();
+    // If -p is specified
+    if (P_flag) {
+        process_cpu_time();
+        //get this process information if specified 0 for debugging purposes
+        if (!p_value) {
+            p_value = getpid();
         }
-        } else if(N_flag) {
-            printf(ANSI_COLOR_YELLOW "Getting network information\n" ANSI_COLOR_RESET);
-            network();
-            printf(ANSI_COLOR_YELLOW "Getting route information...\n" ANSI_COLOR_RESET);
-            route();
-            printf(ANSI_COLOR_YELLOW "checking for arp entries..\n" ANSI_COLOR_RESET);
-            arp();
-        }
-        // If no options are specified
-        else {
-            
-            systeminfo();
-        }
+        if (!interv_flag) interval = 0;
+        getProcessInfo(p_value,interval);
+    } 
+    // If only -H is specified
+    else if (H_flag) {
+    printf(ANSI_COLOR_YELLOW "Getting basic information...\n" ANSI_COLOR_RESET);
+    system_enum();
+    cpuinfo();
+    printf(ANSI_COLOR_YELLOW "Getting memory information\n" ANSI_COLOR_RESET);
+    memory_info();
+    printf(ANSI_COLOR_YELLOW "\nGetting disk layout...\n" ANSI_COLOR_RESET);
+    storage();
+    if (E_flag) {
+        printf(ANSI_COLOR_YELLOW "Getting pci devices\n"ANSI_COLOR_RESET);
+        list_pci_devices();
+        printf(ANSI_COLOR_YELLOW "Getting sensor information..\n"ANSI_COLOR_RESET);
+        detect_sensors();
+        print_battery_information();
+    }
+    } else if(N_flag) {
+        printf(ANSI_COLOR_YELLOW "Getting network information\n" ANSI_COLOR_RESET);
+        network();
+        printf(ANSI_COLOR_YELLOW "Getting route information...\n" ANSI_COLOR_RESET);
+        route();
+        printf(ANSI_COLOR_YELLOW "checking for arp entries..\n" ANSI_COLOR_RESET);
+        arp();
+    }
+    // If no options are specified
+    else {
+        
+        systeminfo();
+    }
 
-        return 0;
+    return 0;
 }

@@ -196,6 +196,8 @@ static void print_disk_info() {
         }
         model[strlen(model) - 1] = '\0'; // remove \n 
         trim_whitespace(model);
+        if (strstr(paths[i],"nvme")) printf("NVMe ");
+        if (strstr(paths[i],"sda")) printf("SATA ");
         printf("%s ",model);
         fclose(fp);
         break;

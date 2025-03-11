@@ -124,7 +124,7 @@ static int count_flatpak_packages() {
 
 void package_manager() {
     // Print package counts for defined distros
-    #if defined(FLATPAK) || defined(GENTOO) || defined(DEBIAN) || defined(REDHAT) || defined(OPENSUSE)
+    #if defined(FLATPAK) || defined(GENTOO) || defined(DEBIAN) || defined(REDHAT) || defined(OPENSUSE) || defined(ARCH)
     printf(DEFAULT_COLOR "Packages:\t"ANSI_COLOR_RESET);
     #endif
 

@@ -68,17 +68,28 @@ static void get_shell_type(enum Shell *sh) {
     closedir(dp);
 }
 
+static inline void remove_trailing_symbols(char* version) {
+    int len = strlen(version);
+    // Iterate from the end of the string to find any unwanted characters.
+    while (len > 0 && (version[len - 1] == '\n' || version[len - 1] == '\r' || version[len - 1] == '\0' || ispunct(version[len - 1]))) {
+        version[len - 1] = '\0'; // Null-terminate at the found unwanted character.
+        len--; // Move to the previous character.
+    }
+}
+
 static void get_bash_version(char *version) {
     FILE *fp = popen("bash -i -c 'echo $BASH_VERSION'", "r");
     if (!fp) return;
-    if (fgets(version, VERSION_LEN, fp) != NULL) version[strcspn(version, "\n")] = '\0';
+    if (fgets(version, VERSION_LEN, fp) != NULL) 
+        remove_trailing_symbols(version);
     pclose(fp);
 }
 
 static void get_zsh_version(char *version) {
     FILE *fp = popen("zsh -i -c 'echo $ZSH_VERSION'", "r");
     if (!fp) return;
-    if (fgets(version, VERSION_LEN, fp) != NULL) version[strcspn(version, "\n")] = '\0';
+    if (fgets(version, VERSION_LEN, fp) != NULL) 
+        remove_trailing_symbols(version);
     pclose(fp);
 }
 
@@ -88,8 +99,10 @@ static void get_fish_version(char *version) {
         version[0] = '\0';
         return;
     }
-    if (fgets(version, VERSION_LEN, fp) != NULL)
+    if (fgets(version, VERSION_LEN, fp) != NULL) {
         version[strcspn(version, "\r\n")] = '\0';  // Remove newlines
+        remove_trailing_symbols(version);
+    }
     pclose(fp);
 }
 

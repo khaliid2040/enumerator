@@ -23,9 +23,19 @@ static void distro_name() {
             size_t len = strlen(name);
             if (name[len - 1] == '\n') name[len - 2] = '\0';
             if (name[len - 1] == '"') name[len - 1] = '\0'; 
-            printf("%s\n",name);
+            printf("%s ",name);
+        }
+        if (!strncmp(line,"VERSION=",8)) {
+            char *version = line + 8;  // Skip "VERSION="
+            // Remove leading and trailing quotes
+            if (version[0] == '"') version++;
+            size_t len = strlen(version);
+            if (version[len - 1] == '\n') version[len - 2] = '\0';
+            if (version[len - 1] == '"') version[len - 1] = '\0'; 
+            printf("%s",version);
         }
     }
+    printf("\n");
     free(line);
     fclose(file);
 }

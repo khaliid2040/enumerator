@@ -52,11 +52,11 @@ static int gentoo_pkgmgr() {
 static int count_dpkg_packages() {
     FILE *fp;
     char content[64];
-    unsigned int count=0;
-    fp = fopen("/var/lib/dpkg/status","r");
+    unsigned int count = 0;
+    fp = fopen("/var/lib/dpkg/status", "r");
     if (!fp) return 0;
-    while (fgets(content,sizeof(content),fp) != NULL) {
-        if (!strncmp(content,"Package:",8)) count++;
+    while (fgets(content, sizeof(content), fp)) {
+        if (!strncmp(content, "Status:", 7) && strstr(content, " installed")) count++;
     }
     fclose(fp);
     return count;
@@ -95,9 +95,9 @@ static int count_pacman_packages() {
     while ((entry = readdir(dir)) != NULL) {
         if (!strcmp(entry->d_name, ".") || !strcmp(entry->d_name, "..")) continue;
 
-        // Construct full path and check if it's a directory
-        snprintf(path, sizeof(path), "/var/lib/pacman/local/%s", entry->d_name);
-        if (stat(path, &st) == 0 && S_ISDIR(st.st_mode)) {
+        // Check if the package directory contains 'desc' (marker for valid packages)
+        snprintf(path, sizeof(path), "/var/lib/pacman/local/%s/desc", entry->d_name);
+        if (stat(path, &st) == 0 && S_ISREG(st.st_mode)) {
             count++;
         }
     }
@@ -105,6 +105,7 @@ static int count_pacman_packages() {
     closedir(dir);
     return count;
 }
+
 // Flatpak package manager
 static int count_flatpak_packages() {
     DIR *dir;
@@ -152,6 +153,10 @@ void package_manager() {
     #endif
 
     #ifdef FLATPAK
+    if (!flatpak) {
+        printf("\n");
+        return;
+    }
     printf("%d (flatpak)\n",flatpak);
     #else
     printf("\n");   

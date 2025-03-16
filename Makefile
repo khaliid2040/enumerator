@@ -20,25 +20,29 @@ EXECUTABLE = systeminfo
 
 # Object files
 OBJ_FILES = main.o \
-			$(OBJ_DIR_OS)/process.o $(OBJ_DIR_UTILS)/utils.o $(OBJ_DIR_OS)/desktop.o \
+			$(OBJ_DIR_OS)/process.o $(OBJ_DIR_OS)/desktop.o \
 			$(OBJ_DIR_OS)/security.o $(OBJ_DIR_OS)/packages.o $(OBJ_DIR_OS)/shell.o \
 			$(OBJ_DIR_NET)/network.o $(OBJ_DIR_NET)/arp.o $(OBJ_DIR_NET)/route.o \
 			$(OBJ_DIR_SYSTEM)/cpuinfo.o $(OBJ_DIR_SYSTEM)/memory.o $(OBJ_DIR_SYSTEM)/storage.o $(OBJ_DIR_SYSTEM)/display.o \
-			$(OBJ_DIR_SYSTEM)/pci.o $(OBJ_DIR_SYSTEM)/power.o $(OBJ_DIR_SYSTEM)/system.o $(OBJ_DIR_SYSTEM)/virt.o
+			$(OBJ_DIR_SYSTEM)/pci.o $(OBJ_DIR_SYSTEM)/power.o $(OBJ_DIR_SYSTEM)/system.o $(OBJ_DIR_SYSTEM)/virt.o\
+			$(OBJ_DIR_UTILS)/utils.o $(OBJ_DIR_UTILS)/pager.o
 
 # Verbosity flag for cleaner output
 V ?= 0
 
 # Main target to build the executable
 $(EXECUTABLE): $(OBJ_FILES)
-	@if [ $(V) -eq 1 ]; then echo "CC -o $@ $(OBJ_FILES) $(LDFLAGS)"; else echo "LD   $@"; fi
+	@if [ $(V) -eq 1 ]; then echo "LD -o $@ $(OBJ_FILES) $(LDFLAGS)"; else echo "LD   $@"; fi
 	@$(CC) -o $@ $(OBJ_FILES) $(LDFLAGS)
 
 # Compile object files from the extra directory
 $(OBJ_DIR_OS)/%.o: $(SRC_DIR_OS)/%.c main.h | $(OBJ_DIR_OS)
 	@if [ $(V) -eq 1 ]; then echo "CC -c -o $@ $< $(CFLAGS)"; else echo "CC   $@"; fi
 	@$(CC) -c -o $@ $< $(CFLAGS)
-
+# Compile object files from the utils directory
+$(OBJ_DIR_UTILS)/%.o: $(SRC_DIR_UTILS)/%.c main.h | $(OBJ_DIR_UTILS)
+	@if [ $(V) -eq 1 ]; then echo "CC -c -o $@ $< $(CFLAGS)"; else echo "CC   $@"; fi
+	@$(CC) -c -o $@ $< $(CFLAGS)
 # Compile object files from the net directory
 $(OBJ_DIR_NET)/%.o: $(SRC_DIR_NET)/%.c main.h | $(OBJ_DIR_NET)
 	@if [ $(V) -eq 1 ]; then echo "CC -c -o $@ $< $(CFLAGS)"; else echo "CC   $@"; fi
@@ -85,4 +89,5 @@ clean:
 	rm -rf $(OBJ_DIR_OS)/*.o
 	rm -rf $(OBJ_DIR_NET)/*.o
 	rm -rf $(OBJ_DIR_SYSTEM)/*.o
+	rm -rf $(OBJ_DIR_UTILS)/*.o
 	rm -f *.o config.mk $(EXECUTABLE) patch 

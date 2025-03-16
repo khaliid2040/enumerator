@@ -85,5 +85,4 @@ clean:
 	rm -rf $(OBJ_DIR_OS)/*.o
 	rm -rf $(OBJ_DIR_NET)/*.o
 	rm -rf $(OBJ_DIR_SYSTEM)/*.o
-	rm -rf $(OBJ_DIR_UTILS)/*.o
 	rm -f *.o config.mk $(EXECUTABLE) patch 

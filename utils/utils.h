@@ -11,6 +11,8 @@
 */
 int process_file(const char *path, const char *filename);
 
+extern FILE* _pager;
+void start_pager();
 /**
  * @brief Checks if the current process is being debugged.
  * @return true if the process is being debugged, false otherwise.
@@ -19,12 +21,20 @@ bool is_debugger_present();
 //used by main.c:Systeminfo
 int is_pid_directory(const char *name);
 
-//load specified library on library argument and search for symbol then modify the 
-//pointer that is being pointed to point executable entry of the function then return the handle
-//obtained from dlopen
+/**
+ * @brief load specified library into program address space
+ * @param library path to the library
+ * @param symbol symbol to load from the library
+ * @param function pointer to the function
+ * @return handle to the library if successful, NULL otherwise, caller should call dlclose to free resources
+ */
 void* load_library(const char *library, const char* symbol, void **function);
 
-//determine if i directory is empty extensively used on sysfs directories
+/**
+ * @brief Check if a directory is empty
+ * @param path path to the directory
+ * @return true if the directory is empty, false otherwise
+ */
 bool is_directory_empty(const char *path);
 
 #ifdef LIBPCI

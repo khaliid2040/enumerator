@@ -48,7 +48,7 @@ struct cpu_times {
 };
 
 void getProcessInfo(int pid,unsigned int interval);
-
+void get_process_id(const char *name,unsigned int interval);
 int is_pid_directory(const char *name);
 
 //total cpu time

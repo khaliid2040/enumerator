@@ -3,11 +3,14 @@ ifneq ($(wildcard config.mk),)
     include config.mk
 endif
 # Directories for source and object files
-SRC_DIR_EXTRA = extra
+SRC_DIR_OS = os
 SRC_DIR_NET = net
+SRC_DIR_UTILS = utils
 SRC_DIR_SYSTEM = system
-OBJ_DIR_EXTRA = extra
+
+OBJ_DIR_OS = os
 OBJ_DIR_NET = net
+OBJ_DIR_UTILS = utils
 OBJ_DIR_SYSTEM = system
 
 BIN_DIR = ~/.local/bin
@@ -17,8 +20,8 @@ EXECUTABLE = systeminfo
 
 # Object files
 OBJ_FILES = main.o \
-			$(OBJ_DIR_EXTRA)/process.o $(OBJ_DIR_EXTRA)/utils.o $(OBJ_DIR_EXTRA)/desktop.o \
-			$(OBJ_DIR_EXTRA)/security.o $(OBJ_DIR_EXTRA)/packages.o $(OBJ_DIR_EXTRA)/shell.o \
+			$(OBJ_DIR_OS)/process.o $(OBJ_DIR_UTILS)/utils.o $(OBJ_DIR_OS)/desktop.o \
+			$(OBJ_DIR_OS)/security.o $(OBJ_DIR_OS)/packages.o $(OBJ_DIR_OS)/shell.o \
 			$(OBJ_DIR_NET)/network.o $(OBJ_DIR_NET)/arp.o $(OBJ_DIR_NET)/route.o \
 			$(OBJ_DIR_SYSTEM)/cpuinfo.o $(OBJ_DIR_SYSTEM)/memory.o $(OBJ_DIR_SYSTEM)/storage.o $(OBJ_DIR_SYSTEM)/display.o \
 			$(OBJ_DIR_SYSTEM)/pci.o $(OBJ_DIR_SYSTEM)/power.o $(OBJ_DIR_SYSTEM)/system.o $(OBJ_DIR_SYSTEM)/virt.o
@@ -32,7 +35,7 @@ $(EXECUTABLE): $(OBJ_FILES)
 	@$(CC) -o $@ $(OBJ_FILES) $(LDFLAGS)
 
 # Compile object files from the extra directory
-$(OBJ_DIR_EXTRA)/%.o: $(SRC_DIR_EXTRA)/%.c main.h | $(OBJ_DIR_EXTRA)
+$(OBJ_DIR_OS)/%.o: $(SRC_DIR_OS)/%.c main.h | $(OBJ_DIR_OS)
 	@if [ $(V) -eq 1 ]; then echo "CC -c -o $@ $< $(CFLAGS)"; else echo "CC   $@"; fi
 	@$(CC) -c -o $@ $< $(CFLAGS)
 
@@ -79,7 +82,7 @@ help:
 
 # Clean up build files
 clean:
-	rm -rf $(OBJ_DIR_EXTRA)/*.o
+	rm -rf $(OBJ_DIR_OS)/*.o
 	rm -rf $(OBJ_DIR_NET)/*.o
 	rm -rf $(OBJ_DIR_SYSTEM)/*.o
 	rm -f *.o config.mk $(EXECUTABLE) patch 

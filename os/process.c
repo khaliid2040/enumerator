@@ -392,7 +392,7 @@ void getProcessInfo(int pid, unsigned int interval) {
         }
         int stat = readProcessStats(pid, &info);
         if (stat == -1) {
-            fprintf(stderr, ANSI_COLOR_RED "Process %d not found\n" ANSI_COLOR_RESET, pid);
+            fprintf(stderr, ANSI_COLOR_RED "Error: Process %d not found\n" ANSI_COLOR_RESET, pid);
             return;
         } else if (stat == 1) {
             fprintf(stderr, "Failed to get parent process command\n");
@@ -435,4 +435,36 @@ void getProcessInfo(int pid, unsigned int interval) {
     }
 
     printProcessInfo(&info, pid);
+}
+
+
+void get_process_id(const char *name,unsigned int interval) {
+    struct dirent *entry;
+    DIR *dir;
+    char path[MAX_PATH];
+    unsigned int pid = 0;
+    dir = opendir("/proc");
+    if (!dir) return;
+    while ((entry = readdir(dir)) != NULL) {
+        if (!is_pid_directory(entry->d_name)) continue;
+        snprintf(path, sizeof(path), "/proc/%s/comm", entry->d_name);
+        FILE *file = fopen(path, "r");
+        if (!file) continue;
+        char comm[MAX_LINE_LENGTH];
+        if (fgets(comm, sizeof(comm), file) == NULL) {
+            fclose(file);
+            continue;
+        }
+        fclose(file);
+        if (strncmp(comm, name, strlen(name)) == 0) {
+            pid = atoi(entry->d_name);
+            break;
+        }
+    }
+    closedir(dir);
+    if (pid == 0) {
+        fprintf(stderr, ANSI_COLOR_RED "Error: process %s not found\n" ANSI_COLOR_RESET, name);
+        return;
+    }
+    getProcessInfo(pid,interval);
 }

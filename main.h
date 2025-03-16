@@ -68,12 +68,12 @@ typedef unsigned long page_t;
 
 // local headers in include directory
 //#include "include/common.h"
-#include "include/cpuinfo.h"
-#include "include/process.h"
-#include "include/system.h"
-#include "include/utils.h"
-#include "include/pci.h"
-#include "include/desktop.h"
+#include "system/cpuinfo.h"
+#include "system/pci.h"
+#include "os/process.h"
+#include "os/desktop.h"
+#include "system/system.h"
+#include "utils/utils.h"
 
 int GetSecureBootStatus(void);
 void LinuxSecurityModule();

@@ -224,9 +224,8 @@ static void hwmon() {
                         }
                         printf(DEFAULT_COLOR "%-10s:\t\t%.1f °C "ANSI_COLOR_RESET,contents,cur_temp);
                     }
-                   }
                     fclose(label);
-                    //printf("%.1f °C  ",cur_temp);
+                   } 
                 }
                 fclose(tem);    
                 snprintf(path,SIZE,"/sys/class/hwmon/%s/temp%d_crit",entry->d_name,i);

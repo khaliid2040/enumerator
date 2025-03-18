@@ -509,7 +509,7 @@ int main(int argc, char *argv[]) {
             detect_sensors();
             print_battery_information();
         }
-        pclose(_pager);
+        stop_pager();
     } else if (N_flag) {
         printf(ANSI_COLOR_YELLOW "Getting network information\n" ANSI_COLOR_RESET);
         network();

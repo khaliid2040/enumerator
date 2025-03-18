@@ -15,34 +15,46 @@ declare -A THEMES=(
     ["magenta"]="-DMAGENTA"
 )
 
-# Letting the user choose a theme to compile with
-if [ "$1" == "--color" ]; then
-    if [[ -v THEMES[$2] ]]; then
-        CFLAGS+=" ${THEMES[$2]}"
-        echo -e "Theme $2: ${GREEN}OK${NC}"
-    else
-        CFLAGS+="-DDEFAULT"
-        echo -e "Theme $2: ${RED}Unsupported${NC}"
-        echo -e "${YELLOW}Warning: color defaulting to green light${NC}"
-    fi
-fi
-# enable debugging by tunning compiler debugging optimization
-# and debugging symbols
-# Enable debugging by tuning compiler debugging optimization and debugging symbols
-if [ "$1" == "--debug" ] || [ "$1" == "-d" ]; then 
-    echo -e "Debugging: ${GREEN}ON${NC}"
-    CFLAGS+=" -Og -g -DDEBUG"
-    if [ "$2" == "--sanitize" ] || [ "$2" == "-s" ]; then
-        CFLAGS+=" -fsanitize=address"
-        LDFLAGS+=" -fsanitize=address"
-        echo -e "Sanitizer: ${GREEN}ON${NC}"
-    else 
-        echo -e "Sanitizer: ${RED}OFF${NC}"
-    fi
-else 
+# Usage function
+usage() {
+    echo "Usage: $0 [-c <color>] [-d] [-s]"
+    exit 1
+}
+
+# Parse command-line arguments
+while getopts "c:ds" opt; do
+    case "$opt" in
+        c)
+            if [[ -v THEMES[${OPTARG}] ]]; then
+                CFLAGS+=" ${THEMES[${OPTARG}]}"
+                echo -e "Theme ${OPTARG}: ${GREEN}OK${NC}"
+            else
+                CFLAGS+=" -DDEFAULT"
+                echo -e "Theme ${OPTARG}: ${RED}Unsupported${NC}"
+                echo -e "${YELLOW}Warning: color defaulting to green light${NC}"
+            fi
+            ;;
+        d)
+            echo -e "Debugging: ${GREEN}ON${NC}"
+            CFLAGS+=" -Og -g -DDEBUG"
+            ;;
+        s)
+            CFLAGS+=" -fsanitize=address -fsanitize=leak -fsanitize=undefined -fanalyzer -Wno-analyzer-use-of-uninitialized-value"
+            LDFLAGS+=" -fsanitize=address -fsanitize=leak -fsanitize=undefined"
+            echo -e "Sanitizer: ${GREEN}ON${NC}"
+            ;;
+        *)
+            usage
+            ;;
+    esac
+done
+
+# Default optimizations if debugging is off
+if [[ ! $CFLAGS =~ "-DDEBUG" ]]; then
     CFLAGS+=" -O2"
-    LDFLAGS+=" -flto" # Link time optimization
+    LDFLAGS+=" -flto"
 fi
+
 # Libraries to check
 LIBS=("libudev" "libsystemd" "libwayland")
 LIBPCI="libpci"
@@ -80,7 +92,7 @@ for LIB in "${LIBS[@]}"; do
     esac
 done
 
-# detect selinux differently
+# Detect security modules
 if [ -d "/sys/fs/selinux" ]; then
     CFLAGS+=" -DSELINUX_H"
 fi
@@ -124,6 +136,7 @@ elif [ -f /usr/bin/emerge ]; then
 else
     echo -e "${RED}Distribution unsupported${NC}"
 fi
+
 # Check for Flatpak
 if [ -f /usr/bin/flatpak ]; then
     CFLAGS+=" -DFLATPAK"

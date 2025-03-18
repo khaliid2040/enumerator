@@ -12,6 +12,13 @@
 int process_file(const char *path, const char *filename);
 
 extern FILE* _pager;
+static inline void stop_pager() {
+    if (_pager) {
+        pclose(_pager);
+        _pager = NULL;
+    }
+}
+
 void start_pager();
 /**
  * @brief Checks if the current process is being debugged.

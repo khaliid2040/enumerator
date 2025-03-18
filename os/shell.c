@@ -23,6 +23,7 @@ static int get_shell_type_comm(enum Shell *sh) {
     } else { // like if we run on sudo
         return -1;
     }
+    return 0;
 }
 
 static void get_shell_type(enum Shell *sh) {

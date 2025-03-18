@@ -1,6 +1,6 @@
 #include "../main.h"
 
-FILE* _pager=NULL;
+FILE* _pager = NULL;
 
 static FILE *open_pager() {
     char command[64];
@@ -23,7 +23,11 @@ void start_pager() {
     if (!pager) {
         return;
     }
-    _pager=pager;
+    _pager = pager;
+
+    // print the initial message inside the pager
+    fprintf(pager, ANSI_COLOR_GREEN "System enumeration\n" ANSI_COLOR_RESET);
+    fflush(pager);
     // Redirect stdout to the pager
     int pager_fd = fileno(pager);
     if (pager_fd == -1) {

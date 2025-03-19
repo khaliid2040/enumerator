@@ -8,15 +8,15 @@
 struct output_info out_info; 
 // Global variables
 static struct wl_display *display;
-static struct wl_registry *registry;
-static struct wl_output *output = NULL;
+static struct wl_registry *_registry;
+static struct wl_output *_output = NULL;
 #ifdef LIBWAYLAND
 // Callback when the compositor announces a new `wl_output` object
 static void registry_handler(void *data, struct wl_registry *registry, uint32_t id,
                              const char *interface, uint32_t version) {
     if (strcmp(interface, "wl_output") == 0)
         // Bind to the wl_output object
-        output = wl_registry_bind(registry, id, &wl_output_interface, version);
+        _output = wl_registry_bind(_registry, id, &wl_output_interface, version);
 }
 
 // Define the registry listener
@@ -77,14 +77,14 @@ static int Detect_display_wayland() {
         }
     
         // Get the registry object and add the registry listener
-        registry = wl_display_get_registry(display);
-        if (!registry) {
+        _registry = wl_display_get_registry(display);
+        if (!_registry) {
             fprintf(stderr, "Failed to get registry\n");
             wl_display_disconnect(display);
             return -1;
         }
         
-        wl_registry_add_listener(registry, &registry_listener, NULL);
+        wl_registry_add_listener(_registry, &registry_listener, NULL);
     
         // Dispatch events to populate the global objects
         int ret = wl_display_dispatch(display);
@@ -95,8 +95,8 @@ static int Detect_display_wayland() {
         }
     
         // Add listener to the wl_output object if it was found
-        if (output) {
-            wl_output_add_listener(output, &output_listener, NULL);
+        if (_output) {
+            wl_output_add_listener(_output, &output_listener, NULL);
             // Dispatch events to receive output device information
             ret = wl_display_dispatch(display);
             if (ret == -1) {
@@ -107,7 +107,7 @@ static int Detect_display_wayland() {
         } else {
             fprintf(stderr, "No output device found\n");
         }
-        wl_registry_destroy(registry);
+        wl_registry_destroy(_registry);
         wl_display_disconnect(display);
         return 0;
 }

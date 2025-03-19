@@ -20,7 +20,7 @@ static void distro_name() {
             char *name = line + 5;  // Skip "NAME="
             // Remove leading and trailing quotes
             if (name[0] == '"') name++;
-            size_t len = strlen(name);
+            len = strlen(name);
             if (name[len - 1] == '\n') name[len - 2] = '\0';
             if (name[len - 1] == '"') name[len - 1] = '\0'; 
             printf("%s ",name);
@@ -29,7 +29,7 @@ static void distro_name() {
             char *version = line + 8;  // Skip "VERSION="
             // Remove leading and trailing quotes
             if (version[0] == '"') version++;
-            size_t len = strlen(version);
+            len = strlen(version);
             if (version[len - 1] == '\n') version[len - 2] = '\0';
             if (version[len - 1] == '"') version[len - 1] = '\0'; 
             printf("%s",version);

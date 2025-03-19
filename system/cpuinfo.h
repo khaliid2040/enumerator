@@ -39,7 +39,7 @@ typedef enum {
 } Virtualization;
 Virtualization detect_hypervisor();
 //detect if we run on vm or not if we run return true if not return false
-static inline bool is_hypervisor_present() {
+static bool inline is_hypervisor_present() {
     unsigned int eax,ebx,ecx,edx;
     __get_cpuid(1,&eax,&ebx,&ecx,&edx);
     if (ecx & (1U << 31)) return true;

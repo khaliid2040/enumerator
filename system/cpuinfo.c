@@ -25,19 +25,19 @@ static void cpuid() {
             "MMX", "FXSR", "SSE", "SSE2", "SS"};
             // Check for features in EDX
             printf(DEFAULT_COLOR "Supported features:\t"ANSI_COLOR_RESET);
-            for (int j = 0; j < 32; j++) {
-                if ((edx >> j) & 1) {
-                    if (j < (sizeof(feature_names) / sizeof(feature_names[0]))) {
-                        printf("%s ", feature_names[j]);
+            for (int i = 0; i < 32; i++) {
+                if ((edx >> i) & 1) {
+                    if (i < (sizeof(feature_names) / sizeof(feature_names[0]))) {
+                        printf("%s ", feature_names[i]);
                     }
                 }
             }
             //array of integers of correspond to simd instruction
             const int simd[]= {0,19,20};
             const char *simd_features[  ]= {"SSE3","SSE4.1","SSE4.2"};
-            for (int j=0; j<3; j++) {
-                if (ecx & ( 1 << simd[j])) {
-                    printf("%s  ", simd_features[j]); 
+            for (int i=0; i<3; i++) {
+                if (ecx & ( 1 << simd[i])) {
+                    printf("%s  ", simd_features[i]); 
                 }
             }
                 // now for hyperthreading and simulatanous threading
@@ -362,6 +362,7 @@ void cpuinfo() {
 }
 
 static void print_cache_info(int cores) {
+    unsigned int eax, ebx, ecx, edx;
     unsigned int cache_count = 0;
     unsigned int cache_type, cache_level, cache_size;
     unsigned int ways, partitions, line_size, sets;

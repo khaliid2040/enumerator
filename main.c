@@ -511,12 +511,14 @@ int main(int argc, char *argv[]) {
         }
         stop_pager();
     } else if (N_flag) {
+        start_pager();
         printf(ANSI_COLOR_YELLOW "Getting network information\n" ANSI_COLOR_RESET);
         network();
         printf(ANSI_COLOR_YELLOW "Getting route information...\n" ANSI_COLOR_RESET);
         route();
         printf(ANSI_COLOR_YELLOW "checking for arp entries..\n" ANSI_COLOR_RESET);
         arp();
+        stop_pager();
     }
     // If no options are specified
     else {

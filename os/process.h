@@ -48,6 +48,12 @@ struct cpu_times {
 };
 
 void getProcessInfo(int pid,unsigned int interval);
+/**
+ * @brief if a process name supplied instead of process id then convert it to pid by searching for 
+ *        process with matching  pid
+ * @param name the process name to be searched 
+ * @param interval if interval is specified then supplied it can be zero
+ */
 void get_process_id(const char *name,unsigned int interval);
 int is_pid_directory(const char *name);
 

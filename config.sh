@@ -51,7 +51,7 @@ done
 
 # Default optimizations if debugging is off
 if [[ ! $CFLAGS =~ "-DDEBUG" ]]; then
-    CFLAGS+=" -O2"
+    CFLAGS+=" -O2 -Werror"
     LDFLAGS+=" -flto"
 fi
 

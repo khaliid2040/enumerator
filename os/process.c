@@ -334,7 +334,7 @@ static void printProcessInfo(const ProcessInfo *info,int pid) {
     printf(DEFAULT_COLOR "CPU Time Percentage:\t\t\t" ANSI_COLOR_RESET "%.2f %%\n", info->cpu_time_percent);
     printf(DEFAULT_COLOR "User Mode CPU Time Percentage:\t\t" ANSI_COLOR_RESET "%.2f %%\n", info->user_mode_percent);
     printf(DEFAULT_COLOR "System Mode CPU Time Percentage:\t" ANSI_COLOR_RESET "%.2f %%\n", info->system_mode_percent);
-    printf(ANSI_COLOR_YELLOW "Getting process virtual address\n" ANSI_COLOR_RESET);
+    printf(ANSI_COLOR_YELLOW "Getting process virtual memory\n" ANSI_COLOR_RESET);
     printf("%s\t\t%s\t\t%s\t%s\n", "Total", "Shared", "Resident", "Dirty");
     printf("%lu %s\t\t%lu %s\t\t%lu %s\t\t%lu %s\n", total, unit[0], shared, unit[1], resident, unit[2], dirty, unit[3]);
 
@@ -373,6 +373,9 @@ static int processinfo_interval(int pid, time_t seconds, ProcessInfo *info,struc
     info->majrflt = after.majrflt;
     info->minflt = after.minflt;
     info->starttime = after.starttime;
+    //context switches
+    info->voluntary_ctxt_switches = after.voluntary_ctxt_switches - before.voluntary_ctxt_switches;
+    info->nonvoluntary_ctxt_switches = after.nonvoluntary_ctxt_switches - before.nonvoluntary_ctxt_switches;
     info->priority = process_getpriority(PRIO_PROCESS,pid);
     strncpy(info->comm,after.comm,sizeof(info->comm));
     strncpy(info->pcomm,after.pcomm,sizeof(info->pcomm));
@@ -437,8 +440,7 @@ void getProcessInfo(int pid, unsigned int interval) {
     printProcessInfo(&info, pid);
 }
 
-
-void get_process_id(const char *name,unsigned int interval) {
+void get_process_id(const char *name, unsigned int interval) {
     struct dirent *entry;
     DIR *dir;
     char path[MAX_PATH];

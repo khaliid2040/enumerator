@@ -67,7 +67,6 @@ typedef unsigned long page_t;
 #endif
 
 // local headers in include directory
-//#include "include/common.h"
 #include "system/cpuinfo.h"
 #include "system/pci.h"
 #include "os/process.h"

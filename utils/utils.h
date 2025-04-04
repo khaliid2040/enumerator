@@ -1,8 +1,6 @@
 #ifndef UTILS_H
 #define UTILS_H
 #include "../main.h"
-#include <sys/wait.h>
-#include <wait.h>
 
 #define LENGTH 1024 //used by get_pci_info
 /*
@@ -11,15 +9,6 @@
 */
 int process_file(const char *path, const char *filename);
 
-extern FILE* _pager;
-static inline void stop_pager() {
-    if (_pager) {
-        pclose(_pager);
-        _pager = NULL;
-    }
-}
-
-void start_pager();
 /**
  * @brief Checks if the current process is being debugged.
  * @return true if the process is being debugged, false otherwise.

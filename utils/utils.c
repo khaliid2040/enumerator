@@ -2,7 +2,7 @@
 
 #define LENGTH 1024 //used by get_pci_info
 int process_file(const char *path, const char *filename) {
-    printf(DEFAULT_COLOR "%-20s: " ANSI_COLOR_RESET, filename);
+    printf(DEFAULT_COLOR "%-30s: " ANSI_COLOR_RESET, filename);
     FILE *file = fopen(path, "r");
     char file_buff[MAX_LINE_LENGTH];
     if (!file) {

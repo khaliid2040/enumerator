@@ -220,7 +220,25 @@ static int get_ctxt_switches(ProcessInfo *info,int pid) {
     fclose(fp);
     return 0;
 }
-// get real, effected user id return 2 if succeed
+
+static void get_user_group_names(struct user_info *user) {
+    struct passwd *pwd;
+    struct group *grp;
+
+    pwd = getpwuid(user->uid);
+    if (pwd) strncpy(user->uid_name, pwd->pw_name, sizeof(user->uid_name));
+    pwd = getpwuid(user->euid);
+    if (pwd) strncpy(user->euid_name, pwd->pw_name, sizeof(user->euid_name));
+    pwd = getpwuid(user->ruid);
+    if (pwd) strncpy(user->ruid_name, pwd->pw_name, sizeof(user->ruid_name));
+
+    grp = getgrgid(user->gid);
+    if (grp) strncpy(user->gid_name, grp->gr_name, sizeof(user->gid_name));
+    grp = getgrgid(user->egid);
+    if (grp) strncpy(user->egid_name, grp->gr_name, sizeof(user->egid_name));
+    grp = getgrgid(user->rgid);
+    if (grp) strncpy(user->rgid_name, grp->gr_name, sizeof(user->rgid_name));
+}
 static void get_uid_gid(ProcessInfo *info,int pid) {
     char path[64],contents[64];
     snprintf(path,sizeof(path),"/proc/%d/status",pid);
@@ -230,18 +248,23 @@ static void get_uid_gid(ProcessInfo *info,int pid) {
     while (fgets(contents,sizeof(contents),fp) != NULL) {
         if (!strncmp(contents, "Uid:", 4)) {
             // Parse Uid: line, which might have tabs or spaces
-            if (sscanf(contents, "Uid:%d\t%d\t%d", &info->uid,&info->euid,&info->ruid) == 3) {
+            if (sscanf(contents, "Uid:%d\t%d\t%d", &info->user.uid,
+                                                   &info->user.euid,
+                                                   &info->user.ruid) == 3) {
                 continue;
             } 
         }
 		if (!strncmp(contents,"Gid:",4)) {
-			if (sscanf(contents,"Gid:%d\t%d\t%d\t", &info->gid, &info->egid,&info->rgid) != 3) {
+			if (sscanf(contents,"Gid:%d\t%d\t%d\t", &info->user.gid,
+                                                    &info->user.egid,
+                                                    &info->user.rgid) != 3) {
 				continue;
 			}
 			break;
 		}
     }
     fclose(fp);
+    get_user_group_names(&info->user);
 }
 //either uptime or cpu_times structure should be supplied
 //if both of them supplied then cpu_times will take the priority so if you want calculation to be based on
@@ -301,6 +324,15 @@ static void calculateCPUInfo(ProcessInfo *info, double uptime, struct cpu_times 
     dlclose(handle);
 }
 
+static inline void print_user_group_process(const ProcessInfo *info) {
+    printf(DEFAULT_COLOR "Uid/euid/uid\t\t\t\t"ANSI_COLOR_RESET "%u (%s)\t%u (%s)\t%u (%s)\t\n",info->user.uid,info->user.uid_name,
+                                                                                     info->user.euid,info->user.euid_name,
+                                                                                     info->user.ruid,info->user.ruid_name);
+    printf(DEFAULT_COLOR "Gid/egid/rgid\t\t\t\t" ANSI_COLOR_RESET "%u (%s)\t%u (%s)\t%u (%s)\t\n" ,info->user.gid,info->user.gid_name,
+                                                                                     info->user.egid,info->user.egid_name,
+                                                                                     info->user.rgid,info->user.rgid_name);  
+}
+
 static void printProcessInfo(const ProcessInfo *info,int pid) {
     long page_size = sysconf(_SC_PAGE_SIZE) / 1024; // Page size in KiB
     char unit[4][4];
@@ -326,8 +358,7 @@ static void printProcessInfo(const ProcessInfo *info,int pid) {
     printf(DEFAULT_COLOR "Parent process:\t\t\t\t"ANSI_COLOR_RESET "%d(%s)\n",info->ppid,info->pcomm);
     printf(DEFAULT_COLOR "priority:\t\t\t\t"ANSI_COLOR_RESET "%d\n",info->priority);
     printf(DEFAULT_COLOR "Cgroup slice:\t\t\t\t" ANSI_COLOR_RESET "%s", info->cgroup);
-    printf(DEFAULT_COLOR "Uid/euid/uid\t\t\t\t"ANSI_COLOR_RESET "%u\t%u\t%u\t\n",info->uid,info->euid,info->ruid);
-    printf(DEFAULT_COLOR "Gid/egid/rgid\t\t\t\t" ANSI_COLOR_RESET "%u\t%u\t%u\t\n" ,info->gid,info->egid,info->rgid);
+    print_user_group_process(info); // ommited for now readability purpose
     printf(DEFAULT_COLOR "major/minor page faults:\t\t"ANSI_COLOR_RESET "%ld/%ld\n",info->majrflt,info->minflt);
     printf(DEFAULT_COLOR "Context switches:\t\t\t"ANSI_COLOR_RESET "voluntary=%d nonvoluntary=%d\n",info->voluntary_ctxt_switches,info->nonvoluntary_ctxt_switches);
     printf(DEFAULT_COLOR "Total CPU Time:\t\t\t\t" ANSI_COLOR_RESET "%.2f %s\n", info->total_cpu_time,info->time_unit);

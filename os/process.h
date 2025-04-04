@@ -3,8 +3,27 @@
 #include "../main.h"
 #include <time.h>
 
+
 //structure filled with data specific to process id
-// Function to get and print process info
+
+struct user_info {
+    uid_t uid; // user id
+    uid_t euid; // effective user id
+    uid_t ruid; // real user id
+
+    gid_t gid; // group id  
+    gid_t egid; // effective group id
+    gid_t rgid; // real group id
+
+    char uid_name[32]; // user name of the corresponding uid
+    char euid_name[32];
+    char ruid_name[32];
+
+    char gid_name[32];
+    char egid_name[32];
+    char rgid_name[32];
+};
+
 typedef struct {
     unsigned long utime;
     unsigned long stime;
@@ -29,8 +48,7 @@ typedef struct {
     double cpu_time_percent;
     double user_mode_percent;
     double system_mode_percent;
-    int uid,euid,ruid;
-    int gid,egid,rgid;
+    struct user_info user;
 } ProcessInfo;
 
 struct cpu_times {

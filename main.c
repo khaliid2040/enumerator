@@ -1,7 +1,6 @@
 #include <sys/utsname.h>
 #include <sys/types.h>
 #include <ctype.h>
-#include <grp.h>    
 #include "main.h"
 
 // get the distribution name
@@ -423,17 +422,24 @@ static void help() {
 }
 
 int main(int argc, char *argv[]) {
-    printf(ANSI_COLOR_GREEN "system enumeration\n" ANSI_COLOR_RESET);
+    print_pager(stdout, ANSI_COLOR_GREEN "System enumeration\n" ANSI_COLOR_RESET);
     int opt, H_flag = 0, N_flag = 0, P_flag = 0, E_flag = 0, interv_flag = 0, C_flag = 0;
     int p_value = 0, interval = 0;
     char *process = NULL;
 
     // Parse command line options
-    while ((opt = getopt(argc, argv, "p:c:i:Hnh")) != -1) {
+    while ((opt = getopt(argc, argv, "p::c:i:Hnh")) != -1) {
         switch (opt) {
             case 'p':
                 P_flag = 1;
-                p_value = atoi(optarg);
+                if (optarg) {
+                    p_value = atoi(optarg);
+                } else if (optind < argc && argv[optind][0] != '-') {
+                    p_value = atoi(argv[optind]);
+                    optind++;
+                } else {
+                    p_value = 0;
+                }
                 break;
             case 'c':
                 if (P_flag) {

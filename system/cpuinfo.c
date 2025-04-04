@@ -299,7 +299,47 @@ static int get_cpu_sockets() {
     sockets = atoi(buffer);
     return sockets +1;
 }
-static void print_cache_info(int cores);
+
+static void print_cache_info(int cores) {
+    unsigned int cache_count = 0;
+    unsigned int cache_type, cache_level, cache_size;
+    unsigned int ways, partitions, line_size, sets;
+    unsigned int cache_sharing;
+    char unit[4];
+
+    while (1) {
+        #if defined(__x86_64) || defined(__i386__)
+        __cpuid_count(0x4, cache_count, eax, ebx, ecx, edx);
+        #endif
+        cache_type = eax & 0x1F;
+        if (cache_type == 0) {
+            break;
+        }
+        cache_level = (eax >> 5) & 0x7;       // Bits 5-7: Cache level (L1, L2, L3, etc.)
+        ways = ((ebx >> 22) & 0x3FF) + 1;
+        partitions = ((ebx >> 12) & 0x3FF) + 1;
+        line_size = (ebx & 0xFFF) + 1;
+        sets = ecx + 1;
+        cache_size = ways * partitions * line_size * sets;
+        cache_size /= 1024;
+        cache_sharing = ((eax >> 14) & 0xfff);
+        if (cache_sharing == 0) cache_sharing = cores;
+        if (cache_sharing == 0) cache_sharing = 1;
+        unsigned int instance = cores / cache_sharing;
+        if (instance == 0) instance = 1;
+
+        double converted_size = convert_size_unit((double)cache_size * instance, unit, sizeof(unit));
+
+        printf(DEFAULT_COLOR "\nCache L%d:\t\t" ANSI_COLOR_RESET "type: %s\n\t\t\tsize: %.1f %s\n\t\t\tinstances: %d\n\t\t\tAssociativity: %d-ways\n", cache_level,
+                cache_type == 1 ? "Data cache" :
+                cache_type == 2 ? "Instruction cache" :
+                cache_type == 3 ? "Unified cache" : "Unknown",
+                converted_size, unit, instance, ways);
+
+        cache_count++;
+    }
+}
+
 void cpuinfo() {
     printf(ANSI_COLOR_YELLOW "getting processor information\n" ANSI_COLOR_RESET);
 
@@ -361,42 +401,3 @@ void cpuinfo() {
     cpu_vulnerabilities();
 }
 
-static void print_cache_info(int cores) {
-    unsigned int cache_count = 0;
-    unsigned int cache_type, cache_level, cache_size;
-    unsigned int ways, partitions, line_size, sets;
-    unsigned int cache_sharing;
-    char unit[4];
-
-    while (1) {
-        #if defined(__x86_64) || defined(__i386__)
-        __cpuid_count(0x4, cache_count, eax, ebx, ecx, edx);
-        #endif
-        cache_type = eax & 0x1F;
-        if (cache_type == 0) {
-            break;
-        }
-        cache_level = (eax >> 5) & 0x7;       // Bits 5-7: Cache level (L1, L2, L3, etc.)
-        ways = ((ebx >> 22) & 0x3FF) + 1;
-        partitions = ((ebx >> 12) & 0x3FF) + 1;
-        line_size = (ebx & 0xFFF) + 1;
-        sets = ecx + 1;
-        cache_size = ways * partitions * line_size * sets;
-        cache_size /= 1024;
-        cache_sharing = ((eax >> 14) & 0xfff);
-        if (cache_sharing == 0) cache_sharing = cores;
-        if (cache_sharing == 0) cache_sharing = 1;
-        unsigned int instance = cores / cache_sharing;
-        if (instance == 0) instance = 1;
-
-        double converted_size = convert_size_unit((double)cache_size * instance, unit, sizeof(unit));
-
-        printf(DEFAULT_COLOR "\nCache L%d:\t\t" ANSI_COLOR_RESET "type: %s\n\t\t\tsize: %.1f %s\n\t\t\tinstances: %d\n\t\t\tAssociativity: %d-ways\n", cache_level,
-                cache_type == 1 ? "Data cache" :
-                cache_type == 2 ? "Instruction cache" :
-                cache_type == 3 ? "Unified cache" : "Unknown",
-                converted_size, unit, instance, ways);
-
-        cache_count++;
-    }
-}

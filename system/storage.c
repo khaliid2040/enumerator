@@ -63,12 +63,13 @@ static void get_disk(const char* device) {
         "/sys/block/nvme0n1/device/model",
         "/sys/block/sda/device/model"
     };
+    const char *disk_types[] = {"nvme0n1","sda"};
     FILE *fp = NULL;
 
-    printf(DEFAULT_COLOR "Model\t\t\t" ANSI_COLOR_RESET);
+    printf(DEFAULT_COLOR "Model:\t\t\t" ANSI_COLOR_RESET);
 
     for (int i = 0; i < sizeof(paths) / sizeof(paths[0]); i++) {
-        if (strcmp(device, paths[i] + 11) == 0) { // +11 to skip "/sys/block/"
+        if (strcmp(device, disk_types[i]) == 0) {
             fp = fopen(paths[i], "r");
             if (fp) {
                 if (fgets(model, sizeof(model), fp) == NULL)
@@ -80,7 +81,7 @@ static void get_disk(const char* device) {
             break;
         }
     }
-    model[strlen(model)] = '\n';
+    model[strlen(model) -1] = '\n';
     printf("%s", model);
 }
 

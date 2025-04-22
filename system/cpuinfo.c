@@ -3,7 +3,14 @@
 
 static unsigned int eax,ebx,ecx,edx;
 static char vendor[13];
-#ifdef supported
+#if defined(__x86_64__) || defined(__i386__)
+
+static inline bool is_5lvl_supported() {
+    __cpuid_count(0x07,0,eax,ebx,ecx,edx);
+    if (ecx & (1 << 16))
+        return true;
+    return false;
+}
 
 static void cpuid() {
     /* i intentionally compared leaf 0 and 1 because this is the only leaf values is being worked 
@@ -32,6 +39,8 @@ static void cpuid() {
                     }
                 }
             }
+            // 5 level paging
+            if (is_5lvl_supported()) printf("5lvl ");
             //array of integers of correspond to simd instruction
             const int simd[]= {0,19,20};
             const char *simd_features[  ]= {"SSE3","SSE4.1","SSE4.2"};
@@ -62,40 +71,68 @@ static void cpuid() {
         }
 }
 #endif
-//the function above is good and optimal uses direct cpuid instrcution but it only available on x86/x86_64 so 
-//for other architectures we don't have option but to parse /proc/cpuinfo
-#ifndef supported
-static void generic_cpuinfo(struct Cpuinfo *cpu) {
-    char buffer[256];  // Increase buffer size to handle longer lines
-    FILE *fp = fopen("/proc/cpuinfo", "r");
-    if (!fp) {
-        perror("fopen");
-        return;
-    }
+/**
+ * This code entirely works well on x86 architecture but for other architecture it maybe used
+ * a more generic way like parsing /proc or /sys.
+ * On arm this below small code should be enough for now
+ */
+#if defined(__arm__) || defined(__aarch64__)
+uint64_t read_midr_el1() {
+    uint64_t val;
+    asm volatile("mrs %0, MIDR_EL1" : "=r"(val));
+    return val;
+}
 
-    // Initialize CPU info to default values
-    cpu->vendor[0] = '\0';
-    cpu->model = 0;
-    cpu->family = 0;
-    cpu->stepping = 0;
-    cpu->model_name[0] = '\0';
-
-    while (fgets(buffer, sizeof(buffer), fp) != NULL) {
-        // Check the start of each line and parse accordingly
-        if (strncmp(buffer, "vendor_id", 9) == 0) {
-            sscanf(buffer, "vendor_id%*[ \t:]    %s", cpu->vendor);
-        } else if (strncmp(buffer, "cpu family", 10) == 0) {
-            sscanf(buffer, "cpu family%*[ \t:]    %u", &cpu->family);
-        } else if (strncmp(buffer, "model", 5) == 0 && !strstr(buffer, "model name")) {
-            sscanf(buffer, "model%*[ \t:]%u", &cpu->model);
-        } else if (strncmp(buffer, "model name", 10) == 0) {
-            sscanf(buffer, "model name%*[ \t:]%[^\n]", cpu->model_name);
-        } else if (strncmp(buffer, "stepping", 8) == 0) {
-            sscanf(buffer, "stepping%*[ \t:]%d", &cpu->stepping);
-        }
+const char* identify_model(uint16_t part) {
+    switch (part) {
+        case 0xD03: return "Cortex-A53";
+        case 0xD04: return "Cortex-A35";
+        case 0xD05: return "Cortex-A55";
+        case 0xD07: return "Cortex-A57";
+        case 0xD08: return "Cortex-A72";
+        case 0xD09: return "Cortex-A73";
+        case 0xD0A: return "Cortex-A75";
+        case 0xD0B: return "Cortex-A76";
+        case 0xD41: return "Cortex-A78";
+        case 0xD42: return "Cortex-X1";
+        case 0xD44: return "Cortex-A710";
+        case 0xD46: return "Cortex-X2";
+        case 0xD47: return "Cortex-A715";
+        case 0xD48: return "Cortex-X3";
+        case 0xD4A: return "Cortex-A720";
+        case 0xD4B: return "Cortex-X4";
+        default:    return "Unknown";
     }
-    
-    fclose(fp);
+}
+
+const char* identify_vendor(uint8_t impl) {
+    switch (impl) {
+        case 0x41: return "ARM Ltd";
+        case 0x42: return "Broadcom";
+        case 0x43: return "Cavium";
+        case 0x44: return "DEC";
+        case 0x4E: return "NVIDIA";
+        case 0x50: return "AppliedMicro";
+        case 0x51: return "Qualcomm";
+        case 0x56: return "Marvell";
+        case 0x61: return "Apple";
+        default:   return "Unknown";
+    }
+}
+
+static void generic_cpuinfo() {
+    uint64_t midr = read_midr_el1();
+    uint8_t implementer = (midr >> 24) & 0xFF;
+    uint8_t variant     = (midr >> 20) & 0xF;
+    uint8_t architecture = (midr >> 16) & 0xF;
+    uint16_t part       = (midr >> 4) & 0xFFF;
+    uint8_t revision    = midr & 0xF;
+
+    printf(DEFAULT_COLOR "Processor:\t\t" ANSI_COLOR_RESET "%s\n",identify_vendor(implementer));
+    printf(DEFAULT_COLOR "Model:\t\t" ANSI_COLOR_RESET "%s\n",identify_model(part));
+    printf(DEFAULT_COLOR "Revision:\t\t" ANSI_COLOR_RESET "r%dp%d\n", variant, revision);
+    printf(DEFAULT_COLOR "Architecture:\t\t" ANSI_COLOR_RESET "0x%X\n", architecture);
+
 }
 #endif      
 static int cpu_vulnerabilities(void) {
@@ -380,13 +417,7 @@ void cpuinfo() {
     printf(DEFAULT_COLOR "Model\t\t\t" ANSI_COLOR_RESET "%u\n", model);
     printf(DEFAULT_COLOR "Stepping\t\t" ANSI_COLOR_RESET "%u\n", stepping);
     #else
-    struct Cpuinfo cpu;
-    generic_cpuinfo(&cpu);
-    printf(DEFAULT_COLOR "\nVendor:\t\t\t" ANSI_COLOR_RESET "%s", cpu.vendor);
-    printf(DEFAULT_COLOR "\nBrand:\t\t\t" ANSI_COLOR_RESET "%s\n", cpu.model_name);
-    printf(DEFAULT_COLOR "Family\t\t\t" ANSI_COLOR_RESET "%u\n", cpu.family);
-    printf(DEFAULT_COLOR "Model\t\t\t" ANSI_COLOR_RESET "%u\n", cpu.model);
-    printf(DEFAULT_COLOR "Stepping\t\t" ANSI_COLOR_RESET "%u\n", cpu.stepping);
+    generic_cpuinfo();
     #endif
 
     char arch[10], endianess[10];

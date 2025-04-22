@@ -51,8 +51,9 @@ Virtualization detect_hypervisor() {
     if (is_hypervisor_present()) {
         printf(DEFAULT_COLOR "\nHypervisor detected:\t"ANSI_COLOR_RESET);
 
+        #if defined(__x86_64__) || defined(__i386__)
         __cpuid(0x40000000U,eax,ebx,ecx,edx);
-        
+        #endif
         // for virtual machines
         if (is_hypervisor_virtualbox()) return Virtualbox;
         if (ebx == 0x4B4D564B && ecx == 0x564B4D56 && edx == 0x0000004D) return KVM;

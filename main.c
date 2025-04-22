@@ -422,7 +422,7 @@ static void help() {
 }
 
 int main(int argc, char *argv[]) {
-    print_pager(stdout, ANSI_COLOR_GREEN "System enumeration\n" ANSI_COLOR_RESET);
+    printf("\n");
     int opt, H_flag = 0, N_flag = 0, P_flag = 0, E_flag = 0, interv_flag = 0, C_flag = 0;
     int p_value = 0, interval = 0;
     char *process = NULL;
@@ -528,6 +528,7 @@ int main(int argc, char *argv[]) {
     }
     // If no options are specified
     else {
+        printf(ANSI_COLOR_GREEN "System enumeration\n");
         systeminfo();
     }
 

@@ -4,11 +4,13 @@
 
 //structure to fill parsed fields in /proc/cpuinfo 
 struct Cpuinfo {
-    char vendor[13];   
-    unsigned int model;
-    unsigned int family;
-    int stepping;
-    char model_name[64];  
+    unsigned int processor;
+    unsigned int implementer;
+    unsigned int architecture;
+    unsigned int variant;
+    unsigned int part;
+    unsigned int revision;
+    char features[48];
 };
 
 
@@ -41,8 +43,10 @@ Virtualization detect_hypervisor();
 //detect if we run on vm or not if we run return true if not return false
 static inline bool is_hypervisor_present() {
     unsigned int eax,ebx,ecx,edx;
+    #if defined(__x86_64__) || defined(__i386__)
     __get_cpuid(1,&eax,&ebx,&ecx,&edx);
     if (ecx & (1U << 31)) return true;
+    #endif
     return false;
 }
 #endif // CPUINFO_H

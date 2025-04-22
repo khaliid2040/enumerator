@@ -1,0 +1,16 @@
+# ignore all object files (*.o) and the executable
+*.o 
+os/*.o 
+net/*.o 
+utils/*.o 
+systeminfo
+# ignore config generated file 
+config.mk
+
+# ignore gdb history file
+.gdb_history
+
+.vscode
+
+# patch file
+patch 

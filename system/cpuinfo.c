@@ -377,6 +377,30 @@ static void print_cache_info(int cores) {
     }
 }
 
+static void get_microcode_version() {
+    char *line = NULL;
+    size_t len = 0;
+    unsigned int code_version = 0;
+    FILE *fp = fopen("/proc/cpuinfo", "r");
+
+    if (!fp) return;
+
+    while (getline(&line, &len, fp) != -1) {
+        if (strstr(line, "microcode")) {
+            char *sep = strchr(line, ':');
+            if (sep) {
+                code_version = (unsigned int)strtoul(sep + 1, NULL, 0);
+                break;
+            }
+        }
+    }
+
+    printf(DEFAULT_COLOR "Microcode:\t\t" ANSI_COLOR_RESET "0x%x\n", code_version);
+
+    free(line);
+    fclose(fp);
+}
+
 void cpuinfo() {
     printf(ANSI_COLOR_YELLOW "getting processor information\n" ANSI_COLOR_RESET);
 
@@ -387,6 +411,8 @@ void cpuinfo() {
         printf(DEFAULT_COLOR "processor:\t\t" ANSI_COLOR_RESET "%d\n", processors);
     }
     printf(DEFAULT_COLOR "Sockets:\t\t" ANSI_COLOR_RESET "%d\n", sockets);
+
+    get_microcode_version();
 
     if (!is_hypervisor_present()) {
         struct freq frq = frequency();

@@ -32,30 +32,30 @@ V ?= 0
 
 # Main target to build the executable
 $(EXECUTABLE): $(OBJ_FILES)
-	@if [ $(V) -eq 1 ]; then echo "LD -o $@ $(OBJ_FILES) $(LDFLAGS)"; else echo "LD   $@"; fi
+	@if [ $(V) -eq 1 ]; then echo "gcc -o $@ $(OBJ_FILES) $(LDFLAGS)"; else echo "LD   $@"; fi
 	@$(CC) -o $@ $(OBJ_FILES) $(LDFLAGS)
 
 # Compile object files from the extra directory
 $(OBJ_DIR_OS)/%.o: $(SRC_DIR_OS)/%.c main.h | $(OBJ_DIR_OS)
-	@if [ $(V) -eq 1 ]; then echo "CC -c -o $@ $< $(CFLAGS)"; else echo "CC   $@"; fi
+	@if [ $(V) -eq 1 ]; then echo "gcc -c -o $@ $< $(CFLAGS)"; else echo "CC   $@"; fi
 	@$(CC) -c -o $@ $< $(CFLAGS)
 # Compile object files from the utils directory
 $(OBJ_DIR_UTILS)/%.o: $(SRC_DIR_UTILS)/%.c main.h | $(OBJ_DIR_UTILS)
-	@if [ $(V) -eq 1 ]; then echo "CC -c -o $@ $< $(CFLAGS)"; else echo "CC   $@"; fi
+	@if [ $(V) -eq 1 ]; then echo "gcc -c -o $@ $< $(CFLAGS)"; else echo "CC   $@"; fi
 	@$(CC) -c -o $@ $< $(CFLAGS)
 # Compile object files from the net directory
 $(OBJ_DIR_NET)/%.o: $(SRC_DIR_NET)/%.c main.h | $(OBJ_DIR_NET)
-	@if [ $(V) -eq 1 ]; then echo "CC -c -o $@ $< $(CFLAGS)"; else echo "CC   $@"; fi
+	@if [ $(V) -eq 1 ]; then echo "gcc -c -o $@ $< $(CFLAGS)"; else echo "CC   $@"; fi
 	@$(CC) -c -o $@ $< $(CFLAGS)
 
 # Compile object files from the system directory
 $(OBJ_DIR_SYSTEM)/%.o: $(SRC_DIR_SYSTEM)/%.c main.h | $(OBJ_DIR_SYSTEM)
-	@if [ $(V) -eq 1 ]; then echo "CC -c -o $@ $< $(CFLAGS)"; else echo "CC   $@"; fi
+	@if [ $(V) -eq 1 ]; then echo "gcc -c -o $@ $< $(CFLAGS)"; else echo "CC   $@"; fi
 	@$(CC) -c -o $@ $< $(CFLAGS)
 
 # Compile main.o in the same way as others
 main.o: main.c main.h
-	@if [ $(V) -eq 1 ]; then echo "CC -c -o $@ $< $(CFLAGS)"; else echo "CC   $@"; fi
+	@if [ $(V) -eq 1 ]; then echo "gcc -c -o $@ $< $(CFLAGS)"; else echo "CC   $@"; fi
 	@$(CC) -c -o main.o main.c $(CFLAGS)
 
 # Phony targets
@@ -90,4 +90,4 @@ clean:
 	rm -rf $(OBJ_DIR_NET)/*.o
 	rm -rf $(OBJ_DIR_SYSTEM)/*.o
 	rm -rf $(OBJ_DIR_UTILS)/*.o
-	rm -f *.o config.mk $(EXECUTABLE) patch 
+	rm -f *.o config.mk $(EXECUTABLE)

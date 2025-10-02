@@ -83,6 +83,7 @@ uint64_t read_midr_el1() {
     return val;
 }
 
+
 const char* identify_model(uint16_t part) {
     switch (part) {
         case 0xD03: return "Cortex-A53";
@@ -134,7 +135,38 @@ static void generic_cpuinfo() {
     printf(DEFAULT_COLOR "Architecture:\t\t" ANSI_COLOR_RESET "0x%X\n", architecture);
 
 }
-#endif      
+#endif    
+
+// Minimal Intel mapping (extend as needed)
+struct cpu_uarch intel_map[] = {
+    {6, 0x1A, "Nehalem (Bloomfield)"},
+    {6, 0x1E, "Nehalem (Lynnfield)"},
+    {6, 0x2A, "Sandy Bridge"},
+    {6, 0x3A, "Ivy Bridge"},
+    {6, 0x3C, "Haswell"},
+    {6, 0x3F, "Haswell-EP"},
+    {6, 0x3D, "Broadwell"},
+    {6, 0x4E, "Skylake (Client)"},
+    {6, 0x5E, "Skylake (Desktop)"},
+    {6, 0x8E, "Kaby Lake / Coffee Lake"},
+    {6, 0x9E, "Kaby Lake / Coffee Lake"},
+    {6, 0xA5, "Comet Lake"},
+    {6, 0xA7, "Rocket Lake"},
+    {6, 0x8C, "Tiger Lake"},
+    {6, 0x97, "Alder Lake"},
+    {6, 0xB7, "Raptor Lake"},
+    {0, 0, NULL} // end marker
+};
+
+static const char* get_uarch_codename(unsigned int family, unsigned int model) {
+    for (int i = 0; intel_map[i].name; i++) {
+        if (intel_map[i].family == family &&
+            intel_map[i].model == model)
+            return intel_map[i].name;
+    }
+    return "Unknown Intel microarchitecture";
+}
+
 static int cpu_vulnerabilities(void) {
     struct dirent *entry;
     char *dir_path= "/sys/devices/system/cpu/vulnerabilities";
@@ -442,6 +474,7 @@ void cpuinfo() {
     printf(DEFAULT_COLOR "Family\t\t\t" ANSI_COLOR_RESET "%u\n", family);
     printf(DEFAULT_COLOR "Model\t\t\t" ANSI_COLOR_RESET "%u\n", model);
     printf(DEFAULT_COLOR "Stepping\t\t" ANSI_COLOR_RESET "%u\n", stepping);
+    printf(DEFAULT_COLOR "Codename:\t\t" ANSI_COLOR_RESET "%s\n", get_uarch_codename(family, model));
     #else
     generic_cpuinfo();
     #endif

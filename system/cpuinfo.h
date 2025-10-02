@@ -21,6 +21,11 @@ struct freq {
     unsigned long base_freq;
 };
 
+struct cpu_uarch {
+    int family;
+    int model;
+    const char *name;
+};
 
 void cpuinfo(void);  
 

@@ -178,18 +178,49 @@ static char* find_class_name(const char *class_id) {
     return NULL;  // No matching class found
 }
 
+static void get_device_path(char *path, int *bus, int *dev, int *func) {
+    char *domain_str, *bus_str, *dev_func_str, *func_str;
+    char *saveptr;
+
+    // Duplicate path because strtok() modifies it
+    char tmp[64];
+    strncpy(tmp, path, sizeof(tmp));
+    tmp[sizeof(tmp) - 1] = '\0';
+
+    // Split by ':'
+    domain_str = strtok_r(tmp, ":", &saveptr);  // domain (ignore)
+    bus_str = strtok_r(NULL, ":", &saveptr);    // bus
+    dev_func_str = strtok_r(NULL, ":", &saveptr); // device.function
+
+    if (!bus_str || !dev_func_str)
+        return;
+
+    // Now split device.function
+    func_str = strchr(dev_func_str, '.');
+    if (!func_str)
+        return;
+
+    *func_str++ = '\0';  // separate strings
+
+    *bus  = (int)strtol(bus_str, NULL, 16);
+    *dev  = (int)strtol(dev_func_str, NULL, 16);
+    *func = (int)strtol(func_str, NULL, 10); // sometimes hex, but usually decimal
+}
+
 void list_pci_devices() {
     DIR* dir;
     FILE *fp;
     char vendor[7],class[7],device[7],path[96];
     struct dirent *entry;
     char *found_device = NULL,*found_vendor=NULL,*found_class=NULL;
+    int bus, dev, func;
+
     dir = opendir(PCI_DEVICE_PATH);
     if (!dir) {
         perror("opendir");
         return;
     }   
-    printf("%-35s%-40s\n","Vendor","Device");
+    printf("%-15s%-35s%-40s\n","Path", "Vendor","Device");
     while ((entry = readdir(dir)) != NULL) {
         if (entry->d_name[0] == '.') continue;
 
@@ -215,6 +246,8 @@ void list_pci_devices() {
         found_vendor = find_vendor_name(vendor);
         found_class = find_class_name(class);
         
+        get_device_path(entry->d_name, &bus, &dev, &func);
+        printf("%x:%x:%x\t", bus, dev, func);
         printf("%-30s %-35s\n",found_vendor,found_device);
         free(found_vendor);
         free(found_device);

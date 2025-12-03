@@ -249,6 +249,7 @@ void storage(void) {
 
                 // Retrieve UUID if BLKID is enabled
                 char uuid[96];
+		memset(uuid, 0, sizeof(uuid));
                 get_device_uuid(entry->mnt_fsname, uuid, sizeof(uuid));
                 // Print only if needed
                 if (needed) {
@@ -257,7 +258,7 @@ void storage(void) {
                            total_size, unit_total,
                            free_blocks, unit_free,
                            used_blocks, unit_used,
-                           uuid ? uuid : "N/A");
+                           uuid);
                 }
             }
         }

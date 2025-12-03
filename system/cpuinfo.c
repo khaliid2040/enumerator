@@ -65,6 +65,7 @@ static void cpuid() {
                 case hyperv: printf("Microsoft hyper-v"); break;
                 case xen: printf("Xen"); break;
                 case unknown: printf(ANSI_COLOR_RED"unknown"ANSI_COLOR_RESET); break;
+		default: break;
             }
         }
         
@@ -167,14 +168,14 @@ static const char* get_uarch_codename(unsigned int family, unsigned int model) {
     return "Unknown Intel microarchitecture";
 }
 
-static int cpu_vulnerabilities(void) {
+static void cpu_vulnerabilities(void) {
     struct dirent *entry;
     char *dir_path= "/sys/devices/system/cpu/vulnerabilities";
     char file_path[MAX_LINE_LENGTH];
     DIR *path= opendir(dir_path);
     if (path ==NULL) {
         perror("couldn't open");
-        return 2;
+        return;
     }
     while ((entry= readdir(path)) != NULL) {
         if (entry->d_type == DT_REG) {

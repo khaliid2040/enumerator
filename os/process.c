@@ -173,7 +173,7 @@ static int countThreads(int pid) {
         return -1;
     while (getline(&content,&size,fp) != -1) {
         if (!strncmp(content,"Threads:",8)) {
-            if (!sscanf(content,"Threads: %u",&Threads) != 1) {
+            if ((!sscanf(content,"Threads: %u",&Threads)) != 1) {
                 break;
             }
         }
